@@ -1,0 +1,66 @@
+# Porting plan and technical questions
+
+## Strategy
+
+Investigate the Dreamcast VF3tb executable first. Shared SH-4 / PowerVR2 / AICA architecture is a substantial advantage over the Model 3 arcade build, but does not establish direct compatibility.
+
+The arcade Model 3 recompilation remains a reference for game behavior. Its PowerPC 603e guest code and Real3D Pro-1000 board implementation are fundamentally different from Naomi.
+
+## Phase 1 — executable reconnaissance
+
+Input: user-supplied 1ST_READ.BIN from a Dreamcast VF3tb dump.
+
+Deliverables:
+- file format, load address and entry point;
+- SH-4 instruction/runtime profile;
+- memory regions and hardware register references;
+- startup sequence and required Dreamcast SDK/runtime services;
+- GD-ROM/disc access patterns and asset inventory;
+- PVR2 and AICA initialization/use;
+- Maple/controller calls and expected controls.
+
+Do not infer a service is unused merely because it is not obvious in static analysis; validate with call tracing or emulator instrumentation where possible.
+
+## Phase 2 — Naomi proof of compatibility
+
+Build independent test programs for:
+- Naomi boot/entry and memory sanity;
+- PowerVR2 video initialization and a basic rendered frame;
+- JVS input detection/polling;
+- audio/AICA initialization;
+- ROMFS-backed asset reads.
+
+Use Flycast for rapid iteration, then verify on real Naomi hardware. Keep tests small and isolate failures by subsystem.
+
+## Phase 3 — adaptation
+
+Only after Phase 1 identifies concrete dependencies:
+- implement required Dreamcast runtime/API shims;
+- replace GD-ROM file access with a Naomi-appropriate asset provider;
+- resolve Dreamcast-specific startup and peripheral assumptions;
+- adapt Maple controller input to Naomi JVS;
+- preserve or adapt PVR2/AICA usage where the Naomi hardware interface is compatible.
+
+Avoid broad API emulation until evidence shows it is needed.
+
+## Phase 4 — game integration
+
+Bring up a deterministic scene first, then menus, fighter selection, match logic, animation, effects and sound. Track missing functions/assets explicitly.
+
+## Phase 5 — deployment
+
+Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where applicable, without sharing game-specific source or merging the repositories.
+
+## Current blockers
+
+- [ ] Obtain and inspect Dreamcast VF3tb 1ST_READ.BIN.
+- [ ] Identify exact game revision and executable hash.
+- [ ] Establish build toolchain and minimal Naomi executable skeleton.
+- [ ] Verify Naomi video, JVS and audio test programs in Flycast and on hardware.
+
+## Risks
+
+- Dreamcast and Naomi share major chips but differ in platform boot, memory configuration, peripherals and storage.
+- Decompiled game source is not yet a complete playable reconstruction.
+- SH-4 recompilation frameworks are experimental; do not assume they provide a ready Naomi runtime.
+- PVR2 and AICA behavior must be validated on actual Naomi hardware, not inferred from shared architecture alone.
