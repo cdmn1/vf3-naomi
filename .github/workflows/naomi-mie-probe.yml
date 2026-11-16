@@ -43,6 +43,26 @@ jobs:
           cache-from: type=gha,scope=vf3-naomi-kos-toolchain
           cache-to: type=gha,mode=max,scope=vf3-naomi-kos-toolchain
 
+
+        run: |
+          python3 - <<'PY'
+from pathlib import Path
+p = Path("kos/kernel/arch/dreamcast/hardware/maple/mie/mie.c")
+s = p.read_text()
+replacements = (
+    ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return false;\n    }\n\n"),
+    ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return;\n    }\n\n"),
+)
+for function, guard in replacements:
+    start = s.find(function)
+    if start < 0:
+        raise SystemExit(f"Could not find {function}")
+    guard_at = s.find(guard, start + len(function))
+    if guard_at < 0:
+        raise SystemExit(f"Could not find Retail guard in {function}")
+    s = s[:guard_at] + s[guard_at + len(guard):]
+p.write_text(s)
+PY
       - name: Build KallistiOS and package a Naomi ROM image
         run: |
           docker run --rm \
@@ -65,25 +85,6 @@ jobs:
               cp "$KOS_BASE/doc/environ.sh.sample" "$KOS_BASE/environ.sh"
               . "$KOS_BASE/environ.sh"
               export KOS_SUBARCH=naomi
-              # Same Naomi-only KOS MIE workaround used by the proven Daytona v5 build.
-              python3 - <<'PY'
-          from pathlib import Path
-          p = Path("/opt/toolchains/dc/kos/kernel/arch/dreamcast/hardware/maple/mie/mie.c")
-          s = p.read_text()
-          replacements = (
-              ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return false;\n    }\n\n"),
-              ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return;\n    }\n\n"),
-          )
-          for function, guard in replacements:
-              start = s.find(function)
-              if start < 0:
-                  raise SystemExit(f"Could not find {function}")
-              guard_at = s.find(guard, start + len(function))
-              if guard_at < 0:
-                  raise SystemExit(f"Could not find Retail guard in {function}")
-              s = s[:guard_at] + s[guard_at + len(guard):]
-          p.write_text(s)
-PY
               make -C "$KOS_BASE" -j2
               make -C /workspace/tests/naomi_mie_probe clean rom
               test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.bin
