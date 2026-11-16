@@ -139,6 +139,7 @@ jobs:
                       for idx in matches[:20]:
                           print("\\n".join(dis[max(0, idx-4):min(len(dis), idx+5)]))
 
+          print_window("test", test_segment, test_addr, 0x8C0210C4, 0x8C021500)
           print_window("test", test_segment, test_addr, 0x8C0463D0, 0x8C046700)
           print_window("main", main_segment, main_addr, 0x8C063D80, 0x8C064180)
 
