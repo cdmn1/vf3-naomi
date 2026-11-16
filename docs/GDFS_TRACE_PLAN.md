@@ -51,6 +51,16 @@ Memory records include the executing PC, access width, read/write flag, address 
 
 The related project's `tools/mem_watch.py` shows the environment setup for memory-only traces, while `docs/re/probe_mode.md` documents the PC-probe record format. The checked-in watch file avoids manually retyping the addresses. The upstream helper's normal CLI constructs memory-only watch files, so use the combined file directly with the environment variables rather than relying on that helper's default watch generation.
 
+## Decoding a retained capture
+
+The combined `VF3_TRACE` stream contains the PC-probe marker groups (`0xFA10`/`0xFA11`) and memory-access records (`0xFA20`) described by the related project's trace notes. After a capture, decode those records with:
+
+```text
+python tools/loader_trace_decode.py path/to/loader_trace.bin --prefix extract/analysis/loader_trace
+```
+
+This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general instruction-trace disassembler.
+
 ## Analysis order
 
 1. **Runtime table pointer:** at the first hit in `mt_loader` / `load_mt_*`, inspect `r13` and `r14` and trace the pointer chain to `0x8C1069BC`. Confirm whether the selected table index is zero-based or one-based and whether it selects a string pointer, a file descriptor or a loader object.
@@ -76,6 +86,7 @@ This plan is based on the related project's published M33/M66 notes and the prev
 - [Probe-mode trace format](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/probe_mode.md)
 - [Front-end / character-select capture attempts and their limits](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/front_to_fight.md)
 - [Checked-in combined PC + memory watch list](../tools/VF3_WATCH_LOADER.txt)
+- [Trace marker decoder](../tools/loader_trace_decode.py)
 - [GDFS / loader pointer investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md)
 - [MT resident scatter evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
 - [MT asset layout](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/MT.md)
