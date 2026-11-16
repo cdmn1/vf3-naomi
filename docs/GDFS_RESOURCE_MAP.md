@@ -58,6 +58,20 @@ The table also contains two suspicious tag strings that appear to have swallowed
 
 This accounts for all 235 `.BIN` files: 232 ordinary resource-name matches plus these three separate/unresolved files.
 
+### A strong ordering clue: 225 normal assets follow GD-ROM LBA order
+
+I compared the order of the 234 extracted table rows with the related project's retail GD-ROM manifest. After excluding seven special/outlier entries (`1ST_READ.BIN`, `MOVIE.BIN`, and `GEN_DMY1.BIN` through `GEN_DMY5.BIN`), the remaining **225 matched assets are in exactly ascending GD-ROM LBA order**: zero inversions across the 224 adjacent pairs.
+
+The seven outliers appear at the beginning/end of the embedded string list even though their physical LBAs are elsewhere:
+- `1ST_READ.BIN`: table row 1, GD LBA 548424;
+- `MOVIE.BIN`: table row 228, GD LBA 426371;
+- `GEN_DMY1.BIN`–`GEN_DMY4.BIN`: rows 229–232, GD LBAs 218103–218106;
+- `GEN_DMY5.BIN`: row 233, GD LBA 218405.
+
+This is a strong structural clue that the embedded filename list preserves the disc-file ordering for the 225 ordinary assets, with a handful of special records kept separately. Combined with the related project's description of positional lookup, it gives us a candidate route from resource-table position to disc-file entry. It does **not** yet prove that the live 132-pointer table indexes this exact list or that the runtime index directly equals an LBA rank.
+
+The updated [GDFS_ASSET_INDEX.csv](GDFS_ASSET_INDEX.csv) now includes the original table row, a core-order position, GD LBA, size, manifest SHA-1 and tag-extraction quality marker.
+
 ## Tag families in the generated table
 
 The related project's `src/sys/gdfs.c` groups selected tags for scheduling:
