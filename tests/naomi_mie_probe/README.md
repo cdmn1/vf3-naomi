@@ -12,11 +12,13 @@ is the documented baseline for current Naomi/NetDIMM support).
 From this directory:
 
 ```sh
-make
-make dist
+make clean rom
 ```
 
-This produces `vf3_mie_probe.elf` and `vf3_mie_probe.elf.bin`.
+This produces `vf3_mie_probe.bin`, a Naomi ROM image packaged by KallistiOS's
+`naomibintool`. Do not upload the ELF or an `objcopy -O binary` output: those
+are not substitutes for the Naomi ROM image header/container. The packaging
+recipe follows the known-good Daytona `naomi_cart_probe_v1.bin` build path.
 
 ## What it reports
 
@@ -38,12 +40,15 @@ stub found in unrelated early recompilation frameworks.
 
 ## Validation
 
-This source has been checked against the current KallistiOS MIE header and
-its `examples/dreamcast/mie/basic` example. It has **not** been compiled or
-run in this environment. A successful build is not a hardware test. The
-first runtime check is whether Port A reports MIE/JVS and the native P1
-switch word changes when a control-panel switch is pressed.
+The source has compiled, but the first packaged build was rejected by the
+Naomi main board with error 01 ("game not acceptable by main board"). That
+build uploaded a raw flat binary rather than a Naomi ROM image. The packaging
+has now been corrected to use `naomibintool`, matching the known-good Daytona
+cart-probe recipe. The corrected image still requires a fresh hardware test.
 
+A successful build is not a hardware test. The runtime success criterion is
+whether Port A reports MIE/JVS and the native P1 switch word changes when a
+control-panel switch is pressed.
 
 The automatic `INIT_MIE` path expects the MIE bridge firmware to already
 be active (for example, initialized by the Naomi BIOS). KOS also exposes
@@ -55,4 +60,5 @@ of bad wiring until bridge firmware state is known.
 
 - KallistiOS MIE driver: https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/include/dc/maple/mie.h
 - KallistiOS official MIE example: https://github.com/KallistiOS/KallistiOS/tree/master/examples/dreamcast/mie/basic
+- KallistiOS Naomi ROM packaging tool: https://github.com/KallistiOS/KallistiOS/tree/master/utils/naomibintool
 - KallistiOS 2.1 release notes: https://github.com/KallistiOS/KallistiOS/releases
