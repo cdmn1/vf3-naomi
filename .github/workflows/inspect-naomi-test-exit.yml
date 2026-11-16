@@ -95,3 +95,5 @@ jobs:
 # Extend the disassembly window around the test-mode BIOS routines.
 
 # Re-run with explicit SH-4 address range printing.
+
+# Trace BSR callers of Naomi BIOS syscall 0x11.
