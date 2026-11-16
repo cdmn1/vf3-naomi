@@ -1,0 +1,89 @@
+name: Inspect Naomi test-mode exit reference
+
+on:
+  push:
+    branches:
+      - research/naomi-test-exit
+    paths:
+      - .github/workflows/inspect-naomi-test-exit.yml
+      - encoded-20261116145552.txt
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode reference ROM and disassemble test segment
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y binutils-sh4-linux-gnu
+          python3 - <<'PY'
+          import base64, io, pathlib, re, struct, subprocess, zipfile
+
+          encoded = pathlib.Path("encoded-20261116145552.txt").read_text()
+          archive = base64.b64decode("".join(encoded.split()))
+          with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+              names = [n for n in zf.namelist() if n.lower().endswith(".bin")]
+              if len(names) != 1:
+                  raise SystemExit(f"expected one BIN in reference ZIP, got {names}")
+              rom = zf.read(names[0])
+
+          def triple(offset):
+              return struct.unpack_from("<III", rom, offset)
+
+          main_off, main_addr, main_size = triple(0x360)
+          test_off, test_addr, test_size = triple(0x3C0)
+          main_entry, test_entry = struct.unpack_from("<II", rom, 0x420)
+
+          print("REFERENCE ROM:", names[0])
+          print("ROM bytes:", len(rom))
+          print("Main descriptor:", hex(main_off), hex(main_addr), hex(main_size))
+          print("Test descriptor:", hex(test_off), hex(test_addr), hex(test_size))
+          print("Main entry:", hex(main_entry), "Test entry:", hex(test_entry))
+          print("Header identity:", rom[:0x30].decode("ascii", "replace").rstrip())
+
+          test_segment = rom[test_off:test_off + test_size]
+          pathlib.Path("/tmp/naomi-test.bin").write_bytes(test_segment)
+          dis = subprocess.run(
+              ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4",
+               f"--adjust-vma={hex(test_addr)}", "/tmp/naomi-test.bin"],
+              check=True, capture_output=True, text=True
+          ).stdout.splitlines()
+
+          print("\n--- TEST SEGMENT: BIOS SYSCALL / EXIT-RELATED DISASSEMBLY ---")
+          terms = ("ac018000", "8c046548", "8c04647a", "8c055862",
+                   "8c055624", "8c021000")
+          shown = set()
+          for term in terms:
+              indexes = [i for i, line in enumerate(dis) if term in line.lower()]
+              print(f"\nMATCH {term}: {len(indexes)}")
+              for idx in indexes[:12]:
+                  lo, hi = max(0, idx - 12), min(len(dis), idx + 16)
+                  key = (lo, hi)
+                  if key in shown:
+                      continue
+                  shown.add(key)
+                  print("\n".join(dis[lo:hi]))
+
+          print("\n--- TEST STRINGS ---")
+          for match in re.finditer(rb"[ -~]{5,}", test_segment):
+              s = match.group().decode("ascii", "replace")
+              if re.search(r"GAME TEST|INPUT TEST|PRESS TEST|RETURN MENU|SERVICE BUTTON|EXIT", s, re.I):
+                  file_off = test_off + match.start()
+                  ram = test_addr + match.start()
+                  print(f"file+{file_off:#x} RAM {ram:#010x}: {s}")
+
+          print("\n--- SYSCALL VECTOR LITERAL LOCATIONS ---")
+          needle = bytes.fromhex("00 80 01 ac")
+          pos = 0
+          while True:
+              pos = test_segment.find(needle, pos)
+              if pos < 0:
+                  break
+              print(f"file+{test_off + pos:#x} RAM {test_addr + pos:#010x}")
+              pos += 1
+          PY
