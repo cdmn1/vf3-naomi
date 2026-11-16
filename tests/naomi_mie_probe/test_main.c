@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <kos.h>
 #include <kos/init.h>
-#include <arch/arch.h>
 #include <dc/minifont.h>
 #include <dc/maple.h>
 #include <dc/maple/mie.h>
@@ -162,6 +161,7 @@ int main(int argc, char **argv)
     font_init();
     maple_wait_scan();
 
+    int exit_requested = 0;
     for(;;) {
         mie_state_t *s = mie_status();
         int service = s ? !!s->jvs.p1.service : 0;
@@ -178,12 +178,12 @@ int main(int argc, char **argv)
                     page = 1;
                 } else {
                     /*
-                     * KOS ARCH_EXIT_MENU performs a clean shutdown and calls
-                     * the BIOS system-menu syscall. Verify the exact target
-                     * on Naomi hardware/Flycast before treating it as proven.
+                     * Keep KOS's default ARCH_EXIT_RETURN path. The KOS
+                     * startup stub saves the caller's stack and PR; returning
+                     * from main lets its exit handler restore them and return
+                     * to the Naomi BIOS that launched this test entry point.
                      */
-                    arch_set_exit_path(ARCH_EXIT_MENU);
-                    exit(EXIT_SUCCESS);
+                    exit_requested = 1;
                 }
             }
             render_menu(lines, selected, s);
@@ -192,6 +192,7 @@ int main(int argc, char **argv)
             render_input(lines, s);
         }
         draw_lines(lines);
+        if(exit_requested) break;
         thd_sleep(50);
     }
     return 0;
