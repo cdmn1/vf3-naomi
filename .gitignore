@@ -1,0 +1,6 @@
+# Locally supplied Naomi ROM archives and encoded copies must never be committed.
+/n1-la_keyboard_xyu-*.zip
+/encoded-*.txt
+
+# Local Dreamcast game executable used for analysis.
+/1ST_READ.BIN
