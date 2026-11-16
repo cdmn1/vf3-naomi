@@ -21,12 +21,28 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check out KallistiOS
+        id: kos
         uses: actions/checkout@v4
         with:
           repository: KallistiOS/KallistiOS
           ref: master
           path: kos
           fetch-depth: 1
+
+      - name: Record KOS source revision
+        id: kos-revision
+        run: echo "sha=$(git -C kos rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiled Naomi KOS cache
+        id: kos-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/kos-naomi-build.tar
+          key: kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('.github/workflows/naomi-mie-probe.yml') }}-mie-v2
+
+      - name: Overlay cached KOS source and build outputs
+        if: steps.kos-cache.outputs.cache-hit == 'true'
+        run: tar -xf .cache/kos-naomi-build.tar -C kos
 
       - name: Install KOS build dependencies
         run: |
@@ -114,12 +130,28 @@ jobs:
               if start < 0:
                   raise SystemExit(f"Could not find {function}")
               guard_at = s.find(guard, start + len(function))
-              if guard_at < 0:
-                  raise SystemExit(f"Could not find Retail guard in {function}")
-              s = s[:guard_at] + s[guard_at + len(guard):]
+              if guard_at >= 0:
+                  s = s[:guard_at] + s[guard_at + len(guard):]
+              # A restored cache already contains this exact source patch.
           p.write_text(s)
           PY
           make -C "$KOS_BASE" -j2
+
+      # Persist the expensive KOS source/build tree before attempting the
+      # probe compile. A later failure must not discard this completed stage.
+      - name: Archive compiled Naomi KOS tree
+        if: steps.kos-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .cache
+          tar --exclude=.git -cf .cache/kos-naomi-build.tar -C kos .
+
+      - name: Save compiled Naomi KOS cache
+        if: steps.kos-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/kos-naomi-build.tar
+          key: kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('.github/workflows/naomi-mie-probe.yml') }}-mie-v2
 
       - name: Calculate binary version
         id: version
