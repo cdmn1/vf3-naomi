@@ -79,3 +79,14 @@ This remains a hypothesis until code references, control flow, register accesses
 5. Determine whether the executable contains conditional platform branches or separately linked platform modules.
 
 No claim of direct Naomi boot or playable compatibility is made.
+
+## Follow-up: AICA driver asset
+
+The Dropbox `SNDDRV.BIN` was fetched through Dropbox's text-content endpoint for a limited string inspection. It contains the embedded identifiers:
+
+- `AM2/AICAsoundDrv990708/Ver1.63a`
+- `Sequencer 1.27 99/03/16 Y.Takeda`
+
+This supports identifying the file as an AM2 AICA sound-driver asset, with the above internal version strings. It is not yet clear whether the binary is a complete driver image, a wrapped/padded form, or a modified copy. Its Dropbox size is 53,120 bytes, while `DATELIST.ASC` records 34,256 bytes for the original `AICADRV.BIN` path, so the discrepancy must be resolved before reusing it.
+
+The executable's embedded `sound.c` path and the driver asset are mutually useful leads, but no sound initialization call sequence has been traced yet.
