@@ -42,16 +42,24 @@ The two very large `.SFD` files and the movie directory corroborate the user's o
 
 The sound driver path explicitly points to an AM2/SEGA library asset named `AICADRV.BIN`, a useful lead for the AICA initialization/runtime investigation. It does not establish the exact driver API or whether the driver is called directly by game code.
 
-## Important size discrepancy
+## Size reconciliation
 
-The Dropbox folder's current file metadata does not always match the sizes recorded in `DATELIST.ASC`. Examples:
-- `MOVIE.BIN`: inventory 327,680 bytes; current Dropbox file metadata 3,932,160 bytes.
-- `SNDDRV.BIN`: inventory 34,256 bytes; current Dropbox file metadata 53,120 bytes.
-- `ROB_AKI.POL`: inventory 132,848 bytes; current Dropbox file metadata 132,416 bytes.
+The inventory and Dropbox metadata were compared across the 412 files in the folder. **321 files have matching sizes; 91 differ.** So the Dropbox folder is not yet proven to be a byte-for-byte faithful copy of the file set represented by `DATELIST.ASC`.
 
-The Dropbox folder is therefore not yet proven to be a byte-for-byte faithful extraction matching this inventory. This may reflect extraction/processing differences or a changed copy, but the cause is unknown. Before relying on individual asset bytes, compare their actual hashes and formats against a known-good disc extraction.
+Examples:
 
-The Dropbox copy of `1ST_READ.BIN` is 1,179,648 bytes, matching the size of the executable uploaded directly in chat.
+| File | DATELIST size | Dropbox size | Difference |
+|---|---:|---:|---:|
+| `MOVIE_A.SFD` | 352,061,440 | 356,409,344 | +4,347,904 |
+| `MOVIE_B.SFD` | 69,023,744 | 69,398,528 | +374,784 |
+| `MOVIE.BIN` | 327,680 | 3,932,160 | +3,604,480 |
+| `SNDDRV.BIN` | 34,256 | 53,120 | +18,864 |
+| `ROB_AKI.POL` | 132,848 | 132,416 | -432 |
+| `ST01.CLI` | 201,696 | 201,696 | 0 |
+
+Some differences are small; others are substantial. The pattern is not explained by a single simple padding rule from the metadata alone. Possible causes include conversion/packing, alternate versions, or modified copies, but none is established yet. Before relying on individual asset bytes, inspect actual file contents and compare hashes/formats against a known-good disc extraction.
+
+The Dropbox copy of `1ST_READ.BIN` is 1,179,648 bytes, matching the executable uploaded directly in chat.
 
 ## Next analysis priorities
 
