@@ -13,6 +13,12 @@ The related project is substantially more advanced than the earlier description 
 
 Neither track is a Naomi port. The work is nevertheless a valuable source of observed Dreamcast runtime behavior and asset-format knowledge.
 
+## Cross-check against the user's Dropbox folder
+
+I listed the 412 immediate files in the user's Dropbox `Vf3-naomi` folder and compared their names and byte sizes with all 412 rows in the related project's [US GD-ROM high-density manifest](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md). The manifest identifies track 3 as Mode1/2352 with base LBA 45000. **All 412 names and all 412 sizes match exactly.** This is strong evidence that the Dropbox folder and the related project refer to the same extracted file set, but it is not proof of byte identity. The manifest publishes SHA-1 values; we still need raw Dropbox bytes to verify them.
+
+The manifest's `1ST_READ.BIN` row is 1,179,648 bytes with SHA-1 `bd327fc8ffb0411883abeb9b925b4660973f160e`. Our prior local analysis recorded SHA-256 `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`; these cannot be directly compared because they are different digest algorithms.
+
 ## Verified findings from the related repository
 
 ### 1. Executable and resident module
