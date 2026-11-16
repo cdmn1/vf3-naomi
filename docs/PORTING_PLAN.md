@@ -38,7 +38,9 @@ Only after Phase 1 identifies concrete dependencies:
 - implement required Dreamcast runtime/API shims;
 - replace GD-ROM file access with a Naomi-appropriate asset provider;
 - resolve Dreamcast-specific startup and peripheral assumptions;
-- adapt Maple controller input to Naomi JVS;
+- adapt Maple controller input to Naomi JVS only after tracing the original
+  guest-facing controller read/merge boundary; the physical JVS source is now
+  verified on hardware;
 - preserve or adapt PVR2/AICA usage where the Naomi hardware interface is compatible.
 
 Avoid broad API emulation until evidence shows it is needed.
@@ -56,14 +58,18 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 - [x] Obtain and inspect Dreamcast VF3tb `1ST_READ.BIN`.
 - [x] Identify the supplied executable as US retail VF3tb `MK-51001`, V1.002; recorded SHA-256:
   `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`.
-- [ ] Complete the Naomi build-toolchain setup and compile the minimal KOS probe. A
-  standalone MIE/JVS probe source and Makefile now exist under
-  `tests/naomi_mie_probe/`. A GitHub Actions workflow now builds the official
-  KOS SH-4 toolchain and Naomi subarchitecture; its first run is in progress,
-  so no successful compile is claimed yet.
-- [ ] Verify Naomi JVS input, PVR2 video and AICA audio in Flycast and on
-  hardware. The JVS probe is the first subsystem test; see
-  `docs/NAOMI_IO_RESEARCH.md`.
+- [x] Build and package the standalone KOS MIE/JVS probe as a versioned Naomi
+  ROM image using GitHub Actions and `naomibintool`.
+- [x] Verify MIE/JVS input on real Naomi hardware. The user confirmed that all
+  cabinet buttons and analog inputs respond. The native JVS switch words and
+  `jvs.analog[]` channels are the intended input source; dedicated racing-style
+  `wheel`/`accel`/`brake` fields are not required.
+- [ ] Capture the original VF3 executable entering its selected-port reader
+  (`0x8C09B006`) and controller merge (`0x8C09AF6C`) paths. Current related-
+  project Flycast captures have not reached these routines, so guest-level
+  controls are not yet proven.
+- [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in
+  isolated probes before attempting full game integration.
 
 ## Risks
 
