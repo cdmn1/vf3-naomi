@@ -34,6 +34,12 @@ The inventory also lists:
 - large scroll/canvas assets under `SCROLL/CNVS`;
 - sound and voice assets under `SOUND/BIN.981013`, including music, voice, and sound-effect banks.
 
+## Cross-check against the related project's retail manifest
+
+The Dropbox folder contains 412 files. I compared every immediate Dropbox filename and byte size against the 412 rows in [celsowm/vf3-decomp's US GD-ROM high-density manifest](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md), which identifies track 3 as Mode1/2352 with base LBA 45000. **All 412 filenames are present and all 412 byte sizes match exactly.** This is consistent with both folders representing the same extracted file set. It is not a byte-for-byte verification: the upstream manifest publishes SHA-1 hashes, but the Dropbox raw bytes have not yet been obtained here for hash comparison.
+
+The manifest lists `1ST_READ.BIN` as 1,179,648 bytes with SHA-1 `bd327fc8ffb0411883abeb9b925b4660973f160e`. Our earlier local analysis recorded SHA-256 `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`; different hash algorithms mean these values cannot be compared directly. A raw-byte SHA-1 calculation is still needed to establish identity.
+
 ## Additional root-level executable: RELOAD.BIN
 
 A separate root-level file, `RELOAD.BIN`, is present in the Dropbox folder at `/Vf3-naomi/RELOAD.BIN` (655,360 bytes; modified 2026-11-16). This exactly matches the size and filename/role documented independently by [celsowm/vf3-decomp's executable inventory](https://github.com/celsowm/vf3-decomp/blob/main/docs/executables.md), which describes a 655,360-byte SH-4 re-init/resident module containing Shinobi, Naomi-library and NEC PowerVR identifiers.
