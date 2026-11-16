@@ -58,6 +58,25 @@ The prologue column is deliberately described as *candidate*: a nearby `STS.L PR
 
 This is a meaningful step beyond string discovery: there are code-level references to all five Naomi source paths. It still does not prove that every referenced path is part of the normal gameplay path; some may be error/reporting paths or dormant platform-specific code.
 
+## Cross-project source-name discrepancy
+
+The related Dreamcast decompilation project's module map lists these Naomi source paths: `lrom.c`, `bj_load.c`, and `pic_logic.c` (alongside `sound.c`, `stage.c`, `area_coli.c`, and `rob_load.c`). This executable's embedded strings instead include `nlrom.c`, `obj_load.c`, and `cpic_logic.c`.
+
+Do not silently equate:
+- `nlrom.c` with `lrom.c`;
+- `obj_load.c` with `bj_load.c`;
+- `cpic_logic.c` with `pic_logic.c`.
+
+They may be renamed modules, separate compilation units, build-specific source paths, or simply different code revisions. The existing literal-load scan found code references to the first five paths in this executable, but it did not yet establish references or absence for every alternate name.
+
+The scanner `tools/sh4_string_xrefs.py` now searches both name sets, plus the other known Naomi source paths. It reports only SH-4 PC-relative `MOV.L @(disp,PC),Rn` literal references; it does not resolve `MOVA`, computed pointers, or prove runtime reachability. Run it against the exact raw `1ST_READ.BIN` image:
+
+```sh
+python tools/sh4_string_xrefs.py path/to/1ST_READ.BIN --csv extract/analysis/naomi_source_xrefs.csv
+```
+
+The script has synthetic tests for cached/uncached SH-4 pointer aliases and literal-pool addressing. A positive result for an alternate name would establish that the string is referenced in this image, not that its module is called during gameplay. A missing result is limited to the scanned PC-relative `MOV.L` pattern.
+
 ## Evidence of both arcade and Dreamcast subsystems
 
 The same binary contains arcade/operator-facing strings:
