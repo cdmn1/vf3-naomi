@@ -25,7 +25,7 @@ The libnaomi `executable_t` structure therefore exposes separate main and test s
 
 This is direct evidence that the Naomi ROM format has first-class support for a test executable/entry point. It is not necessary to invent an unrelated menu-launch mechanism.
 
-## Existing toolchain examples
+## Existing toolchain examples and current probe
 
 DragonMinded/libnaomi's `examples/eepromtest/Makefile` invokes its ROM maker with:
 - `--main-binary-includes-test-binary`
@@ -33,7 +33,16 @@ DragonMinded/libnaomi's `examples/eepromtest/Makefile` invokes its ROM maker wit
 
 The corresponding `main.c` defines both `main()` and `test()`. In that example the test function is a stub loop, demonstrating the dual-entrypoint build arrangement, not a complete production menu or return sequence.
 
-KallistiOS `naomibintool` currently initializes the test segment and test entry point to match the main executable in its simple `build` path. Its header reader nevertheless parses and prints distinct test segments and a distinct test entry point. Thus the ROM format supports the distinction even though that simple builder does not expose a separate test-binary option.
+KallistiOS `naomibintool` currently initializes the test segment and test entry point to match the main executable in its simple `build` path. Its ELF packer explicitly assigns `hdr->test_entry = ehdr->e_entry` and duplicates the main segment descriptor into the test segment table. It does not provide a separate test-ELF option in the version inspected.
+
+That is exactly how the existing VF3 MIE/JVS probe is packaged: `tests/naomi_mie_probe/Makefile` invokes `naomibintool build ... -e vf3_mie_probe.elf`. Therefore its current ROM header has the same main and test entry points and segment descriptors. It is an ideal known-booting hardware/input baseline, but it does not yet demonstrate a distinct test program.
+
+The existing probe already contains useful working pieces for a test-mode prototype:
+- Naomi MIE/JVS initialization and live cabinet input polling;
+- raw player switch words, system/panel switches, coin counters and analog channels;
+- a working PVR text display.
+
+We should extend this probe rather than create a new unrelated test ROM. The initial menu prototype can retain the diagnostic screen as an INPUT TEST page and add a small menu/navigation layer around it.
 
 ## What remains to be verified
 
@@ -48,19 +57,23 @@ The ROM-header fields and toolchain examples establish how a test entry point is
 
 The user-provided screenshot's `NOW LOADING TEST (31K)` message is consistent with a separately loaded test component, but is not sufficient by itself to prove the loader details above.
 
+## Experiment plan using the existing probe
+
+1. Keep the known-good probe binary/source as the baseline and preserve its current input diagnostics.
+2. Add a visible distinction between normal entry and test entry, without changing the existing JVS/MIE polling path.
+3. Extend ROM packaging so the test entry can be distinct and points at a correctly initialized test-program startup path. Do not simply point the header at an ordinary C function until its stack/runtime requirements are handled.
+4. In test mode, display a simple standard-style menu and use the already verified Service/Test and JVS inputs for navigation/selection.
+5. Determine and implement the actual BIOS return mechanism; verify the exit returns to the Naomi SYSTEM MENU rather than merely restarting the game.
+6. Validate through Flycast and then the real Naomi board.
+
 ## Implementation direction
 
-First produce a minimal Naomi ROM with:
-- a normal entry point that displays a simple game/attract placeholder;
-- a distinct test entry point (preferably a separately linked test segment for the first experiment);
-- a minimal service/test navigable test screen;
-- a verified, clean return to the Naomi SYSTEM MENU.
-
-Validate the same image through the intended ROM/netboot path on Flycast and real Naomi hardware. Only after the entry/exit contract is proven should the common title-side menu shell be integrated into VF3 and Daytona. Keep each title's settings and tests separate.
+After the entry/exit contract is proven, integrate the reusable title-side menu shell into VF3 and Daytona. Keep each title's settings and tests separate. Do not treat a static overlay or a reboot to the normal game as a successful test-mode implementation.
 
 ## Sources inspected
 
 - Sega, Naomi GD-ROM System Service Manual, section 5 SYSTEM TEST MODE and section 5-11 GAME TEST MODE.
 - KallistiOS: `utils/naomibintool/naomibintool.c`.
 - DragonMinded/libnaomi: `libnaomi/cart.c`, `examples/eepromtest/Makefile`, and `examples/eepromtest/main.c`.
+- VF3 Naomi: `tests/naomi_mie_probe/Makefile` and `tests/naomi_mie_probe/main.c`.
 - User-provided Naomi menu flow screenshots in `cdmn1/vf3-naomi/test menu flow/`.
