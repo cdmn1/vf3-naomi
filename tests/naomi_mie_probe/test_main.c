@@ -2,8 +2,8 @@
  * Naomi title-test experiment for the VF3 MIE/JVS probe.
  *
  * This is built as a separate KOS executable and placed in the Naomi ROM's
- * test segment/entry point. It deliberately does not attempt to return to the
- * Naomi System Menu until that BIOS protocol is understood.
+ * test segment/entry point. EXIT uses KOS's BIOS-menu exit path, which still
+ * needs confirmation on the target Naomi BIOS.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -146,7 +146,6 @@ int main(int argc, char **argv)
     int prev_service = 0, prev_test = 0;
     (void)argc; (void)argv;
 
-    pvr_init_defaults();
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
     font_tex = pvr_mem_malloc(256 * 256 * 2);
