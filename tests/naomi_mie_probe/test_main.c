@@ -132,7 +132,7 @@ static void render_input(char lines[][LINE_MAX], mie_state_t *s)
              s->jvs.analog[0], s->jvs.analog[1],
              s->jvs.analog[2], s->jvs.analog[3]);
     snprintf(lines[9], LINE_MAX, "P1 BUTTONS: %04X", s->jvs.p1.raw);
-    snprintf(lines[10], LINE_MAX, "");
+    lines[10][0] = 0;
     snprintf(lines[11], LINE_MAX, "PRESS TEST TO RETURN TO MENU");
 }
 
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
             snprintf(lines[3], LINE_MAX, "This page is intentionally");
             snprintf(lines[4], LINE_MAX, "non-destructive. No reboot or");
             snprintf(lines[5], LINE_MAX, "fake return is attempted.");
-            snprintf(lines[6], LINE_MAX, "");
+            lines[6][0] = 0;
             snprintf(lines[7], LINE_MAX, "Press TEST to return to menu.");
             for(int i = 8; i < LINE_COUNT; ++i) lines[i][0] = 0;
             if(test_edge) page = 0;
