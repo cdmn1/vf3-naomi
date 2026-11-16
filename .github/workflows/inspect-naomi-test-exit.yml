@@ -93,3 +93,5 @@ jobs:
 # Retry with little-endian SH-4 instruction decoding.
 
 # Extend the disassembly window around the test-mode BIOS routines.
+
+# Re-run with explicit SH-4 address range printing.
