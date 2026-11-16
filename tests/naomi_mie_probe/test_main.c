@@ -7,8 +7,10 @@
  */
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <kos.h>
 #include <kos/init.h>
+#include <arch/arch.h>
 #include <dc/minifont.h>
 #include <dc/maple.h>
 #include <dc/maple/mie.h>
@@ -164,24 +166,22 @@ int main(int argc, char **argv)
         if(page == 0) {
             if(service_edge) selected = (selected + 1) % 2;
             if(test_edge) {
-                if(selected == 0) page = 1;
-                else page = 2;
+                if(selected == 0) {
+                    page = 1;
+                } else {
+                    /*
+                     * KOS ARCH_EXIT_MENU performs a clean shutdown and calls
+                     * the BIOS system-menu syscall. Verify the exact target
+                     * on Naomi hardware/Flycast before treating it as proven.
+                     */
+                    arch_set_exit_path(ARCH_EXIT_MENU);
+                    exit(EXIT_SUCCESS);
+                }
             }
             render_menu(lines, selected);
         } else if(page == 1) {
             if(test_edge) page = 0;
             render_input(lines, s);
-        } else {
-            snprintf(lines[0], LINE_MAX, "VF3 GAME TEST MODE");
-            snprintf(lines[1], LINE_MAX, "EXIT");
-            snprintf(lines[2], LINE_MAX, "BIOS RETURN NOT IMPLEMENTED");
-            snprintf(lines[3], LINE_MAX, "This page is intentionally");
-            snprintf(lines[4], LINE_MAX, "non-destructive. No reboot or");
-            snprintf(lines[5], LINE_MAX, "fake return is attempted.");
-            lines[6][0] = 0;
-            snprintf(lines[7], LINE_MAX, "Press TEST to return to menu.");
-            for(int i = 8; i < LINE_COUNT; ++i) lines[i][0] = 0;
-            if(test_edge) page = 0;
         }
         draw_lines(lines);
         thd_sleep(50);
