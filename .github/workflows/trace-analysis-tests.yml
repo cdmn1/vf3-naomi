@@ -6,8 +6,10 @@ on:
     paths:
       - "tools/loader_trace_*.py"
       - "tools/sh4_string_xrefs.py"
+      - "tools/validate_gdfs_asset_index.py"
       - "tests/test_loader_trace_*.py"
       - "tests/test_sh4_string_xrefs.py"
+      - "tests/test_gdfs_asset_index.py"
       - ".github/workflows/trace-analysis-tests.yml"
   pull_request:
     paths:
