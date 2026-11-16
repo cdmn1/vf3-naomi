@@ -103,3 +103,5 @@ jobs:
 # Trace references into the game-test menu strings.
 
 # Trace generic BIOS syscall helper callsites.
+
+# Inspect menu callback table targets.
