@@ -109,3 +109,5 @@ jobs:
 # Inspect test-segment startup and return path.
 
 # Disassemble the reference test application entrypoint.
+
+# Inspect the reference test menu task and its callback routines.
