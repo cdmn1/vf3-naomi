@@ -112,6 +112,44 @@ jobs:
 
               return segment
 
-          inspect_segment("main", main_off, main_addr, main_size, main_entry)
-          inspect_segment("test", test_off, test_addr, test_size, test_entry)
+          main_segment = inspect_segment("main", main_off, main_addr, main_size, main_entry)
+          test_segment = inspect_segment("test", test_off, test_addr, test_size, test_entry)
+
+          def print_window(label, segment, base, start, end):
+              path = pathlib.Path(f"/tmp/{label}-window.bin")
+              path.write_bytes(segment)
+              dis = subprocess.run(
+                  ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4", "-EL",
+                   f"--adjust-vma={hex(base)}", str(path)],
+                  check=True, capture_output=True, text=True
+              ).stdout.splitlines()
+              print(f"\\n=== {label.upper()} DISASSEMBLY {start:#010x}..{end:#010x} ===")
+              for line in dis:
+                  m = re.match(r"^\\s*([0-9a-fA-F]+):", line)
+                  if m and start <= int(m.group(1), 16) < end:
+                      print(line)
+              for term in ("8c055624", "8c055633", "8c055862", "ac018044", "ac018040"):
+                  matches = [i for i, line in enumerate(dis) if term in line.lower()]
+                  if matches:
+                      print(f"\\n{label} lines mentioning {term}:")
+                      for idx in matches[:20]:
+                          print("\\n".join(dis[max(0, idx-4):min(len(dis), idx+5)]))
+
+          print_window("test", test_segment, test_addr, 0x8C0463D0, 0x8C046700)
+          print_window("main", main_segment, main_addr, 0x8C063D80, 0x8C064180)
+
+          for label, segment, base in (("main", main_segment, main_addr), ("test", test_segment, test_addr)):
+              print(f"\\n{label.upper()} ABSOLUTE BIOS VECTOR CONSTANTS:")
+              for value in (0xAC018000, 0xAC018040, 0xAC018044, 0xAC018048, 0xAC01804C, 0xAC018050):
+                  needle = struct.pack("<I", value)
+                  positions = []
+                  pos = 0
+                  while True:
+                      pos = segment.find(needle, pos)
+                      if pos < 0:
+                          break
+                      positions.append(base + pos)
+                      pos += 1
+                  if positions:
+                      print(hex(value), [hex(x) for x in positions])
           PY
