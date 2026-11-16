@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <kos.h>
 #include <kos/init.h>
+#include <arch/arch.h>
 #include <dc/minifont.h>
 #include <dc/maple.h>
 #include <dc/maple/mie.h>
@@ -178,11 +179,10 @@ int main(int argc, char **argv)
                     page = 1;
                 } else {
                     /*
-                     * Keep KOS's default ARCH_EXIT_RETURN path. The KOS
-                     * startup stub saves the caller's stack and PR; returning
-                     * from main lets its exit handler restore them and return
-                     * to the Naomi BIOS that launched this test entry point.
+                     * Leave the title test program through KOS's BIOS-menu
+                     * path, not its default return-to-loader path.
                      */
+                    arch_set_exit_path(ARCH_EXIT_MENU);
                     exit_requested = 1;
                 }
             }
