@@ -75,7 +75,7 @@ The scanner `tools/sh4_string_xrefs.py` now searches both name sets, plus the ot
 python tools/sh4_string_xrefs.py path/to/1ST_READ.BIN --csv extract/analysis/naomi_source_xrefs.csv
 ```
 
-The script has synthetic tests for cached/uncached SH-4 pointer aliases and literal-pool addressing. A positive result for an alternate name would establish that the string is referenced in this image, not that its module is called during gameplay. A missing result is limited to the scanned PC-relative `MOV.L` pattern.
+The script has synthetic tests for cached/uncached SH-4 pointer aliases and literal-pool addressing. These tests passed in [GitHub Actions run 43964488665](https://github.com/cdmn1/vf3-naomi/actions/runs/43964488665). A positive result for an alternate name would establish that the string is referenced in this image, not that its module is called during gameplay. A missing result is limited to the scanned PC-relative `MOV.L` pattern.
 
 ## Evidence of both arcade and Dreamcast subsystems
 
