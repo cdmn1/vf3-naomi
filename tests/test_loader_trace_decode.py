@@ -46,6 +46,24 @@ class LoaderTraceDecodeTests(unittest.TestCase):
         self.assertEqual(memory[0]["address"], "0x8C1069BC")
         self.assertEqual(memory[0]["value"], "0x12345678")
 
+    def test_preserves_full_64_bit_memory_values(self) -> None:
+        pc = 0x8C0360C8
+        value = 0x1122334455667788
+        words = [
+            (pc << 16) | 0xFA20,
+            (8 << 48),
+            0x8C1069BC,
+            value,
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "wide.bin"
+            trace.write_bytes(qwords(*words))
+            _, memory, warnings = decode(trace)
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(memory[0]["width"], "8")
+        self.assertEqual(memory[0]["value"], "0x1122334455667788")
+
     def test_skips_unknown_words_and_reports_truncated_records(self) -> None:
         pc = 0x8C02DCEC
         words = [0x123456789ABCDEF0, (pc << 16) | 0xFA10, 1, 2]
