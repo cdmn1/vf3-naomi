@@ -80,7 +80,13 @@ file is needed.
 ## Probe added to this repository
 
 `tests/naomi_mie_probe/` contains a small KOS application that reports every
-250 ms:
+250 ms. Its Naomi ROM image must be packaged with KOS `naomibintool`; a raw
+ELF or flat `objcopy` binary is not an acceptable substitute. This follows the
+known-good Daytona `naomi_cart_probe_v1.bin` build recipe. The first VF3
+hardware attempt was rejected by the main board with error 01 because the
+workflow had uploaded a flat binary; the workflow and Makefile have now been
+corrected to emit a `naomibintool` image. The corrected image is awaiting
+hardware validation.
 
 - Port A mode and MIE enumeration;
 - mapped P1 controller buttons;
@@ -89,9 +95,11 @@ file is needed.
 - all eight analog channels.
 
 The source is checked against the current KOS MIE public header and official
-MIE example. It has not yet been compiled or run in this environment. Its
-first success criterion is a real runtime report of `MIE_PORT0_JVS` and a
-changing raw P1 switch word when a cabinet control is pressed.
+MIE example and has compiled successfully. The first packaged image was not
+accepted by the Naomi main board; that failure occurred before the program
+could execute and therefore says nothing about MIE/JVS behavior. The corrected
+Naomi ROM image must first boot, then report `MIE_PORT0_JVS` and a changing raw
+P1 switch word when a cabinet control is pressed.
 
 ## Flycast validation path
 
