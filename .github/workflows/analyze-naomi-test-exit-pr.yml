@@ -232,6 +232,31 @@ jobs:
                   print(f"\\n--- global-pointer use at {pc:#010x} ---")
                   print("\\n".join(test_dis[max(0, idx-12):min(len(test_dis), idx+24)]))
 
+          print("\\n=== TEST-SEGMENT PC-RELATIVE REFERENCES INTO MENU STRING AREA ===")
+          string_refs = []
+          for off in range(0, len(test_segment) - 1, 2):
+              op = struct.unpack_from("<H", test_segment, off)[0]
+              pc = test_addr + off
+              target = None
+              if (op & 0xF000) == 0xD000:
+                  target = ((pc + 4) & ~3) + (op & 0xFF) * 4
+              elif (op & 0xFF00) == 0xC700:
+                  target = ((pc + 4) & ~3) + (op & 0xFF) * 4
+              elif (op & 0xF000) == 0x9000:
+                  target = ((pc + 4) & ~3) + (op & 0xFF) * 2
+              if target is not None and 0x8C055000 <= target < 0x8C056000:
+                  string_refs.append((pc, target, op))
+          print([(hex(pc), hex(target), hex(op)) for pc, target, op in string_refs])
+          for pc, target, op in string_refs:
+              idx = addr_to_line.get(pc)
+              if idx is not None:
+                  print(f"\\n--- string-area reference {pc:#010x} -> {target:#010x} ---")
+                  print("\\n".join(test_dis[max(0, idx-12):min(len(test_dis), idx+28)]))
+
+          print("\\n=== MENU STRING AREA HEX DUMP ===")
+          string_off = 0x8C055500 - test_addr
+          print(test_segment[string_off:string_off+0x500].hex(" "))
+
           print("\\n=== TEST-SEGMENT INDIRECT CALL INSTRUCTIONS ===")
           indirect = []
           for off in range(0, len(test_segment) - 1, 2):
