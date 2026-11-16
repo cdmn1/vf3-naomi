@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sh4_if.h"
+#include "../sh4_if.h"
 
 bool vf3TraceEnabled();
 void vf3TraceInit();
