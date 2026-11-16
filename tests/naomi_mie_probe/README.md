@@ -20,7 +20,7 @@ This produces `vf3_mie_probe.elf` and `vf3_mie_probe.elf.bin`.
 
 ## What it reports
 
-Every 250 ms the probe prints:
+Every 250 ms the probe refreshes an on-screen status page showing:
 
 - Port A mode: MIE/JVS, standard Maple, or unknown;
 - whether the MIE device enumerated;
