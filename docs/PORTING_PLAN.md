@@ -53,10 +53,15 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 
 ## Current blockers
 
-- [ ] Obtain and inspect Dreamcast VF3tb 1ST_READ.BIN.
-- [ ] Identify exact game revision and executable hash.
-- [ ] Establish build toolchain and minimal Naomi executable skeleton.
-- [ ] Verify Naomi video, JVS and audio test programs in Flycast and on hardware.
+- [x] Obtain and inspect Dreamcast VF3tb `1ST_READ.BIN`.
+- [x] Identify the supplied executable as US retail VF3tb `MK-51001`, V1.002; recorded SHA-256:
+  `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`.
+- [ ] Establish the Naomi build toolchain and compile the minimal KOS probe. A
+  standalone MIE/JVS probe source and Makefile now exist under
+  `tests/naomi_mie_probe/`, but no build is claimed yet.
+- [ ] Verify Naomi JVS input, PVR2 video and AICA audio in Flycast and on
+  hardware. The JVS probe is the first subsystem test; see
+  `docs/NAOMI_IO_RESEARCH.md`.
 
 ## Risks
 
