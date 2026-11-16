@@ -193,6 +193,77 @@ jobs:
               print(f"\\nPointer literals for {label} {target:#010x}:",
                     [hex(x) for x in hits])
 
+          print("\\n=== TEST-SEGMENT REFERENCES TO BIOS TABLE POINTER GLOBAL ===")
+          global_needle = struct.pack("<I", 0x8C0A1618)
+          global_literals = []
+          pos = 0
+          while True:
+              pos = test_segment.find(global_needle, pos)
+              if pos < 0:
+                  break
+              global_literals.append(pos)
+              pos += 1
+          global_refs = []
+          for off in range(0, len(test_segment) - 1, 2):
+              op = struct.unpack_from("<H", test_segment, off)[0]
+              if (op & 0xF000) == 0xD000:
+                  pc = test_addr + off
+                  target = ((pc + 4) & ~3) + (op & 0xFF) * 4
+                  if target in [test_addr + x for x in global_literals]:
+                      global_refs.append(pc)
+          print("global literal RAM locations:", [hex(test_addr+x) for x in global_literals])
+          print("PC-relative loads of global pointer:", [hex(x) for x in global_refs])
+
+          test_dis = subprocess.run(
+              ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4", "-EL",
+               f"--adjust-vma={hex(test_addr)}", "/tmp/test-window.bin"],
+              check=True, capture_output=True, text=True
+          ).stdout.splitlines()
+          addr_to_line = {}
+          for i, line in enumerate(test_dis):
+              token = line.strip().split(":", 1)[0]
+              try:
+                  addr_to_line[int(token, 16)] = i
+              except ValueError:
+                  pass
+          for pc in global_refs:
+              idx = addr_to_line.get(pc)
+              if idx is not None:
+                  print(f"\\n--- global-pointer use at {pc:#010x} ---")
+                  print("\\n".join(test_dis[max(0, idx-12):min(len(test_dis), idx+24)]))
+
+          print("\\n=== TEST-SEGMENT INDIRECT CALL INSTRUCTIONS ===")
+          indirect = []
+          for off in range(0, len(test_segment) - 1, 2):
+              op = struct.unpack_from("<H", test_segment, off)[0]
+              pc = test_addr + off
+              if (op & 0xF0FF) == 0x400B:
+                  indirect.append((pc, "jsr", (op >> 8) & 15))
+              elif (op & 0xF0FF) == 0x402B:
+                  indirect.append((pc, "jmp", (op >> 8) & 15))
+              elif (op & 0xF0FF) == 0x0003:
+                  indirect.append((pc, "bsrf", (op >> 8) & 15))
+              elif (op & 0xF0FF) == 0x0023:
+                  indirect.append((pc, "braf", (op >> 8) & 15))
+          print("count:", len(indirect))
+          print("calls/jumps near BIOS wrappers:",
+                [(hex(pc), kind, f"r{reg}") for pc, kind, reg in indirect if 0x8C046400 <= pc < 0x8C046700])
+
+          for target, label in targets.items():
+              for value in (target, target | 0x20000000, target - test_addr):
+                  needle = struct.pack("<I", value & 0xFFFFFFFF)
+                  hits = []
+                  pos = 0
+                  while True:
+                      pos = test_segment.find(needle, pos)
+                      if pos < 0:
+                          break
+                      hits.append(test_addr + pos)
+                      pos += 1
+                  if hits:
+                      print(f"Pointer/relative literals for {label} value {value:#010x}:",
+                            [hex(x) for x in hits])
+
           for label, segment, base in (("main", main_segment, main_addr), ("test", test_segment, test_addr)):
               print(f"\\n{label.upper()} ABSOLUTE BIOS VECTOR CONSTANTS:")
               for value in (0xAC018000, 0xAC018040, 0xAC018044, 0xAC018048, 0xAC01804C, 0xAC018050):
