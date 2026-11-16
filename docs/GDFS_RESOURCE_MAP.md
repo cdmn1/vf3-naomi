@@ -110,6 +110,24 @@ The related project's `src/sys/gdfs.c` is a small host-side NAME-to-tag lookup h
 
 The retail executable's banner identifies GDFS 0.53 (1998/08/28) and NAOMI library 0.8. The related project's analysis notes that the game uses this older/custom GDFS build rather than simply matching a later SDK library. Therefore we should not assume a generic modern GDFS implementation reproduces its exact behavior.
 
+## Naomi-side source-module clues inside the Dreamcast executable
+
+Earlier analysis of the user's supplied `1ST_READ.BIN` recorded embedded source-path strings under `/pub/data3/vf3/naomi/c/`, including:
+
+- `nlrom.c` at file offset `0xD9EA8`;
+- `obj_load.c` at `0xD9EC8`;
+- `rob_load.c` at `0xD9EF0`;
+- `sound.c` at `0xD9F18`;
+- `stage.c` at `0xD9F38`;
+- `area_coli.c` at `0xC2FAA`;
+- `cpic_logic.c` at `0xC3F88`.
+
+The earlier SH-4 literal-load scan recorded code references to the first five paths (for example, references to `rob_load.c` around `0xA2578` and `sound.c` around `0xB5F68`). Those are references to embedded source-path strings; they are not yet proof that the corresponding Naomi routines are reached in the Dreamcast runtime or that they are the active retail Naomi loader.
+
+The related project's [module map](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/modules.md) independently lists Naomi source modules `sound.c`, `stage.c`, `area_coli.c`, `rob_load.c`, `bj_load.c`, `pic_logic.c`, and `lrom.c` (described there as BIOS-level), plus the motion-file directory prefix `/pub/data3/vf3/naomi/c/` immediately followed by MT filenames. Its naming differs from some strings recorded in our earlier scan (`lrom.c` vs `nlrom.c`; `bj_load.c` vs `obj_load.c`), so these should not be silently treated as identical modules.
+
+This is a useful architectural clue: the source tree appears to contain a Naomi-specific resource path alongside the Dreamcast GDFS path. The next proof required is to trace the code references to these path strings, identify their callers and data structures, and determine whether the Naomi path can be reused or reconstructed for NetDIMM-backed assets. Until then, keep the Dreamcast GDFS and candidate Naomi loader as separate hypotheses.
+
 ## Consequences for the Naomi port
 
 The most promising boundary is to preserve the game's resource identity, lookup/index semantics, and destination-buffer expectations while replacing the Dreamcast-specific sector transport with a Naomi-side asset provider.
@@ -117,11 +135,12 @@ The most promising boundary is to preserve the game's resource identity, lookup/
 Before implementing that boundary, the port needs to establish:
 
 1. how the runtime-populated pointer reaches the 132-entry table at `0x8C1069BC`, and which caller supplies the index;
-2. how that runtime index relates to the 234 embedded filename/tag candidates and the disc's LBA/length metadata;
-3. which function reads each MT asset's internal 8,880-slot table and performs the per-record scatter/rewrite into resident RAM;
-4. which loader functions request each asset family and what destination address/relocation rules they apply;
-5. whether Naomi-side ROMFS/NetDIMM access can supply equivalent file contents and timing, or whether a compatibility shim is needed;
-6. which resources are loaded during boot, menu, character select, stage setup and match runtime.
+2. whether the Naomi-specific source path (`nlrom.c`/`lrom.c`, `rob_load.c`, `bj_load.c`, `stage.c`) is present as callable code in this executable and what its file API expects;
+3. how that runtime index relates to the 234 embedded filename/tag candidates and the disc's LBA/length metadata;
+4. which function reads each MT asset's internal 8,880-slot table and performs the per-record scatter/rewrite into resident RAM;
+5. which loader functions request each asset family and what destination address/relocation rules they apply;
+6. whether Naomi-side ROMFS/NetDIMM access can supply equivalent file contents and timing, or whether a compatibility shim is needed;
+7. which resources are loaded during boot, menu, character select, stage setup and match runtime.
 
 Do not yet hard-code the related project's tag labels as a Naomi loader specification. The table extractor has visible boundary ambiguities, and the runtime's destination-buffer and relocation behavior is more important than the category labels.
 
@@ -131,6 +150,7 @@ Do not yet hard-code the related project's tag labels as a Naomi loader specific
 - [Related project: generated GDFS table](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdfs_table.h)
 - [Related project: table extraction script](https://github.com/celsowm/vf3-decomp/blob/main/tools/bin_names.py)
 - [Related project: architecture and loader chain](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/architecture.md)
+- [Related project: Naomi/Dreamcast source module map](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/modules.md)
 - [Related project: later runtime loader-table investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md)
 - [Related project: MT asset internal 8,880-slot format](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/MT.md)
 - [Related project: MT resident scatter/rewrite evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
