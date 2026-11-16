@@ -45,7 +45,7 @@ jobs:
 
           def inspect_segment(label, file_off, load_addr, size, entry):
               segment = rom[file_off:file_off + size]
-              needle = bytes.fromhex("ac 01 80 00")
+              needle = bytes.fromhex("00 80 01 ac")
               literals = []
               pos = 0
               while True:
@@ -58,7 +58,7 @@ jobs:
               path = pathlib.Path(f"/tmp/{label}.bin")
               path.write_bytes(segment)
               proc = subprocess.run(
-                  ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4",
+                  ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4", "-EL",
                    f"--adjust-vma={hex(load_addr)}", str(path)],
                   check=True, capture_output=True, text=True
               )
@@ -71,14 +71,14 @@ jobs:
 
               refs = []
               for off in range(0, len(segment) - 1, 2):
-                  op = struct.unpack_from(">H", segment, off)[0]
+                  op = struct.unpack_from("<H", segment, off)[0]
                   if (op & 0xF000) == 0xD000:
                       pc = load_addr + off
                       target = ((pc + 4) & ~3) + (op & 0xFF) * 4
                       if target in [load_addr + x for x in literals]:
                           refs.append((pc, target, op))
 
-              print(f"\n=== {label.upper()} SEGMENT (SH-4 big-endian) ===")
+              print(f"\n=== {label.upper()} SEGMENT (SH-4 little-endian) ===")
               print("size:", hex(size), "syscall-vector literal offsets:",
                     [hex(x) for x in literals])
               print("PC-relative references to those literals:",
