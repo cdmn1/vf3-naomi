@@ -1,0 +1,92 @@
+name: Build VF3 Flycast trace tool
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/flycast-trace/**"
+      - "tools/VF3_WATCH_LOADER.txt"
+      - ".github/workflows/flycast-trace.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-trace-build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Check out VF3 Naomi tooling
+        uses: actions/checkout@v4
+
+      - name: Check out pinned upstream Flycast
+        uses: actions/checkout@v4
+        with:
+          repository: flyinghead/flycast
+          ref: 3a5267a5e32438026e1c5b97d5de6cd77236f72c
+          path: flycast
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Apply VF3 tracing patch
+        shell: pwsh
+        run: |
+          python tools/flycast-trace/patch.py flycast
+          if ($LASTEXITCODE -ne 0) { throw "Flycast patch application failed" }
+
+      - name: Set up MSYS2 MinGW64 build environment
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git make zip
+          pacboy: ccache:p cmake:p libcdio:p lua:p ninja:p SDL2:p toolchain:p
+
+      - name: Configure Flycast
+        shell: msys2 {0}
+        run: |
+          cmake -S flycast -B flycast/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/flycast-install" \
+            -DUSE_DISCORD=OFF
+
+      - name: Build and install Flycast
+        shell: msys2 {0}
+        run: |
+          cmake --build flycast/build --target install --parallel 2
+          test -s flycast-install/bin/flycast.exe
+
+      - name: Assemble trace package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $package = Join-Path $env:GITHUB_WORKSPACE "VF3-Flycast-Trace"
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item -Path "flycast-install/bin/*" -Destination $package -Recurse -Force
+          Copy-Item "tools/flycast-trace/run-trace.cmd" $package
+          Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
+          @"
+          VF3 Flycast trace build
+          Upstream repository: https://github.com/flyinghead/flycast
+          Upstream commit: 3a5267a5e32438026e1c5b97d5de6cd77236f72c
+          VF3 tooling commit: $env:GITHUB_SHA
+          Built by GitHub Actions run: $env:GITHUB_RUN_ID
+          Instrumentation: PC probe groups (FA10/FA11), guest memory access records (FA20)
+          "@ | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
+          Get-ChildItem $package -File | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $($_.Path | Split-Path -Leaf)" } |
+            Set-Content -Encoding ascii (Join-Path $package "SHA256SUMS.txt")
+          Compress-Archive -Path "$package/*" -DestinationPath "VF3-Flycast-Trace.zip" -Force
+          Get-FileHash "VF3-Flycast-Trace.zip" -Algorithm SHA256 |
+            Format-List | Out-String | Set-Content -Encoding ascii "VF3-Flycast-Trace.zip.sha256"
+
+      - name: Upload verified build package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-flycast-trace-windows
+          path: |
+            VF3-Flycast-Trace.zip
+            VF3-Flycast-Trace.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
