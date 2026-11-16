@@ -43,7 +43,7 @@ jobs:
           cache-from: type=gha,scope=vf3-naomi-kos-toolchain
           cache-to: type=gha,mode=max,scope=vf3-naomi-kos-toolchain
 
-      - name: Build KallistiOS and the Naomi probe
+      - name: Build KallistiOS and package a Naomi ROM image
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -60,25 +60,21 @@ jobs:
               export DC_TOOLS_BASE=/opt/toolchains/dc/bin
               export KOS_ARCH=dreamcast
               export KOS_SUBARCH=naomi
-              # Current KOS toolchain setup appends this optional C++ include
-              # variable under nounset; the sample config does not initialize it.
               export KOS_INC_PATHS_CPP=""
               mkdir -p "$KOS_PORTS"
               cp "$KOS_BASE/doc/environ.sh.sample" "$KOS_BASE/environ.sh"
               . "$KOS_BASE/environ.sh"
               export KOS_SUBARCH=naomi
               make -C "$KOS_BASE" -j2
-              make -C /workspace/tests/naomi_mie_probe clean all dist
-              test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf
-              test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf.bin
+              make -C /workspace/tests/naomi_mie_probe clean rom
+              test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.bin
               mkdir -p /workspace/build-artifacts
-              cp /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf /workspace/build-artifacts/
-              cp /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf.bin /workspace/build-artifacts/
+              cp /workspace/tests/naomi_mie_probe/vf3_mie_probe.bin /workspace/build-artifacts/
             '
 
-      - name: Upload Naomi probe binaries
+      - name: Upload bootable Naomi ROM image
         uses: actions/upload-artifact@v4
         with:
           name: vf3-naomi-mie-probe
-          path: build-artifacts/
+          path: build-artifacts/vf3_mie_probe.bin
           if-no-files-found: error
