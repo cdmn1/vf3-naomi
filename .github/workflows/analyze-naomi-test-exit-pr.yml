@@ -146,6 +146,10 @@ jobs:
               0x8C046562: "BIOS syscall index 0x10",
               0x8C046582: "BIOS syscall index 0x11 (ENTER_TEST_MODE)",
               0x8C04659A: "BIOS syscall index 0x12",
+              0x8C0465AE: "generic BIOS syscall-vector lookup helper",
+              0x8C0464A2: "BIOS syscall index 0x0D availability/call helper",
+              0x8C0465BA: "BIOS syscall index 0x13",
+              0x8C0465D0: "BIOS syscall index 0x0C",
           }
           callers = []
           for off in range(0, len(test_segment) - 1, 2):
