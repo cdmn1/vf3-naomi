@@ -261,6 +261,22 @@ jobs:
           string_off = 0x8C055500 - test_addr
           print(test_segment[string_off:string_off+0x500].hex(" "))
 
+          print("\\n=== MENU-AREA CODE POINTER TABLE CANDIDATES ===")
+          table_start = 0x8C0554D4 - test_addr
+          table_end = 0x8C055700 - test_addr
+          table_targets = []
+          for off in range(table_start, min(table_end, len(test_segment)-3), 4):
+              value = struct.unpack_from("<I", test_segment, off)[0]
+              if test_addr <= value < test_addr + len(test_segment) and value % 2 == 0:
+                  table_targets.append((test_addr + off, value))
+          print([(hex(slot), hex(target)) for slot, target in table_targets])
+
+          for slot, target in table_targets:
+              idx = addr_to_line.get(target)
+              if idx is not None:
+                  print(f"\\n--- menu-area pointer {slot:#010x} -> code {target:#010x} ---")
+                  print("\\n".join(test_dis[max(0, idx-8):min(len(test_dis), idx+48)]))
+
           print("\\n=== TEST-SEGMENT INDIRECT CALL INSTRUCTIONS ===")
           indirect = []
           for off in range(0, len(test_segment) - 1, 2):
