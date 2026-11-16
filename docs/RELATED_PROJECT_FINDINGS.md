@@ -45,7 +45,7 @@ The related research harness documents:
 - A real ISO9660/GD-ROM loader path.
 - An embedded filename/tag string inventory regenerated from the corrected, non-descrambled executable image: the current generated header contains 234 candidate rows (the earlier 222-row count is superseded).
 - Our Dropbox comparison finds 232 of those candidate names match actual `.BIN` filenames after stripping a leading underscore from 13 extracted names. The two remaining candidate rows appear to be extraction-boundary false positives; the tag extraction also has visible cases where it swallows following text. This generated list is **not** the live runtime GDFS pointer table.
-- A later loader investigation identifies a separate 132-pointer runtime table at `0x8C1069BC..0x8C106BCC`, with `MTJACLAU` at index 39, reached through a runtime-populated pointer. Its pointer chase remains unresolved. A separate 8,880-slot table is also mentioned in the MT loader path. See [GDFS resource map](GDFS_RESOURCE_MAP.md).
+- A later loader investigation identifies a separate 132-pointer runtime table at `0x8C1069BC..0x8C106BCC`, with `MTJACLAU` at index 39, reached through a runtime-populated pointer. Its pointer chase remains unresolved. The 8,880-slot table belongs to each MT motion asset itself (2,960 rows × three offsets), not to GDFS; the guest loader's per-record scatter/rewrite into resident RAM is still unresolved. See [GDFS resource map](GDFS_RESOURCE_MAP.md).
 - Name-to-tag lookup and candidate tag families for motion, BGM/dump staging, stage tables, canvas packages and high-priority overlays. These tag meanings remain the related project's interpretation, not a complete proven loader specification.
 - A GD-ROM BIOS service model that handles request, status polling, DMA-read setup and sector transfer.
 - A boot run that loads 367 files from the disc.
@@ -90,7 +90,7 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 
 - Reconcile the related project's documented executable identities against our own `1ST_READ.BIN` hash and disc inventory; do not rely on file size alone.
 - Inspect the Dropbox `RELOAD.BIN` bytes and establish its provenance; metadata confirms 655,360 bytes, but it is absent from `DATELIST.ASC`.
-- Trace the runtime-populated pointer to the 132-entry table at `0x8C1069BC`, then follow its index into `_gdFsDaPlaySct` and map destination buffers; validate the embedded four-byte tag/flag format separately.
+- Trace the runtime-populated pointer to the 132-entry table at `0x8C1069BC`, then follow its index into `_gdFsDaPlaySct` and map destination buffers; separately trace the MT loader's per-record scatter/rewrite using the MT file's internal 8,880-slot index.
 - Once the original executable bytes are available in this working session, resume instruction-level tracing around the Naomi source-path references and distinguish active loader calls from diagnostics.
 - Build Naomi-side probes independently for ROMFS reads, JVS input, PVR2 display and AICA startup before attempting game integration.
 
