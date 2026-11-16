@@ -71,13 +71,14 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
             meta, address, value = words[i + 1:i + 4]
             size = meta >> 48
             is_write = (meta >> 47) & 1
+            value_width = 16 if size == 8 else 8
             memory.append({
                 "word_index": str(i),
                 "pc": f"0x{pc:08X}",
                 "access": "W" if is_write else "R",
                 "width": str(size),
                 "address": f"0x{address:08X}",
-                "value": f"0x{value & 0xFFFFFFFF:08X}",
+                "value": f"0x{value:0{value_width}X}" if size == 8 else f"0x{value & 0xFFFFFFFF:08X}",
             })
             i += 4
             continue
