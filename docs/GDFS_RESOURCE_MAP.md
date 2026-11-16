@@ -70,7 +70,7 @@ The seven outliers appear at the beginning/end of the embedded string list even 
 
 This is a strong structural clue that the embedded filename list preserves the disc-file ordering for the 225 ordinary assets, with a handful of special records kept separately. Combined with the related project's description of positional lookup, it gives us a candidate route from resource-table position to disc-file entry. It does **not** yet prove that the live 132-pointer table indexes this exact list or that the runtime index directly equals an LBA rank.
 
-The updated [GDFS_ASSET_INDEX.csv](GDFS_ASSET_INDEX.csv) now includes the original table row, a core-order position, GD LBA, size, manifest SHA-1 and tag-extraction quality marker.
+The updated [GDFS_ASSET_INDEX.csv](GDFS_ASSET_INDEX.csv) now includes the original table row, a core-order position, GD LBA, size, manifest SHA-1 and tag-extraction quality marker. The exact follow-up capture is specified in [GDFS_TRACE_PLAN.md](GDFS_TRACE_PLAN.md).
 
 ## Tag families in the generated table
 
