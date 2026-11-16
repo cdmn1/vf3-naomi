@@ -32,8 +32,10 @@ A standalone KallistiOS MIE/JVS probe is now in
 [`tests/naomi_mie_probe/`](tests/naomi_mie_probe/README.md). It reports the
 native JVS switch words, KOS-mapped controller state, coin meters and analog
 channels. The API and firmware caveats are documented in
-[`NAOMI_IO_RESEARCH.md`](docs/NAOMI_IO_RESEARCH.md). The probe source is not
-yet built or runtime-tested; it is a hardware-validation tool, not a VF3 port.
+[`NAOMI_IO_RESEARCH.md`](docs/NAOMI_IO_RESEARCH.md). The repository now has a GitHub Actions workflow to build KallistiOS for
+Naomi and compile the probe. The first run is underway; until it completes,
+no successful build or runtime test is claimed. This is a hardware-validation
+tool, not a VF3 port.
 
 ## First milestone
 
