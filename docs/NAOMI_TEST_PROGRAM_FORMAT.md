@@ -77,3 +77,41 @@ After the entry/exit contract is proven, integrate the reusable title-side menu 
 - DragonMinded/libnaomi: `libnaomi/cart.c`, `examples/eepromtest/Makefile`, and `examples/eepromtest/main.c`.
 - VF3 Naomi: `tests/naomi_mie_probe/Makefile` and `tests/naomi_mie_probe/main.c`.
 - User-provided Naomi menu flow screenshots in `cdmn1/vf3-naomi/test menu flow/`.
+
+
+## Prototype implementation status (2026-11-16)
+
+A first separate title-test executable has now been added under `tests/naomi_mie_probe/test_main.c`. The build packages it as an independent Naomi test segment/entry point while retaining the existing MIE/JVS probe as the normal application entry.
+
+The packer is `tests/naomi_mie_probe/combine_naomi_test_rom.py`. It:
+- builds the existing probe ELF as a normal Naomi ROM;
+- builds the test-menu ELF separately with KOS startup;
+- appends the test ELF payload at a 0x1000-aligned ROM offset;
+- copies its load address and size into the ROM header's test segment table;
+- writes its entry point to the test-entry field.
+
+The first screen is intentionally only a two-item proof of concept:
+- INPUT TEST — reuses the live MIE/JVS state, including player switch words, panel test/service switches, coin meters and analog channels;
+- EXIT — currently reports that BIOS return is not implemented and does not reboot or fake a return.
+
+Navigation uses the KOS MIE definitions:
+- panel PSW2 (`jvs.panel.psw.service`) advances the selection;
+- panel PSW1 (`jvs.panel.psw.test`) selects/returns.
+
+These are the public MIE driver definitions in `dc/maple/mie.h`; they are not inferred from player-button bits.
+
+A build has completed successfully for the initial source revision (Actions run 17). A later revision also initializes PVR explicitly in the separate test startup. The latest CI run must pass before distributing its artifact.
+
+### New research clue: BIOS boot header
+
+Flycast's `RomBootID` mirrors the Naomi boot header and explicitly names the fields `gameLoad[8]`, `testLoad[8]`, `gamePC`, and `testPC`. Its source comment says the structure is copied by the BIOS to system RAM at `0x0c01f400`. This independently confirms that the test load descriptors and test PC are first-class BIOS boot data. It does not reveal the BIOS's exit-to-System-Menu call or convention.
+
+The Sega GD-ROM system manual documents the user-facing lifecycle: select GAME TEST MODE from the system menu, use SERVICE to move and TEST to select, then choose EXIT in the title's test menu. It describes returning to the game mode; the supplied Naomi menu-flow screenshots show the System Menu reappearing. We should verify the exact return destination on the target BIOS/loader rather than hard-code a reset or guessed BIOS address.
+
+### Next validation
+
+1. Confirm the latest CI package's header has distinct main/test entry points and distinct load descriptors.
+2. Boot the package normally and confirm the existing probe still works.
+3. Enter GAME TEST MODE from the actual Naomi System Menu and confirm the separate test executable starts.
+4. Confirm PSW2/PSW1 navigation and live INPUT TEST.
+5. Establish the actual EXIT path by tracing BIOS/game behaviour or comparing a known-working commercial title; only then implement EXIT.
