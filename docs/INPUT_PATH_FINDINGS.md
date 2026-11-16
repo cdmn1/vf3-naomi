@@ -2,6 +2,12 @@
 
 Reviewed: 2026-11-16
 
+## Naomi hardware input validation
+
+The standalone KallistiOS MIE/JVS probe has now booted on the user's real Naomi. The user tested all cabinet buttons and analog inputs and confirmed that they respond. This verifies the physical cabinet → JVS I/O board → Naomi MIE → KOS `mie_state_t` path on this setup.
+
+This result is deliberately separate from the Dreamcast guest input findings below. It does not establish that the original VF3 executable's controller reader or merge routine has run, nor that the Dreamcast Maple API can be replaced by simply reading KOS's mapped `cont` state. The dedicated `wheel`/`accel`/`brake` fields are not needed: use native JVS switch words and `jvs.analog[]` for this fighting-game input adapter.
+
 ## Scope and source boundary
 
 This note separates observations from the Dreamcast research harness in
@@ -68,16 +74,23 @@ control.
 
 ## Consequence for this Naomi project
 
-1. Do not change the Start/A bit values: `0x8` and `0x4` are already
-   confirmed for the Dreamcast/KOS input model.
-2. Do not infer a game-level input failure from Maple delivery alone. The
-   missing evidence is execution of the game's selected-port and merge path.
-3. Do not reuse the native harness's `VF3_PRESS` result as proof of a
+1. Keep the confirmed Dreamcast Maple active-low representation and Start/A
+   masks (`0x8` and `0x4`) unchanged.
+2. Treat the Naomi JVS hardware input source as proven on the tested cabinet;
+   do not spend more time troubleshooting its wiring or basic MIE polling.
+3. Do not infer a game-level input failure from successful JVS polling alone.
+   The missing evidence is execution of the original guest's selected-port
+   reader and controller-merge path.
+4. Do not reuse the native harness's `VF3_PRESS` result as proof of a
    successful Flycast menu route.
-4. The next useful original-executable capture must distinguish menu states
+5. The next useful original-executable capture must distinguish menu states
    and record the first transition into the selected-port reader /
    controller-merge path. Once that boundary is found, the existing GDFS/MT
    watches can be combined with it to capture character-load resources.
+6. Once the guest input seam is observed, add a small adapter that translates
+   JVS active-high switches and the required analog channels into the exact
+   guest-facing Maple/controller representation. Do not invent the mapping
+   before identifying the buttons the game actually consumes.
 
 ## Sources
 
