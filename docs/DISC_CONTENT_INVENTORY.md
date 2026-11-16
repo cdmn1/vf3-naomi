@@ -38,7 +38,7 @@ The inventory also lists:
 
 A separate root-level file, `RELOAD.BIN`, is present in the Dropbox folder at `/Vf3-naomi/RELOAD.BIN` (655,360 bytes; modified 2026-11-16). This exactly matches the size and filename/role documented independently by [celsowm/vf3-decomp's executable inventory](https://github.com/celsowm/vf3-decomp/blob/main/docs/executables.md), which describes a 655,360-byte SH-4 re-init/resident module containing Shinobi, Naomi-library and NEC PowerVR identifiers.
 
-`RELOAD.BIN` does **not** appear in the 418-line `DATELIST.ASC` listing. Its presence and matching size are a strong lead, but its provenance and byte identity are not established by size alone. The file has not yet been inspected at the byte level in this working session. Keep it separate from the retail `1ST_READ.BIN` until its role and relationship to this disc dump are verified.
+`RELOAD.BIN` does **not** appear in the 418-line `DATELIST.ASC` listing. The related project's [file inventory](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md) independently lists a 655,360-byte `RELOAD.BIN` with SHA-1 `d6b40a9f2bccac3e961cbcaf1867f91c82670cb8`, and its [format inventory](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/INVENTORY.md) records leading bytes `22 4f dc 7f 48 1f 57 1f 66 1f 75 1f 15 d3 16 d2`. These are useful fingerprints to compare, but we have not verified them against the Dropbox file's bytes. Keep it separate from the retail `1ST_READ.BIN` until its provenance and byte identity are established.
 
 ## Interpretation
 
