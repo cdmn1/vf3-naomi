@@ -69,7 +69,15 @@ The combined `VF3_TRACE` stream contains the PC-probe marker groups (`0xFA10`/`0
 python tools/loader_trace_decode.py path/to/vf3-loader-trace.bin --prefix extract/analysis/loader_trace
 ```
 
-This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general trace disassembler.
+This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Eight-byte memory values are retained at their full 64-bit width. Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general trace disassembler.
+
+For a first-pass report, run:
+
+```text
+python tools/loader_trace_summary.py extract/analysis/loader_trace.pc.csv extract/analysis/loader_trace.memory.csv
+```
+
+The report includes the first register snapshot for each watched function, pointer-table read/write values, and the first resident-MT writes. These samples help narrow the pointer chain and scatter routine; they are not by themselves proof that a resource load completed.
 
 ## Analysis order
 
