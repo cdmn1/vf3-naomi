@@ -92,7 +92,7 @@ The packer is `tests/naomi_mie_probe/combine_naomi_test_rom.py`. It:
 
 The first screen is intentionally only a two-item proof of concept:
 - INPUT TEST — reuses the live MIE/JVS state, including player switch words, panel test/service switches, coin meters and analog channels;
-- EXIT — currently reports that BIOS return is not implemented and does not reboot or fake a return.
+- EXIT — selects KallistiOS's `ARCH_EXIT_MENU` path before returning from `main()`. This requests the Naomi BIOS System Menu rather than using KOS's default return-to-loader path; hardware confirmation is still pending.
 
 Navigation uses the KOS MIE definitions:
 - panel PSW2 (`jvs.panel.psw.service`) advances the selection;
@@ -126,4 +126,6 @@ KallistiOS exposes a standard BIOS-menu exit path:
 - `arch_menu()` calls `syscall_system_bios_menu()`;
 - that syscall invokes the system BIOS vector with `FUNC_SYSTEM_BIOS_MENU`.
 
-The test program now uses this KOS path when EXIT is selected. This is materially better grounded than a reset or guessed address. The KOS API documentation calls it the BIOS menu exit path, but it has not yet been verified on this Naomi BIOS. The next build is a test candidate, not proof that the screen returns to the exact Naomi System Menu shown in the supplied screenshots.
+The test program now calls `arch_set_exit_path(ARCH_EXIT_MENU)` when EXIT is selected. Returning from `main()` then follows KOS's normal shutdown path and dispatches to `arch_menu()`, which calls `syscall_system_bios_menu()`. This is materially better grounded than a reset or guessed address. KOS documents this as the BIOS-menu exit path, but it has not yet been verified on this Naomi BIOS. A successful build is only a test candidate, not proof that the screen returns to the exact Naomi System Menu shown in the supplied screenshots.
+
+The distinction matters: KOS defaults to `ARCH_EXIT_RETURN` (return to loader). A plain `return 0` from the test program does not request the System Menu. The explicit `ARCH_EXIT_MENU` selection is therefore required for the intended EXIT behaviour.
