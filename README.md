@@ -26,6 +26,15 @@ The current blocking reverse-engineering task is to capture the character-select
 - [Dreamcast/Naomi SH-4 recompilation framework](https://github.com/sp00nznet/dcrecomp) — useful architectural reference; early-stage.
 - [Model 3 arcade VF3 recompilation](https://github.com/mr-finster/vf3-recomp) — arcade behavior/reference, but its PPC 603e and Real3D Model 3 platform are not a direct Naomi base.
 
+## Naomi I/O bring-up
+
+A standalone KallistiOS MIE/JVS probe is now in
+[`tests/naomi_mie_probe/`](tests/naomi_mie_probe/README.md). It reports the
+native JVS switch words, KOS-mapped controller state, coin meters and analog
+channels. The API and firmware caveats are documented in
+[`NAOMI_IO_RESEARCH.md`](docs/NAOMI_IO_RESEARCH.md). The probe source is not
+yet built or runtime-tested; it is a hardware-validation tool, not a VF3 port.
+
 ## First milestone
 
 Inspect a legally obtained Dreamcast VF3tb executable (`1ST_READ.BIN`) and map:
