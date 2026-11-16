@@ -1,0 +1,119 @@
+name: Analyze Naomi test-mode exit reference ROM
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode and disassemble the test executable
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y binutils-sh4-linux-gnu
+          python3 - <<'PY'
+          import base64, io, pathlib, re, struct, subprocess, zipfile
+
+          encoded = pathlib.Path("encoded-20261116145552.txt").read_text()
+          archive = base64.b64decode("".join(encoded.split()))
+          with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+              names = [n for n in zf.namelist() if n.lower().endswith(".bin")]
+              if len(names) != 1:
+                  raise SystemExit(f"expected one BIN in reference ZIP, got {names}")
+              rom = zf.read(names[0])
+
+          def triple(offset):
+              return struct.unpack_from("<III", rom, offset)
+
+          main_off, main_addr, main_size = triple(0x360)
+          test_off, test_addr, test_size = triple(0x3C0)
+          main_entry, test_entry = struct.unpack_from("<II", rom, 0x420)
+
+          print("REFERENCE ROM:", names[0])
+          print("ROM bytes:", len(rom))
+          print("Main descriptor:", hex(main_off), hex(main_addr), hex(main_size))
+          print("Test descriptor:", hex(test_off), hex(test_addr), hex(test_size))
+          print("Main entry:", hex(main_entry), "Test entry:", hex(test_entry))
+          print("Header identity:", rom[:0x30].decode("ascii", "replace").rstrip())
+
+          def inspect_segment(label, file_off, load_addr, size):
+              segment = rom[file_off:file_off + size]
+              literals = []
+              needle = bytes.fromhex("00 80 01 ac")
+              pos = 0
+              while True:
+                  pos = segment.find(needle, pos)
+                  if pos < 0:
+                      break
+                  literals.append(pos)
+                  pos += 1
+              path = pathlib.Path(f"/tmp/{label}.bin")
+              path.write_bytes(segment)
+              proc = subprocess.run(
+                  ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4",
+                   f"--adjust-vma={hex(load_addr)}", str(path)],
+                  check=True, capture_output=True, text=True
+              )
+              lines = proc.stdout.splitlines()
+              by_addr = {}
+              for i, line in enumerate(lines):
+                  m = re.match(r"^\s*([0-9a-fA-F]+):", line)
+                  if m:
+                      by_addr[int(m.group(1), 16)] = i
+              refs = []
+              for off in range(0, len(segment) - 1, 2):
+                  op = struct.unpack_from("<H", segment, off)[0]
+                  if (op & 0xF000) == 0xD000:
+                      pc = load_addr + off
+                      target = ((pc + 4) & ~3) + (op & 0xFF) * 4
+                      if target in [load_addr + x for x in literals]:
+                          refs.append((pc, target, op))
+              print(f"\n=== {label.upper()} SEGMENT ===")
+              print("size:", hex(size), "syscall-vector literal offsets:",
+                    [hex(x) for x in literals])
+              print("PC-relative references to those literals:",
+                    [(hex(pc), hex(target), hex(op)) for pc, target, op in refs])
+              printed = set()
+              for pc, target, op in refs:
+                  idx = by_addr.get(pc)
+                  if idx is None:
+                      continue
+                  lo, hi = max(0, idx - 14), min(len(lines), idx + 28)
+                  if (lo, hi) not in printed:
+                      printed.add((lo, hi))
+                      print(f"\n--- code around {pc:#010x} (literal {target:#010x}) ---")
+                      print("\n".join(lines[lo:hi]))
+              interesting = []
+              for match in re.finditer(rb"[ -~]{5,}", segment):
+                  s = match.group().decode("ascii", "replace")
+                  if re.search(r"GAME TEST|INPUT TEST|PRESS TEST|RETURN MENU|SERVICE BUTTON|EXIT", s, re.I):
+                      interesting.append((load_addr + match.start(), s))
+              if interesting:
+                  print("\nRelevant strings:")
+                  for addr, s in interesting:
+                      print(f"{addr:#010x}: {s}")
+              return segment
+
+          main = inspect_segment("main", main_off, main_addr, main_size)
+          test = inspect_segment("test", test_off, test_addr, test_size)
+
+          print("\n=== TEST ENTRYPOINT WINDOW ===")
+          test_path = pathlib.Path("/tmp/test.bin")
+          proc = subprocess.run(
+              ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4",
+               f"--adjust-vma={hex(test_addr)}", str(test_path)],
+              check=True, capture_output=True, text=True
+          )
+          lines = proc.stdout.splitlines()
+          for i, line in enumerate(lines):
+              if re.match(rf"^\s*{test_entry:x}:", line, re.I):
+                  print("\n".join(lines[i:i + 100]))
+                  break
+          PY
