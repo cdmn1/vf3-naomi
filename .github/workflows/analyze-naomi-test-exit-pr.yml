@@ -125,8 +125,12 @@ jobs:
               ).stdout.splitlines()
               print(f"\\n=== {label.upper()} DISASSEMBLY {start:#010x}..{end:#010x} ===")
               for line in dis:
-                  m = re.match(r"^\\s*([0-9a-fA-F]+):", line)
-                  if m and start <= int(m.group(1), 16) < end:
+                  token = line.strip().split(":", 1)[0]
+                  try:
+                      address = int(token, 16)
+                  except ValueError:
+                      continue
+                  if start <= address < end:
                       print(line)
               for term in ("8c055624", "8c055633", "8c055862", "ac018044", "ac018040"):
                   matches = [i for i, line in enumerate(dis) if term in line.lower()]
