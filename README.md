@@ -16,6 +16,10 @@ A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), 
 
 No playable Naomi port or hardware compatibility is claimed yet.
 
+## Current loader investigation
+
+The current blocking reverse-engineering task is to capture the character-select-to-round-one resource load. The 132-entry runtime name-pointer table, candidate MT loaders and GDFS sector-read endpoint are documented in [the loader trace plan](docs/GDFS_TRACE_PLAN.md). A combined watch list is provided at [tools/VF3_WATCH_LOADER.txt](tools/VF3_WATCH_LOADER.txt), with a CSV decoder at [tools/loader_trace_decode.py](tools/loader_trace_decode.py). Its synthetic regression tests are in [tests/test_loader_trace_decode.py](tests/test_loader_trace_decode.py) and run with `python -m unittest discover -s tests -v`. These tools prepare and decode a capture; they do not replace the still-required genuine pre-fight savestate and patched Flycast interpreter.
+
 ## Chosen research sources
 
 - [Dreamcast VF3tb native decompilation](https://github.com/celsowm/vf3-decomp) — asset and gameplay reconstruction plus a separate Dreamcast runtime research harness; useful evidence, but neither is a completed Naomi port.
