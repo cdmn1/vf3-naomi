@@ -107,3 +107,14 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 - [GD-ROM service model](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdrom_hle.c)
 - [Native C port plan](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/native_decomp_port.md)
 - [Retail scramble warning](https://github.com/celsowm/vf3-decomp/blob/main/tools/dc_scramble.py)
+
+
+## Separate Model 3 recompilation: `mr-finster/vf3-recomp`
+
+The uploaded `mr-finster/vf3-recomp` project is a separate Virtua Fighter 3 arcade port for the Sega Model 3, not a Dreamcast/Naomi port. Its README describes a PowerPC 603e guest program, a Model 3 board model, and a host-side native recompiler. The source therefore cannot be used as the Naomi runtime or as a direct base for this Dreamcast VF3tb project: the CPU, board registers, video, sound and I/O architecture are different.
+
+It is still useful as a control-semantics reference. Its `src/host/controls.h` names the four fighting actions as Guard, Punch, Kick and Escape, alongside Up/Down/Left/Right, Start and Coin. Its default gamepad layout places Punch on A, Kick on B, Guard on X and Escape on Y. In `src/machine/model3.h`, these are abstract pressed/released controls; `src/machine/model3.cpp::read_inputs()` then converts them into the Model 3's active-low input registers. That Model 3 register implementation is not portable to Naomi.
+
+The Naomi probe's current JVS-to-Maple adapter uses that action naming and A/B/X/Y layout as a provisional convention, then emits the Dreamcast controller's active-low Maple button word. The actual JVS push-switch wiring must still be confirmed on the user's cabinet, and the generated Maple word has not yet been connected to the original VF3 guest's controller read path.
+
+References: [Model 3 recompilation README](https://github.com/mr-finster/vf3-recomp), [host control layout](https://github.com/mr-finster/vf3-recomp/blob/main/src/host/controls.h), [Model 3 input registers](https://github.com/mr-finster/vf3-recomp/blob/main/src/machine/model3.cpp), [Model 3 control state](https://github.com/mr-finster/vf3-recomp/blob/main/src/machine/model3.h).
