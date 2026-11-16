@@ -44,6 +44,13 @@ run in this environment. A successful build is not a hardware test. The
 first runtime check is whether Port A reports MIE/JVS and the native P1
 switch word changes when a control-panel switch is pressed.
 
+
+The automatic `INIT_MIE` path expects the MIE bridge firmware to already
+be active (for example, initialized by the Naomi BIOS). KOS also exposes
+`mie_init_fw(fw_path)` for uploading `mie_z80.bin` when required, but that
+firmware is not bundled here. Do not interpret an empty input page as proof
+of bad wiring until bridge firmware state is known.
+
 ## Reference
 
 - KallistiOS MIE driver: https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/include/dc/maple/mie.h
