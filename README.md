@@ -6,7 +6,7 @@ This repository is independent of the Daytona Naomi port. Daytona's proven build
 
 ## Current status
 
-**Phase 1 — executable reconnaissance in progress.**
+**Phase 1 — executable reconnaissance in progress. Naomi JVS input is now verified on real hardware.**
 
 The initial target is the Dreamcast VF3tb executable and assets, not the Model 3 arcade recompilation. Dreamcast and Naomi share the SH-4 CPU, PowerVR2 graphics family and AICA audio architecture, making this the most promising starting point. They are not binary-compatible by default: Naomi boot, memory layout, storage, peripherals and arcade I/O must be checked.
 
@@ -18,7 +18,7 @@ No playable Naomi port or hardware compatibility is claimed yet.
 
 ## Current loader investigation
 
-The current blocking reverse-engineering task is to capture the character-select-to-round-one resource load. The 132-entry runtime name-pointer table, candidate MT loaders and GDFS sector-read endpoint are documented in [the loader trace plan](docs/GDFS_TRACE_PLAN.md). A combined watch list is provided at [tools/VF3_WATCH_LOADER.txt](tools/VF3_WATCH_LOADER.txt), with a CSV decoder at [tools/loader_trace_decode.py](tools/loader_trace_decode.py) and a first-pass report generator at [tools/loader_trace_summary.py](tools/loader_trace_summary.py). Synthetic regression tests are in [tests/](tests/) and run with `python -m unittest discover -s tests -v`. A pre-fight savestate is an optional convenience, not a required user-provided artifact: the intended route is to start the game in a research Flycast build and drive it to the load boundary once the input sequence is reliable. Current Maple/input findings and the distinction between the related project's native harness and patched Flycast captures are recorded in [INPUT_PATH_FINDINGS.md](docs/INPUT_PATH_FINDINGS.md). A real capture still requires the patched interpreter hooks.
+The current blocking reverse-engineering task is to capture the character-select-to-round-one resource load. The 132-entry runtime name-pointer table, candidate MT loaders and GDFS sector-read endpoint are documented in [the loader trace plan](docs/GDFS_TRACE_PLAN.md). A combined watch list is provided at [tools/VF3_WATCH_LOADER.txt](tools/VF3_WATCH_LOADER.txt), with a CSV decoder at [tools/loader_trace_decode.py](tools/loader_trace_decode.py) and a first-pass report generator at [tools/loader_trace_summary.py](tools/loader_trace_summary.py). Synthetic regression tests are in [tests/](tests/) and run with `python -m unittest discover -s tests -v`. A pre-fight savestate is an optional convenience, not a required user-provided artifact: the intended route is to start the game in a research Flycast build and drive it to the load boundary once the input sequence is reliable. Current Maple/input findings and the distinction between the related project's native harness and patched Flycast captures are recorded in [INPUT_PATH_FINDINGS.md](docs/INPUT_PATH_FINDINGS.md). A real capture still requires the patched interpreter hooks. The standalone Naomi MIE/JVS probe has separately booted on the user's cabinet, and the user confirmed that all buttons and analog inputs respond. This verifies hardware input delivery, not the original guest's game-level controller path.
 
 ## Chosen research sources
 
