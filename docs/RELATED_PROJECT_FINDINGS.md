@@ -75,13 +75,13 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 1. **Keep the Dreamcast executable as the initial reference.** It is the closest hardware/software lineage to Naomi, but direct binary execution is not established.
 2. **Use the related project as a behavioral oracle.** Its GDFS, GD-ROM, Maple, PVR2 and AICA notes can help us classify Dreamcast dependencies and avoid rediscovering them.
 3. **Prioritize storage and boot boundaries.** The documented 222-name resource table, GDFS tag decoding, BIOS service vectors and 367-file boot ladder give us concrete targets for a Naomi asset-provider design.
-4. **Compare the resident module separately.** `RELOAD.BIN` is a distinct 655,360-byte image with relevant Naomi and PowerVR identifiers; it should be inventoried and analyzed separately if present in the user's own disc dump.
+4. **Compare the resident module separately.** A root-level `RELOAD.BIN` is now confirmed in the user's Dropbox folder at 655,360 bytes, exactly the size listed by the related project's executable inventory. It is absent from `DATELIST.ASC`, and its bytes/provenance have not yet been verified; treat it as a high-priority separate artifact, not as proven retail disc content.
 5. **Do not treat the native port as finished or Naomi-compatible.** Its current value is evidence and reverse-engineering leverage, not a completed game port.
 
 ## Immediate next technical tasks
 
 - Reconcile the related project's documented executable identities against our own `1ST_READ.BIN` hash and disc inventory; do not rely on file size alone.
-- Check whether the user's disc asset set contains `RELOAD.BIN` and compare its recorded size/name against the related project's inventory.
+- Inspect the Dropbox `RELOAD.BIN` bytes and establish its provenance; metadata confirms 655,360 bytes, but it is absent from `DATELIST.ASC`.
 - Use the GDFS name/tag model to map the resource names already found in our own asset inventory to actual file groups and destination buffers.
 - Once the original executable bytes are available in this working session, resume instruction-level tracing around the Naomi source-path references and distinguish active loader calls from diagnostics.
 - Build Naomi-side probes independently for ROMFS reads, JVS input, PVR2 display and AICA startup before attempting game integration.
