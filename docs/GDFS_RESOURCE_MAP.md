@@ -91,7 +91,7 @@ The categories are useful for organizing the investigation, but not sufficient t
 
 The related project's later [loader investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md) identifies a distinct runtime table at `0x8C1069BC..0x8C106BCC`: 132 pointers, with the `MTJACLAU` entry at index 39 (`0x8C106A58`). The note says this table has no static pool/mova references and is reached through a runtime-populated pointer (possibly init relocation or a manager object). It explicitly leaves the runtime pointer chase unresolved. This 132-pointer table must not be conflated with the 234 candidate filename strings in `gdfs_table.h`.
 
-The same loader note mentions a separate 8,880-slot table read by a function that then scatters 64-byte probes. Its exact relationship to the GDFS pointer table and MT package loading remains to be traced. The related project's recommended capture watches the MT resident pack at `0x8C5F0000+`, the 132-pointer table at `0x8C1069BC`, and loader candidates `0x8C02DCEC`, `0x8C04BDA2`, `0x8C08232E`, `_gdFsDaPlaySct` at `0x8C0360C8`, and `bjload_run` at `0x8C0CBC40`.
+The 8,880-slot table is **inside each MT motion asset**, not another GDFS name table. The related project's `docs/formats/MT.md` describes it as 8,880 32-bit offsets (`0x0000..0x8ABF`), interpreted as 2,960 rows of three offsets for packed channel descriptors, key-time bytes and float tuples. The loader then scatters/re-sites records into resident RAM; the exact runtime pack-loader function remains unresolved. The related project's recommended capture watches the MT resident pack at `0x8C5F0000+`, the 132-pointer runtime table at `0x8C1069BC`, and loader candidates `0x8C02DCEC`, `0x8C04BDA2`, `0x8C08232E`, `_gdFsDaPlaySct` at `0x8C0360C8`, and `bjload_run` at `0x8C0CBC40`.
 
 ## What the related reverse engineering establishes about loading
 
@@ -118,7 +118,7 @@ Before implementing that boundary, the port needs to establish:
 
 1. how the runtime-populated pointer reaches the 132-entry table at `0x8C1069BC`, and which caller supplies the index;
 2. how that runtime index relates to the 234 embedded filename/tag candidates and the disc's LBA/length metadata;
-3. what the separate 8,880-slot table represents and how it relates to MT package relocation;
+3. which function reads each MT asset's internal 8,880-slot table and performs the per-record scatter/rewrite into resident RAM;
 4. which loader functions request each asset family and what destination address/relocation rules they apply;
 5. whether Naomi-side ROMFS/NetDIMM access can supply equivalent file contents and timing, or whether a compatibility shim is needed;
 6. which resources are loaded during boot, menu, character select, stage setup and match runtime.
@@ -132,6 +132,8 @@ Do not yet hard-code the related project's tag labels as a Naomi loader specific
 - [Related project: table extraction script](https://github.com/celsowm/vf3-decomp/blob/main/tools/bin_names.py)
 - [Related project: architecture and loader chain](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/architecture.md)
 - [Related project: later runtime loader-table investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md)
+- [Related project: MT asset internal 8,880-slot format](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/MT.md)
+- [Related project: MT resident scatter/rewrite evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
 - [Related project: analysis state and GDFS 0.53 identification](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/ANALYSIS_STATE.md)
 - [Related project: retail GD-ROM manifest](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md)
 - [Related project: GD-ROM BIOS model](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdrom_hle.c)
