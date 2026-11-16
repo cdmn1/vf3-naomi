@@ -40,7 +40,7 @@ In principle, yes: one could run the Model 3 PowerPC program under an interprete
 
 ### CPU execution
 
-The reference recompiler uses SLJIT to emit **x86-64 or ARM64** code. Its bundled `sljitConfigCPU.h` has architecture selections for x86, ARM, PPC, MIPS, RISC-V, S390X, LoongArch and Alpha; there is no SH-4 backend. A Naomi port would therefore need either:
+The reference recompiler uses SLJIT to emit **x86-64 or ARM64** code. Its bundled [`sljitConfigCPU.h`](https://github.com/mr-finster/vf3-recomp/blob/main/third_party/sljit/sljitConfigCPU.h) has architecture selections for x86, ARM, PPC, MIPS, RISC-V, S390X, LoongArch and Alpha; there is no SH-4 backend. A Naomi port would therefore need either:
 - a new SH-4 SLJIT backend and the associated ABI/register/branch handling; or
 - a hand-written PowerPC-to-SH-4 translator; or
 - the PowerPC interpreter only.
@@ -87,6 +87,8 @@ For our immediate work, this reinforces the current order: establish Naomi boot 
 - [Step 1: execution measurement](https://github.com/mr-finster/vf3-recomp/blob/main/docs/step1-measure.md)
 - [Step 2: interpreter and board core](https://github.com/mr-finster/vf3-recomp/blob/main/docs/step2-core.md)
 - [Step 3: PowerPC recompiler](https://github.com/mr-finster/vf3-recomp/blob/main/docs/step3-recompiler.md)
+- [SLJIT CPU architecture configuration](https://github.com/mr-finster/vf3-recomp/blob/main/third_party/sljit/sljitConfigCPU.h)
+- [PowerPC recompiler implementation](https://github.com/mr-finster/vf3-recomp/blob/main/src/rec/ppc_rec.cpp)
 - [Step 4: graphics, sound and host integration](https://github.com/mr-finster/vf3-recomp/blob/main/docs/step4-game.md)
 - [Project licence](https://github.com/mr-finster/vf3-recomp/blob/main/LICENSE)
 - [This project's porting plan](PORTING_PLAN.md)
