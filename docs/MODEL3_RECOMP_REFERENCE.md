@@ -34,6 +34,38 @@ These are methods and test-design ideas we can adopt. The reference's specific r
 
 The reference repository's own licence is MIT for its project-written code, but explicitly excludes the game itself and separately licensed third-party components. That licence does not make Sega game code or assets redistributable. Any future reuse would require checking each file's provenance and licence; this investigation does not copy code from that repository.
 
+## Could the complete Model 3 emulator be ported to Naomi?
+
+In principle, yes: one could run the Model 3 PowerPC program under an interpreter or a new SH-4 code generator, then implement the Model 3 devices and graphics/audio behavior on Naomi. But the reviewed implementation does not provide the key pieces needed to make that practical.
+
+### CPU execution
+
+The reference recompiler uses SLJIT to emit **x86-64 or ARM64** code. Its bundled `sljitConfigCPU.h` has architecture selections for x86, ARM, PPC, MIPS, RISC-V, S390X, LoongArch and Alpha; there is no SH-4 backend. A Naomi port would therefore need either:
+- a new SH-4 SLJIT backend and the associated ABI/register/branch handling; or
+- a hand-written PowerPC-to-SH-4 translator; or
+- the PowerPC interpreter only.
+
+The project's own Step 3 measurements are on an x86-64 host: 89 frames/s for the interpreter and 456–478 frames/s for its optimized recompiler in the measured scripted run. Those numbers do not predict SH-4 performance. They do show that the optimized native path is a major part of its performance; there is no evidence that the interpreter alone would meet Naomi's frame budget.
+
+### Graphics
+
+The reference's CPU renderer is a software rasterizer, while its GPU renderer is implemented through SDL_GPU and shaders for desktop APIs. Neither is a Naomi PowerVR2 backend. A port would need either to make the software rasterizer fast enough on SH-4, or to translate Model 3 Real3D scene data and rendering state into PowerVR2 polygon/texture submissions. The latter is a substantial renderer project, not a build-system change.
+
+### Sound and board devices
+
+The reference runs the Model 3 sound board's 68000 and two SCSPs using MAME-derived code. Naomi's AICA path is different. Likewise, the Model 3 SCSI controller/DMA, board memory map, IRQs, JTAG and EEPROM do not describe Naomi's platform. Each device would need an implementation or compatibility layer, and the Model 3's timing assumptions would need validation.
+
+### Practical assessment
+
+| Route | Main work | Assessment |
+|---|---|---|
+| Reuse the Model 3 native recompiler unchanged | Run x86-64/ARM64 code on SH-4 | Not possible as-is |
+| Use its PowerPC interpreter on Naomi | Port interpreter and Model 3 board; measure SH-4 speed | Technically possible, performance unproven and likely the first major risk |
+| Add an SH-4 JIT backend | New SLJIT backend plus Model 3 board emulation | Large CPU-engineering effort before graphics/audio |
+| Rebuild the game around Naomi hardware | PPC execution, Real3D-to-PVR2 renderer, SCSP-to-AICA sound, board I/O/storage adaptation | Effectively a new Model 3 emulator port |
+
+This does not make a Model 3-to-Naomi port impossible in theory. It means the existing repository is not a shortcut to a usable Naomi game image. For the current goal, the Dreamcast SH-4 executable remains the much lower-risk starting point because its CPU family and major graphics/audio chips align with Naomi, while its remaining platform differences can be isolated and measured.
+
 ## Recommendation for this project
 
 Keep the Dreamcast-derived SH-4 executable as the primary software lineage for the Naomi port. Continue using the Model 3 recompilation as a behavioral and engineering reference only.
