@@ -79,6 +79,17 @@ python tools/loader_trace_summary.py extract/analysis/loader_trace.pc.csv extrac
 
 The report includes the first register snapshot for each watched function, pointer-table read/write values, and the first resident-MT writes. These samples help narrow the pointer chain and scatter routine; they are not by themselves proof that a resource load completed.
 
+## Naomi source-path reference probes
+
+The checked-in `VF3_WATCH_LOADER.txt` now also watches the exact SH-4 PCs that load pointers to the embedded Naomi source-path strings for `nlrom.c`, `obj_load.c`, `rob_load.c`, `sound.c` and `stage.c`. These are literal-reference instructions, not confirmed function entries.
+
+Use their hits as a separate line of evidence:
+- no hit during a capture means only that these specific instructions were not executed in that captured interval;
+- a hit proves the instruction executed and records `r13`, `r14`, and `r4`–`r7` at that point;
+- a hit does not prove the named source module is the current caller, that its loader path completed, or that it is part of normal gameplay.
+
+This should help determine whether the Naomi source-path references are reached during boot, character selection or Round 1, while the memory watches continue to identify the actual resource reads and destination writes. The new probes do not replace the original loader/GDFS/memory watches.
+
 ## Analysis order
 
 1. **Runtime table pointer:** at the first hit in `mt_loader` / `load_mt_*`, inspect `r13` and `r14` and trace the pointer chain to `0x8C1069BC`. Confirm whether the selected table index is zero-based or one-based and whether it selects a string pointer, a file descriptor or a loader object.
