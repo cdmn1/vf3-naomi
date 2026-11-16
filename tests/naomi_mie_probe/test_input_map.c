@@ -6,11 +6,11 @@ static int check(const char *name, uint16_t jvs, uint16_t expected)
 {
     const uint16_t actual = vf3_jvs_to_maple_buttons(jvs);
     if(actual != expected) {
-        fprintf(stderr, "%s: expected %04x, got %04x\\n", name, expected, actual);
+        fprintf(stderr, "%s: expected %04x, got %04x\n", name, expected, actual);
         return 1;
     }
     if((actual & 0xF901u) != 0xF901u) {
-        fprintf(stderr, "%s: unsupported pad bits were not released\\n", name);
+        fprintf(stderr, "%s: unsupported pad bits were not released\n", name);
         return 1;
     }
     return 0;

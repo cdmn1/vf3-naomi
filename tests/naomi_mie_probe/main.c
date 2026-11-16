@@ -139,7 +139,7 @@ static void build_report(char lines[][UI_LINE_MAX])
              state->jvs.p1.raw, state->jvs.p2.raw);
     snprintf(lines[4], UI_LINE_MAX, "SYS: %02x  PANEL: %02x",
              state->jvs.system.raw, state->jvs.panel.psw.raw);
-    snprintf(lines[5], UI_LINE_MAX, "Mapped P1 buttons: %08" PRIx32,
+    snprintf(lines[5], UI_LINE_MAX, "KOS default pad bits: %08" PRIx32,
              state->cont.buttons);
     snprintf(lines[6], UI_LINE_MAX, "Coins: %u / %u  pulse:%02x fault:%02x",
              state->jvs.coin[0].count, state->jvs.coin[1].count,
@@ -154,7 +154,7 @@ static void build_report(char lines[][UI_LINE_MAX])
              vf3_jvs_to_maple_buttons(state->jvs.p1.raw));
     snprintf(lines[10], UI_LINE_MAX, "P2 Maple (active-low): %04x",
              vf3_jvs_to_maple_buttons(state->jvs.p2.raw));
-    snprintf(lines[11], UI_LINE_MAX, "Map: SW1=P SW2=K SW3=G SW4=E");
+    snprintf(lines[11], UI_LINE_MAX, "Push1=P Push2=K Push3=G Push4=E");
 }
 
 int main(int argc, char *argv[])
