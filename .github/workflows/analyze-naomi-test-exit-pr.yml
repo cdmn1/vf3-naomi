@@ -142,6 +142,57 @@ jobs:
           print_window("test", test_segment, test_addr, 0x8C0463D0, 0x8C046700)
           print_window("main", main_segment, main_addr, 0x8C063D80, 0x8C064180)
 
+          targets = {
+              0x8C046562: "BIOS syscall index 0x10",
+              0x8C046582: "BIOS syscall index 0x11 (ENTER_TEST_MODE)",
+              0x8C04659A: "BIOS syscall index 0x12",
+          }
+          callers = []
+          for off in range(0, len(test_segment) - 1, 2):
+              op = struct.unpack_from("<H", test_segment, off)[0]
+              if (op & 0xF000) == 0xB000:
+                  disp = op & 0x0FFF
+                  if disp & 0x0800:
+                      disp -= 0x1000
+                  pc = test_addr + off
+                  dest = pc + 4 + disp * 2
+                  if dest in targets:
+                      callers.append((pc, dest, op))
+          print("\\n=== DIRECT BSR CALLERS OF BIOS SYSCALL WRAPPERS ===")
+          print([(hex(pc), hex(dest), targets[dest], hex(op))
+                 for pc, dest, op in callers])
+
+          test_dis = subprocess.run(
+              ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4", "-EL",
+               f"--adjust-vma={hex(test_addr)}", "/tmp/test-window.bin"],
+              check=True, capture_output=True, text=True
+          ).stdout.splitlines()
+          addr_to_line = {}
+          for i, line in enumerate(test_dis):
+              token = line.strip().split(":", 1)[0]
+              try:
+                  addr_to_line[int(token, 16)] = i
+              except ValueError:
+                  pass
+          for pc, dest, op in callers:
+              idx = addr_to_line.get(pc)
+              if idx is not None:
+                  print(f"\\n--- caller {pc:#010x} -> {dest:#010x} ({targets[dest]}) ---")
+                  print("\\n".join(test_dis[max(0, idx-20):min(len(test_dis), idx+30)]))
+
+          for target, label in targets.items():
+              needle = struct.pack("<I", target)
+              hits = []
+              pos = 0
+              while True:
+                  pos = test_segment.find(needle, pos)
+                  if pos < 0:
+                      break
+                  hits.append(test_addr + pos)
+                  pos += 1
+              print(f"\\nPointer literals for {label} {target:#010x}:",
+                    [hex(x) for x in hits])
+
           for label, segment, base in (("main", main_segment, main_addr), ("test", test_segment, test_addr)):
               print(f"\\n{label.upper()} ABSOLUTE BIOS VECTOR CONSTANTS:")
               for value in (0xAC018000, 0xAC018040, 0xAC018044, 0xAC018048, 0xAC01804C, 0xAC018050):
