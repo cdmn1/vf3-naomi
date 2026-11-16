@@ -60,6 +60,9 @@ jobs:
               export DC_TOOLS_BASE=/opt/toolchains/dc/bin
               export KOS_ARCH=dreamcast
               export KOS_SUBARCH=naomi
+              # Current KOS toolchain setup appends this optional C++ include
+              # variable under nounset; the sample config does not initialize it.
+              export KOS_INC_PATHS_CPP=""
               mkdir -p "$KOS_PORTS"
               cp "$KOS_BASE/doc/environ.sh.sample" "$KOS_BASE/environ.sh"
               . "$KOS_BASE/environ.sh"
