@@ -8,6 +8,8 @@ The standalone KallistiOS MIE/JVS probe has now booted on the user's real Naomi.
 
 This result is deliberately separate from the Dreamcast guest input findings below. It does not establish that the original VF3 executable's controller reader or merge routine has run, nor that the Dreamcast Maple API can be replaced by simply reading KOS's mapped `cont` state. The dedicated `wheel`/`accel`/`brake` fields are not needed: use native JVS switch words and `jvs.analog[]` for this fighting-game input adapter.
 
+A first conversion layer now exists in `tests/naomi_mie_probe/vf3_input_map.c`. It converts each player's active-high JVS switch word into a standard Dreamcast controller button word, active-low, including the standard-pad released-bit mask. The provisional mapping is Push 1 = Punch/A, Push 2 = Kick/B, Push 3 = Guard/X, Push 4 = Escape/Y, plus digital directions and Start. The pure conversion tests passed in GitHub Actions run 15. The probe displays the resulting P1/P2 Maple words so the cabinet's actual switch assignment can be checked. This helper is not yet wired into the original guest runtime.
+
 ## Scope and source boundary
 
 This note separates observations from the Dreamcast research harness in
