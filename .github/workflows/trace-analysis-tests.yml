@@ -1,16 +1,20 @@
-name: Test VF3 trace analysis tools
+name: Test VF3 trace and SH-4 analysis tools
 
 on:
   push:
     branches: [main]
     paths:
       - "tools/loader_trace_*.py"
+      - "tools/sh4_string_xrefs.py"
       - "tests/test_loader_trace_*.py"
+      - "tests/test_sh4_string_xrefs.py"
       - ".github/workflows/trace-analysis-tests.yml"
   pull_request:
     paths:
       - "tools/loader_trace_*.py"
+      - "tools/sh4_string_xrefs.py"
       - "tests/test_loader_trace_*.py"
+      - "tests/test_sh4_string_xrefs.py"
       - ".github/workflows/trace-analysis-tests.yml"
   workflow_dispatch:
 
@@ -25,5 +29,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run trace decoder and summary tests
-        run: python -m unittest discover -s tests -p "test_loader_trace_*.py" -v
+      - name: Run trace decoder, summary and SH-4 xref tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
