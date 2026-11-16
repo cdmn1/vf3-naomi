@@ -101,3 +101,5 @@ jobs:
 # Trace indirect BIOS syscall table references.
 
 # Trace references into the game-test menu strings.
+
+# Trace generic BIOS syscall helper callsites.
