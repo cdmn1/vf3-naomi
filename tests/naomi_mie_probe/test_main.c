@@ -107,16 +107,16 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected,
     lines[7][0] = 0;
     if(s) {
         snprintf(lines[8], TEST_LINE_MAX, "MIE: FOUND  PANEL: %02X", s->jvs.panel.psw.raw);
-        snprintf(lines[9], TEST_LINE_MAX, "PSW1 TEST:%u PSW2 SERVICE:%u",
-                 s->jvs.panel.psw.test, s->jvs.panel.psw.service);
-        snprintf(lines[10], TEST_LINE_MAX, "SYSTEM TEST: %u P1 SERVICE: %u",
+        snprintf(lines[9], TEST_LINE_MAX, "JVS TEST:%u SERVICE:%u",
                  s->jvs.system.test, s->jvs.p1.service);
+        snprintf(lines[10], TEST_LINE_MAX, "SYSTEM RAW:%02X P1 RAW:%04X",
+                 s->jvs.system.raw, s->jvs.p1.raw);
     } else {
         snprintf(lines[8], TEST_LINE_MAX, "MIE: NOT FOUND");
         snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
         snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
     }
-    snprintf(lines[11], TEST_LINE_MAX, "RAW PANEL BITS: PSW1=BIT0 PSW2=BIT1");
+    snprintf(lines[11], TEST_LINE_MAX, "CONTROLS: JVS SYSTEM TEST / P1 SERVICE");
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -133,10 +133,9 @@ static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
     snprintf(lines[3], TEST_LINE_MAX, "P2 JVS SWITCHES: %04X", s->jvs.p2.raw);
     snprintf(lines[4], TEST_LINE_MAX, "SYSTEM: %02X PANEL: %02X",
              s->jvs.system.raw, s->jvs.panel.psw.raw);
-    snprintf(lines[5], TEST_LINE_MAX, "PANEL TEST: %u SERVICE: %u",
-             s->jvs.panel.psw.test, s->jvs.panel.psw.service);
-    snprintf(lines[6], TEST_LINE_MAX, "P1 SERVICE: %u START: %u",
-             s->jvs.p1.service, s->jvs.p1.start);
+    snprintf(lines[5], TEST_LINE_MAX, "JVS TEST: %u SERVICE: %u",
+             s->jvs.system.test, s->jvs.p1.service);
+    snprintf(lines[6], TEST_LINE_MAX, "P1 START: %u", s->jvs.p1.start);
     snprintf(lines[7], TEST_LINE_MAX, "COINS: %u / %u",
              s->jvs.coin[0].count, s->jvs.coin[1].count);
     snprintf(lines[8], TEST_LINE_MAX, "ANALOG: %u %u %u %u",
@@ -165,8 +164,8 @@ int main(int argc, char **argv)
 
     for(;;) {
         mie_state_t *s = mie_status();
-        int service = s ? !!s->jvs.panel.psw.service : 0;
-        int test = s ? !!s->jvs.panel.psw.test : 0;
+        int service = s ? !!s->jvs.p1.service : 0;
+        int test = s ? !!s->jvs.system.test : 0;
         int service_edge = service && !prev_service;
         int test_edge = test && !prev_test;
         prev_service = service;
