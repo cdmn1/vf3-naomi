@@ -4,7 +4,7 @@
 
 Investigate the Dreamcast VF3tb executable first. Shared SH-4 / PowerVR2 / AICA architecture is a substantial advantage over the Model 3 arcade build, but does not establish direct compatibility.
 
-The arcade Model 3 recompilation remains a reference for game behavior. Its PowerPC 603e guest code and Real3D Pro-1000 board implementation are fundamentally different from Naomi.
+The arcade Model 3 recompilation remains a reference for game behavior. Its PowerPC 603e guest code and Real3D Pro-1000 board implementation are fundamentally different from Naomi. A review of the public [Model 3 VF3 recompilation](MODEL3_RECOMP_REFERENCE.md) confirms that its useful contribution here is its measurement, lockstep-validation and subsystem-isolation methodology—not reusable Naomi code.
 
 ## Phase 1 — executable reconnaissance
 
