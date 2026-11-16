@@ -72,6 +72,18 @@ This is a strong structural clue that the embedded filename list preserves the d
 
 The updated [GDFS_ASSET_INDEX.csv](GDFS_ASSET_INDEX.csv) now includes the original table row, a core-order position, GD LBA, size, manifest SHA-1 and tag-extraction quality marker. The exact follow-up capture is specified in [GDFS_TRACE_PLAN.md](GDFS_TRACE_PLAN.md).
 
+## Asset-index validation
+
+`tools/validate_gdfs_asset_index.py` now checks the checked-in index before it is used as porting evidence. It validates the 232-row inventory, unique asset names, SHA-1 formatting, the 91 MT packs and their 154,676,388-byte total, plus the 225 core-order rows for strictly ascending LBA order and non-overlapping 2048-byte sector spans.
+
+Run it from the repository root:
+
+```sh
+python tools/validate_gdfs_asset_index.py
+```
+
+The validator and its tests passed in [GitHub Actions run 43964994298](https://github.com/cdmn1/vf3-naomi/actions/runs/43964994298). These checks protect the extracted manifest/index structure; they do not prove that the game's runtime table uses the same order or that any particular asset has loaded successfully.
+
 ## Tag families in the generated table
 
 The related project's `src/sys/gdfs.c` groups selected tags for scheduling:
