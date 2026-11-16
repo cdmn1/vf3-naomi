@@ -63,19 +63,21 @@ raw JVS words first and then set a VF3-specific mapping deliberately.
 
 ## MIE firmware caveat
 
-KOS's automatic `INIT_MIE` path registers the driver and probes Port A. It
-will use an already active MIE Z80/JVS bridge if available. The public
-`mie_init_fw(fw_path)` API can upload `mie_z80.bin` when the bridge needs
-firmware; its documentation says this is intended for early Naomi startup
-before the normal Maple scan completes JVS setup. The firmware file is not
-included in the KOS repository and is not bundled in this probe.
+The known-good Daytona `naomi_input_probe_v5.bin` established an additional
+critical requirement: on the tested Naomi setup, `hardware_sys_mode()` reports
+`HW_TYPE_RETAIL`, and unmodified KallistiOS consequently returns early from
+both `mie_init()` and `mie_init_fw()` because of its Retail-Dreamcast guards.
+The Daytona v5 workflow removes those two guards from KOS's
+`kernel/arch/dreamcast/hardware/maple/mie/mie.c` before building KOS. This is
+a Naomi-only build workaround, not a change to Naomi hardware mode and not a
+request to switch Port A into Dreamcast controller mode.
 
-Therefore, a probe reporting Port A as JVS but no usable MIE input state may
-indicate that the bridge firmware has not been activated; it does not
-automatically prove the physical JVS wiring is wrong. Do not add an unknown
-firmware blob or invent a path. Establish whether the BIOS/emulator already
-initializes the bridge before deciding whether a separately sourced firmware
-file is needed.
+The VF3 probe must use the same KOS source patch. Merely compiling the
+application with `INIT_DEFAULT | INIT_MIE` is insufficient when those guards
+remain in the KOS library. Do not revisit firmware upload, generic Maple
+mode, or physical wiring as the first diagnosis: first reproduce the exact
+v5 KOS build treatment and then compare runtime enumeration and native JVS
+state.
 
 ## Probe added to this repository
 
@@ -94,8 +96,11 @@ hardware validation.
 - coin meter values, insert pulses and fault flags;
 - all eight analog channels.
 
-The source is checked against the current KOS MIE public header and official
-MIE example and has compiled successfully. The first packaged image was not
+The probe uses the same `INIT_DEFAULT | INIT_MIE` startup flags and
+`maple_enum_type(..., MAPLE_FUNC_MIE)` / `maple_dev_status()` native-state path
+as Daytona v5. The important difference was in the KOS library build: Daytona
+v5 removed the two Retail guards from `mie_init()` and `mie_init_fw()`. The VF3
+workflow now applies that exact Naomi-only patch before building KOS. The first packaged image was not
 accepted by the Naomi main board; that failure occurred before the program
 could execute and therefore says nothing about MIE/JVS behavior. The corrected
 Naomi ROM image must first boot, then report `MIE_PORT0_JVS` and a changing raw
