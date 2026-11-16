@@ -18,7 +18,7 @@
 
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 
-#define LINE_MAX 64
+#define TEST_LINE_MAX 64
 #define LINE_COUNT 12
 #define FONT_W 12
 #define FONT_H 24
@@ -77,7 +77,7 @@ static void draw_string(float x, float y, const char *s)
     }
 }
 
-static void draw_lines(const char lines[][LINE_MAX])
+static void draw_lines(const char lines[][TEST_LINE_MAX])
 {
     pvr_wait_ready();
     pvr_scene_begin();
@@ -94,53 +94,53 @@ static mie_state_t *mie_status(void)
     return dev ? (mie_state_t *)maple_dev_status(dev) : NULL;
 }
 
-static void render_menu(char lines[][LINE_MAX], int selected)
+static void render_menu(char lines[][TEST_LINE_MAX], int selected)
 {
-    snprintf(lines[0], LINE_MAX, "VF3 GAME TEST MODE");
-    snprintf(lines[1], LINE_MAX, "------------------------------");
-    snprintf(lines[2], LINE_MAX, "%s INPUT TEST", selected == 0 ? "->" : "  ");
-    snprintf(lines[3], LINE_MAX, "%s EXIT", selected == 1 ? "->" : "  ");
+    snprintf(lines[0], TEST_LINE_MAX, "VF3 GAME TEST MODE");
+    snprintf(lines[1], TEST_LINE_MAX, "------------------------------");
+    snprintf(lines[2], TEST_LINE_MAX, "%s INPUT TEST", selected == 0 ? "->" : "  ");
+    snprintf(lines[3], TEST_LINE_MAX, "%s EXIT", selected == 1 ? "->" : "  ");
     lines[4][0] = 0;
-    snprintf(lines[5], LINE_MAX, "SELECT BY SERVICE BUTTON");
-    snprintf(lines[6], LINE_MAX, "AND PRESS TEST BUTTON");
+    snprintf(lines[5], TEST_LINE_MAX, "SELECT BY SERVICE BUTTON");
+    snprintf(lines[6], TEST_LINE_MAX, "AND PRESS TEST BUTTON");
     lines[7][0] = 0;
-    snprintf(lines[8], LINE_MAX, "SERVICE: PANEL PSW2");
-    snprintf(lines[9], LINE_MAX, "TEST: PANEL PSW1");
+    snprintf(lines[8], TEST_LINE_MAX, "SERVICE: PANEL PSW2");
+    snprintf(lines[9], TEST_LINE_MAX, "TEST: PANEL PSW1");
     lines[10][0] = 0;
-    snprintf(lines[11], LINE_MAX, "NAOMI TEST ENTRY EXPERIMENT");
+    snprintf(lines[11], TEST_LINE_MAX, "NAOMI TEST ENTRY EXPERIMENT");
 }
 
-static void render_input(char lines[][LINE_MAX], mie_state_t *s)
+static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
 {
-    snprintf(lines[0], LINE_MAX, "VF3 GAME TEST MODE");
-    snprintf(lines[1], LINE_MAX, "INPUT TEST");
+    snprintf(lines[0], TEST_LINE_MAX, "VF3 GAME TEST MODE");
+    snprintf(lines[1], TEST_LINE_MAX, "INPUT TEST");
     if(!s) {
-        snprintf(lines[2], LINE_MAX, "MIE/JVS DEVICE NOT FOUND");
+        snprintf(lines[2], TEST_LINE_MAX, "MIE/JVS DEVICE NOT FOUND");
         for(int i = 3; i < LINE_COUNT; ++i) lines[i][0] = 0;
-        snprintf(lines[11], LINE_MAX, "PRESS TEST TO RETURN");
+        snprintf(lines[11], TEST_LINE_MAX, "PRESS TEST TO RETURN");
         return;
     }
-    snprintf(lines[2], LINE_MAX, "P1 JVS SWITCHES: %04X", s->jvs.p1.raw);
-    snprintf(lines[3], LINE_MAX, "P2 JVS SWITCHES: %04X", s->jvs.p2.raw);
-    snprintf(lines[4], LINE_MAX, "SYSTEM: %02X PANEL: %02X",
+    snprintf(lines[2], TEST_LINE_MAX, "P1 JVS SWITCHES: %04X", s->jvs.p1.raw);
+    snprintf(lines[3], TEST_LINE_MAX, "P2 JVS SWITCHES: %04X", s->jvs.p2.raw);
+    snprintf(lines[4], TEST_LINE_MAX, "SYSTEM: %02X PANEL: %02X",
              s->jvs.system.raw, s->jvs.panel.psw.raw);
-    snprintf(lines[5], LINE_MAX, "PANEL TEST: %u SERVICE: %u",
+    snprintf(lines[5], TEST_LINE_MAX, "PANEL TEST: %u SERVICE: %u",
              s->jvs.panel.psw.test, s->jvs.panel.psw.service);
-    snprintf(lines[6], LINE_MAX, "P1 SERVICE: %u START: %u",
+    snprintf(lines[6], TEST_LINE_MAX, "P1 SERVICE: %u START: %u",
              s->jvs.p1.service, s->jvs.p1.start);
-    snprintf(lines[7], LINE_MAX, "COINS: %u / %u",
+    snprintf(lines[7], TEST_LINE_MAX, "COINS: %u / %u",
              s->jvs.coin[0].count, s->jvs.coin[1].count);
-    snprintf(lines[8], LINE_MAX, "ANALOG: %u %u %u %u",
+    snprintf(lines[8], TEST_LINE_MAX, "ANALOG: %u %u %u %u",
              s->jvs.analog[0], s->jvs.analog[1],
              s->jvs.analog[2], s->jvs.analog[3]);
-    snprintf(lines[9], LINE_MAX, "P1 BUTTONS: %04X", s->jvs.p1.raw);
+    snprintf(lines[9], TEST_LINE_MAX, "P1 BUTTONS: %04X", s->jvs.p1.raw);
     lines[10][0] = 0;
-    snprintf(lines[11], LINE_MAX, "PRESS TEST TO RETURN TO MENU");
+    snprintf(lines[11], TEST_LINE_MAX, "PRESS TEST TO RETURN TO MENU");
 }
 
 int main(int argc, char **argv)
 {
-    char lines[LINE_COUNT][LINE_MAX] = {{0}};
+    char lines[LINE_COUNT][TEST_LINE_MAX] = {{0}};
     int selected = 0;
     int page = 0;
     int prev_service = 0, prev_test = 0;
