@@ -37,7 +37,7 @@ The related project's generated `src/sys/gdfs_table.h` is a host-side mirror of 
 - 2 table entries that still do not correspond to a Dropbox filename;
 - 3 Dropbox `.BIN` files not represented by a normalized table name.
 
-The 13 leading-underscore names are therefore consistent with a prefix/flag being included in the extractor's backward name scan rather than being literal filenames. This is an observed normalization that makes the extracted string list line up with the asset folder; it is not yet a fully decoded record format.
+The 13 leading-underscore names are therefore consistent with a prefix/flag being included in the extractor's backward name scan rather than being literal filenames. This is an observed normalization that makes the extracted string list line up with the asset folder; it is not yet a fully decoded record format. I generated [`GDFS_ASSET_INDEX.csv`](GDFS_ASSET_INDEX.csv), joining all 232 matched candidate names to the retail manifest's GD LBA, byte size and published SHA-1. Its `tag_candidate` field is deliberately marked as provisional where extraction boundaries are suspect.
 
 ### Two unresolved table entries
 
@@ -156,5 +156,6 @@ Do not yet hard-code the related project's tag labels as a Naomi loader specific
 - [Related project: MT resident scatter/rewrite evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
 - [Related project: analysis state and GDFS 0.53 identification](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/ANALYSIS_STATE.md)
 - [Related project: retail GD-ROM manifest](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md)
+- [This repository: joined 232-row candidate asset index](GDFS_ASSET_INDEX.csv)
 - [Related project: GD-ROM BIOS model](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdrom_hle.c)
 - [Related project: BIOS syscall model](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/bios_syscall.c)
