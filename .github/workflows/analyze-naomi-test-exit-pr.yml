@@ -43,10 +43,10 @@ jobs:
           print("Main entry:", hex(main_entry), "Test entry:", hex(test_entry))
           print("Header identity:", rom[:0x30].decode("ascii", "replace").rstrip())
 
-          def inspect_segment(label, file_off, load_addr, size):
+          def inspect_segment(label, file_off, load_addr, size, entry):
               segment = rom[file_off:file_off + size]
+              needle = bytes.fromhex("ac 01 80 00")
               literals = []
-              needle = bytes.fromhex("00 80 01 ac")
               pos = 0
               while True:
                   pos = segment.find(needle, pos)
@@ -54,6 +54,7 @@ jobs:
                       break
                   literals.append(pos)
                   pos += 1
+
               path = pathlib.Path(f"/tmp/{label}.bin")
               path.write_bytes(segment)
               proc = subprocess.run(
@@ -67,29 +68,38 @@ jobs:
                   m = re.match(r"^\s*([0-9a-fA-F]+):", line)
                   if m:
                       by_addr[int(m.group(1), 16)] = i
+
               refs = []
               for off in range(0, len(segment) - 1, 2):
-                  op = struct.unpack_from("<H", segment, off)[0]
+                  op = struct.unpack_from(">H", segment, off)[0]
                   if (op & 0xF000) == 0xD000:
                       pc = load_addr + off
                       target = ((pc + 4) & ~3) + (op & 0xFF) * 4
                       if target in [load_addr + x for x in literals]:
                           refs.append((pc, target, op))
-              print(f"\n=== {label.upper()} SEGMENT ===")
+
+              print(f"\n=== {label.upper()} SEGMENT (SH-4 big-endian) ===")
               print("size:", hex(size), "syscall-vector literal offsets:",
                     [hex(x) for x in literals])
               print("PC-relative references to those literals:",
                     [(hex(pc), hex(target), hex(op)) for pc, target, op in refs])
+
               printed = set()
               for pc, target, op in refs:
                   idx = by_addr.get(pc)
                   if idx is None:
                       continue
-                  lo, hi = max(0, idx - 14), min(len(lines), idx + 28)
+                  lo, hi = max(0, idx - 30), min(len(lines), idx + 70)
                   if (lo, hi) not in printed:
                       printed.add((lo, hi))
                       print(f"\n--- code around {pc:#010x} (literal {target:#010x}) ---")
                       print("\n".join(lines[lo:hi]))
+
+              if entry in by_addr:
+                  idx = by_addr[entry]
+                  print(f"\n--- entrypoint {entry:#010x} ---")
+                  print("\n".join(lines[idx:idx + 100]))
+
               interesting = []
               for match in re.finditer(rb"[ -~]{5,}", segment):
                   s = match.group().decode("ascii", "replace")
@@ -99,21 +109,9 @@ jobs:
                   print("\nRelevant strings:")
                   for addr, s in interesting:
                       print(f"{addr:#010x}: {s}")
+
               return segment
 
-          main = inspect_segment("main", main_off, main_addr, main_size)
-          test = inspect_segment("test", test_off, test_addr, test_size)
-
-          print("\n=== TEST ENTRYPOINT WINDOW ===")
-          test_path = pathlib.Path("/tmp/test.bin")
-          proc = subprocess.run(
-              ["sh4-linux-gnu-objdump", "-D", "-b", "binary", "-m", "sh4",
-               f"--adjust-vma={hex(test_addr)}", str(test_path)],
-              check=True, capture_output=True, text=True
-          )
-          lines = proc.stdout.splitlines()
-          for i, line in enumerate(lines):
-              if re.match(rf"^\s*{test_entry:x}:", line, re.I):
-                  print("\n".join(lines[i:i + 100]))
-                  break
+          inspect_segment("main", main_off, main_addr, main_size, main_entry)
+          inspect_segment("test", test_off, test_addr, test_size, test_entry)
           PY
