@@ -141,6 +141,10 @@ jobs:
 
           print_window("test", test_segment, test_addr, 0x8C0210C4, 0x8C021500)
           print_window("test", test_segment, test_addr, 0x8C044B9C, 0x8C044E00)
+          print_window("test", test_segment, test_addr, 0x8C046D94, 0x8C046F80)
+          print_window("test", test_segment, test_addr, 0x8C0474AE, 0x8C047700)
+          print_window("test", test_segment, test_addr, 0x8C048B44, 0x8C048D00)
+          print_window("test", test_segment, test_addr, 0x8C04908C, 0x8C049300)
           print_window("test", test_segment, test_addr, 0x8C0463D0, 0x8C046700)
           print_window("main", main_segment, main_addr, 0x8C063D80, 0x8C064180)
 
