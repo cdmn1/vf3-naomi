@@ -1,0 +1,81 @@
+name: Naomi MIE/JVS probe build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tests/naomi_mie_probe/**"
+      - ".github/workflows/naomi-mie-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-naomi-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out VF3 Naomi
+        uses: actions/checkout@v4
+
+      - name: Check out KallistiOS
+        uses: actions/checkout@v4
+        with:
+          repository: KallistiOS/KallistiOS
+          ref: master
+          path: kos
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build KallistiOS SH-4 toolchain image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./kos
+          file: ./kos/utils/kos-chain/docker/Dockerfile
+          tags: vf3-naomi-kos-toolchain:ci
+          load: true
+          build-args: |
+            platform=dreamcast
+            profile=stable
+          cache-from: type=gha,scope=vf3-naomi-kos-toolchain
+          cache-to: type=gha,mode=max,scope=vf3-naomi-kos-toolchain
+
+      - name: Build KallistiOS and the Naomi probe
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${GITHUB_WORKSPACE}/kos:/opt/toolchains/dc/kos" \
+            vf3-naomi-kos-toolchain:ci \
+            /bin/sh -lc '
+              set -eu
+              export KOS_BASE=/opt/toolchains/dc/kos
+              export KOS_PORTS=/opt/toolchains/dc/kos-ports
+              export KOS_CC_BASE=/opt/toolchains/dc/sh-elf
+              export KOS_CC_PREFIX=sh-elf
+              export DC_ARM_BASE=/opt/toolchains/dc/arm-eabi
+              export DC_ARM_PREFIX=arm-eabi
+              export DC_TOOLS_BASE=/opt/toolchains/dc/bin
+              export KOS_ARCH=dreamcast
+              export KOS_SUBARCH=naomi
+              mkdir -p "$KOS_PORTS"
+              cp "$KOS_BASE/doc/environ.sh.sample" "$KOS_BASE/environ.sh"
+              . "$KOS_BASE/environ.sh"
+              export KOS_SUBARCH=naomi
+              make -C "$KOS_BASE" -j2
+              make -C /workspace/tests/naomi_mie_probe clean all dist
+              test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf
+              test -s /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf.bin
+              mkdir -p /workspace/build-artifacts
+              cp /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf /workspace/build-artifacts/
+              cp /workspace/tests/naomi_mie_probe/vf3_mie_probe.elf.bin /workspace/build-artifacts/
+            '
+
+      - name: Upload Naomi probe binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-mie-probe
+          path: build-artifacts/
+          if-no-files-found: error
