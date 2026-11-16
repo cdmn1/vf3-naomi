@@ -28,16 +28,16 @@ The Dropbox folder contains 412 files:
 
 The 412 Dropbox filenames and sizes match all 412 rows of the related project's US GD-ROM high-density manifest. That manifest identifies track 3 as Mode1/2352 with base LBA 45000. This establishes filename/size agreement, not byte-for-byte identity.
 
-## GDFS name-table comparison
+## Embedded filename-string inventory (not the live pointer table)
 
-The related project's generated `src/sys/gdfs_table.h` contains 234 rows. Comparing its names with the 235 Dropbox `.BIN` files gives:
+The related project's generated `src/sys/gdfs_table.h` is a host-side mirror of 234 candidate filename/tag records extracted from strings embedded in `1ST_READ.BIN`. It is **not** the game's live runtime GDFS pointer table. Comparing those candidate names with the 235 Dropbox `.BIN` files gives:
 
 - 221 exact filename matches;
 - 232 matches after removing a leading underscore from the table name;
 - 2 table entries that still do not correspond to a Dropbox filename;
 - 3 Dropbox `.BIN` files not represented by a normalized table name.
 
-The 13 leading-underscore names are therefore consistent with a prefix/flag being included in the extractor's backward name scan rather than being literal filenames. This is an observed normalization that makes the table line up with the asset folder; it is not yet a fully decoded record format.
+The 13 leading-underscore names are therefore consistent with a prefix/flag being included in the extractor's backward name scan rather than being literal filenames. This is an observed normalization that makes the extracted string list line up with the asset folder; it is not yet a fully decoded record format.
 
 ### Two unresolved table entries
 
@@ -87,6 +87,12 @@ Examples of the five tags that the current helper recognizes:
 
 The categories are useful for organizing the investigation, but not sufficient to choose a loader or destination buffer by themselves.
 
+## Separate runtime pointer table and loader state
+
+The related project's later [loader investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md) identifies a distinct runtime table at `0x8C1069BC..0x8C106BCC`: 132 pointers, with the `MTJACLAU` entry at index 39 (`0x8C106A58`). The note says this table has no static pool/mova references and is reached through a runtime-populated pointer (possibly init relocation or a manager object). It explicitly leaves the runtime pointer chase unresolved. This 132-pointer table must not be conflated with the 234 candidate filename strings in `gdfs_table.h`.
+
+The same loader note mentions a separate 8,880-slot table read by a function that then scatters 64-byte probes. Its exact relationship to the GDFS pointer table and MT package loading remains to be traced. The related project's recommended capture watches the MT resident pack at `0x8C5F0000+`, the 132-pointer table at `0x8C1069BC`, and loader candidates `0x8C02DCEC`, `0x8C04BDA2`, `0x8C08232E`, `_gdFsDaPlaySct` at `0x8C0360C8`, and `bjload_run` at `0x8C0CBC40`.
+
 ## What the related reverse engineering establishes about loading
 
 The related project's `docs/re/architecture.md` reports:
@@ -100,7 +106,7 @@ The related project's `docs/re/architecture.md` reports:
 - The loader is described as positional: the file table is resolved by index at runtime, rather than by direct literal pointers to the name table.
 - Approximately 370 name strings were identified by the related project's string-reader analysis.
 
-The related project's `src/sys/gdfs.c` is a small host-side NAME-to-tag lookup helper generated from the table. It is not, by itself, a complete implementation of the original GDFS 0.53 library. Likewise, `src/sys/gdrom_hle.c` and `src/sys/bios_syscall.c` model the Dreamcast/REIOS BIOS GD-ROM DMA-read service: the DMA request is advanced in chunks of up to five sectors, with the guest polling GET_CMD_STAT. That is a lower-level disc transport model, not the complete GDFS name/resource loader.
+The related project's `src/sys/gdfs.c` is a small host-side NAME-to-tag lookup helper generated from the embedded filename-string inventory. It is not the runtime 132-pointer table, and it is not a complete implementation of the original GDFS 0.53 library. Likewise, `src/sys/gdrom_hle.c` and `src/sys/bios_syscall.c` model the Dreamcast/REIOS BIOS GD-ROM DMA-read service: the DMA request is advanced in chunks of up to five sectors, with the guest polling GET_CMD_STAT. That is a lower-level disc transport model, not the complete GDFS name/resource loader.
 
 The retail executable's banner identifies GDFS 0.53 (1998/08/28) and NAOMI library 0.8. The related project's analysis notes that the game uses this older/custom GDFS build rather than simply matching a later SDK library. Therefore we should not assume a generic modern GDFS implementation reproduces its exact behavior.
 
@@ -110,11 +116,12 @@ The most promising boundary is to preserve the game's resource identity, lookup/
 
 Before implementing that boundary, the port needs to establish:
 
-1. which resource-name table fields are actually read by the original loader (especially the four-byte tag/flag interpretation);
-2. how the positional index maps to the disc's file table / LBA and length;
-3. which loader functions request each asset family and what destination address/relocation rules they apply;
-4. whether Naomi-side ROMFS/NetDIMM access can supply equivalent file contents and timing, or whether a compatibility shim is needed;
-5. which resources are loaded during boot, menu, character select, stage setup and match runtime.
+1. how the runtime-populated pointer reaches the 132-entry table at `0x8C1069BC`, and which caller supplies the index;
+2. how that runtime index relates to the 234 embedded filename/tag candidates and the disc's LBA/length metadata;
+3. what the separate 8,880-slot table represents and how it relates to MT package relocation;
+4. which loader functions request each asset family and what destination address/relocation rules they apply;
+5. whether Naomi-side ROMFS/NetDIMM access can supply equivalent file contents and timing, or whether a compatibility shim is needed;
+6. which resources are loaded during boot, menu, character select, stage setup and match runtime.
 
 Do not yet hard-code the related project's tag labels as a Naomi loader specification. The table extractor has visible boundary ambiguities, and the runtime's destination-buffer and relocation behavior is more important than the category labels.
 
@@ -124,6 +131,7 @@ Do not yet hard-code the related project's tag labels as a Naomi loader specific
 - [Related project: generated GDFS table](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdfs_table.h)
 - [Related project: table extraction script](https://github.com/celsowm/vf3-decomp/blob/main/tools/bin_names.py)
 - [Related project: architecture and loader chain](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/architecture.md)
+- [Related project: later runtime loader-table investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md)
 - [Related project: analysis state and GDFS 0.53 identification](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/ANALYSIS_STATE.md)
 - [Related project: retail GD-ROM manifest](https://github.com/celsowm/vf3-decomp/blob/main/docs/files.md)
 - [Related project: GD-ROM BIOS model](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/gdrom_hle.c)
