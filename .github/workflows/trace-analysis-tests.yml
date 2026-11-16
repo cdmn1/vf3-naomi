@@ -10,6 +10,7 @@ on:
       - "tests/test_loader_trace_*.py"
       - "tests/test_sh4_string_xrefs.py"
       - "tests/test_gdfs_asset_index.py"
+      - "tests/test_naomi_test_rom_packer.py"
       - ".github/workflows/trace-analysis-tests.yml"
   pull_request:
     paths:
@@ -17,6 +18,8 @@ on:
       - "tools/sh4_string_xrefs.py"
       - "tests/test_loader_trace_*.py"
       - "tests/test_sh4_string_xrefs.py"
+      - "tests/test_gdfs_asset_index.py"
+      - "tests/test_naomi_test_rom_packer.py"
       - ".github/workflows/trace-analysis-tests.yml"
   workflow_dispatch:
 
@@ -31,5 +34,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run trace decoder, summary and SH-4 xref tests
+      - name: Run trace, asset-index and Naomi ROM packer tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
