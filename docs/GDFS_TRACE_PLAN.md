@@ -25,7 +25,7 @@ The related project's M66 recipe identifies these guest PCs:
 | `0x8C0360C8` | `_gdFsDaPlaySct` | fingerprint-verified GDFS sector-read endpoint |
 | `0x8C0CBC40` | `bjload_run` | fighter-object loader/runner; likely part of the character load path |
 
-The related Flycast fork's `VF3_WATCH` file supports `pc 0xADDR` lines. Each hit records `r13`, `r14`, `r4`, `r5`, `r6`, and `r7` in a probe group. The interpreter normalizes the watched PC for the game's P2 alias.
+The maintained Flycast tracer in `tools/flycast-trace/` reads `pc 0xADDR` lines. Each hit records `r13`, `r14`, `r4`, `r5`, `r6`, and `r7` in a probe group. The interpreter normalizes the watched PC for the game's P2 alias.
 
 ## Memory watches
 
@@ -43,41 +43,33 @@ Memory records include the executing PC, access width, read/write flag, address 
 
 ## Input-path evidence and harness distinction
 
-See [INPUT_PATH_FINDINGS.md](INPUT_PATH_FINDINGS.md) for the detailed
-cross-check. The related project's native `vf3sdl` harness once published
-a zero-valued Maple pad when no script was active; because the wire is
-active-low, that looked like every button pressed. Its later per-frame neutral
-publication fixed that host bug, and a Start hold passed its press-start
-screen. This is **not** a result from patched Flycast running the original
-executable.
+See [INPUT_PATH_FINDINGS.md](INPUT_PATH_FINDINGS.md) for the detailed cross-check. The related project's native `vf3sdl` harness once published a zero-valued Maple pad when no script was active; because the wire is active-low, that looked like every button pressed. Its later per-frame neutral publication fixed that host bug, and a Start hold passed its press-start screen. This is **not** a result from patched Flycast running the original executable.
 
-The separate Flycast cold-boot captures logged the correct Start/A Maple
-words (`0x8` / `0x4` pressed masks), yet their scanned checkpoints did not
-execute selected-port reader `0x0C09B006`, controller merge
-`0x0C09AF6C`, or action update `0x0C0AD1B8`. Therefore, button delivery is
-verified at Maple, but the game-level route to a player-controlled round is
-not. Do not treat either harness's navigation sequence as a proven
-character-select-to-round-one script.
+The separate Flycast cold-boot captures logged the correct Start/A Maple words (`0x8` / `0x4` pressed masks), yet their scanned checkpoints did not execute selected-port reader `0x0C09B006`, controller merge `0x0C09AF6C`, or action update `0x0C0AD1B8`. Therefore, button delivery is verified at Maple, but the game-level route to a player-controlled round is not. Do not treat either harness's navigation sequence as a proven character-select-to-round-one script.
 
 ## Capture sequence
 
-1. Prefer a cold boot and drive the game to the actual character-select confirmation / round-one load using a verified input sequence. A savestate at that boundary can shorten repeated experiments, but it is optional and is not an expected user deliverable. The existing `vf3_play_frontend_ladder.txt` is not yet a verified route to the boundary; continue solving the input/navigation path rather than assuming it works. A state from an already-running attract/demo fight is too late.
-2. Use the checked-in [`tools/VF3_WATCH_LOADER.txt`](../tools/VF3_WATCH_LOADER.txt) as the `VF3_WATCH` file. It contains all five `pc` watches and both `mem` ranges above; do not edit the addresses unless the executable/load map changes.
-3. Run the patched Flycast interpreter with `VF3_INTERPRETER=1`, `VF3_FULL=1`, `VF3_WATCH=<watch-file>`, `VF3_TRACE=<trace-output>`, `VF3_TRACE_FRAMES=<sufficient-frame-count>`, and `VF3_STATE=<pre-fight-state>`.
-4. Drive character select through round one using a verified `VF3_PLAY` script, starting from cold boot if necessary. A manually captured state at the character-select/load boundary is an optional shortcut, not a prerequisite. Important: the related project's published `vf3_play_frontend_ladder.txt` and repeated corrected Start/A cold-boot scans (Start `0x8`, A `0x4`) delivered button events to Maple but did **not** reach the controller-merge/action-update path; the scanned checkpoints remained autonomous attract/demo states. Treat that ladder as an input/navigation probe, not as a proven character-select-to-round-one script. A real transition state is still required.
-5. Retain the trace and emulator log. Record the exact state, script, emulator revision and frame count so the result is reproducible.
+The first maintained tracer is a minimum PC/memory-watch build. It does not yet implement the private research fork's `VF3_FULL` snapshots, `VF3_TRACE_FRAMES` frame limit, `VF3_STATE` savestate staging, or `VF3_PLAY` / frame-clock `vf3script` commands. Do not set those variables or assume they work.
 
-The related project's `tools/mem_watch.py` shows the environment setup for memory-only traces, while `docs/re/probe_mode.md` documents the PC-probe record format. The checked-in watch file avoids manually retyping the addresses. The upstream helper's normal CLI constructs memory-only watch files, so use the combined file directly with the environment variables rather than relying on that helper's default watch generation.
+After the Windows package has been built and smoke-tested:
+
+1. Run `run-trace.cmd` from the extracted package. It sets `VF3_INTERPRETER=1`, `VF3_WATCH`, and `VF3_TRACE` automatically.
+2. In the Flycast GUI, load the **Dreamcast** VF3 game image used by the decomp research (not the Naomi ROM image).
+3. Manually navigate to the actual character-select confirmation and continue into Round 1. A savestate at that boundary is not required for this first pass.
+4. Close Flycast normally. The output `vf3-loader-trace.bin` will be beside `flycast.exe` in the extracted package.
+5. Retain the trace and emulator log. Record the exact game image, emulator revision and whether the capture reached Round 1.
+
+Important: if the run reaches only an autonomous attract/demo fight, the one-time loaders may already have finished. That capture will not answer this plan's question. The existing `vf3_play_frontend_ladder.txt` is not a verified route to the boundary; continue solving the input/navigation path rather than assuming it works.
 
 ## Decoding a retained capture
 
 The combined `VF3_TRACE` stream contains the PC-probe marker groups (`0xFA10`/`0xFA11`) and memory-access records (`0xFA20`) described by the related project's trace notes. After a capture, decode those records with:
 
 ```text
-python tools/loader_trace_decode.py path/to/loader_trace.bin --prefix extract/analysis/loader_trace
+python tools/loader_trace_decode.py path/to/vf3-loader-trace.bin --prefix extract/analysis/loader_trace
 ```
 
-This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general instruction-trace disassembler.
+This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general trace disassembler.
 
 ## Analysis order
 
@@ -109,4 +101,4 @@ This plan is based on the related project's published M33/M66 notes and the prev
 - [MT resident scatter evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
 - [MT asset layout](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/MT.md)
 - [MT memory-access trace](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_fields.md)
-- [This repository's candidate GDFS asset index](GDFS_ASSET_INDEX.csv)
+- [Flycast tracer implementation and build status](FLYCAST_TRACE_TOOLING.md)
