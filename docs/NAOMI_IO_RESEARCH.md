@@ -93,6 +93,26 @@ MIE example. It has not yet been compiled or run in this environment. Its
 first success criterion is a real runtime report of `MIE_PORT0_JVS` and a
 changing raw P1 switch word when a cabinet control is pressed.
 
+## Flycast validation path
+
+The current Flycast source contains a Naomi MIE/JVS implementation in
+`core/hw/maple/maple_jvs.cpp`; its Maple device factory creates the MIE
+device for `MDT_NaomiJamma`. For an unrecognized game ID, the MIE defaults
+to the Sega `837-13551` JVS I/O board model. That model advertises two player
+switch banks, 13 digital inputs, two coin inputs, eight analog channels and
+six digital outputs. The input reader consumes Flycast's configured Naomi
+input state.
+
+This gives us a concrete emulator-side test target for the probe: the MIE
+should enumerate, the two native player switch words should react to the
+configured player controls, and the eight analog values should be readable.
+This is source-level evidence that Flycast implements the required device,
+not a claim that this particular probe has already run successfully in
+Flycast. Actual runtime validation remains pending.
+
+Reference: [Flycast MIE/JVS implementation](https://github.com/flyinghead/flycast/blob/master/core/hw/maple/maple_jvs.cpp)
+and [Maple device factory](https://github.com/flyinghead/flycast/blob/master/core/hw/maple/maple_devs.cpp).
+
 ## Sources
 
 - [KallistiOS MIE public header](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/include/dc/maple/mie.h)
