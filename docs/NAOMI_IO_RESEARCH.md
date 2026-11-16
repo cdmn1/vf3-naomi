@@ -2,6 +2,8 @@
 
 Reviewed: 2026-11-16
 
+Hardware validation update: the corrected, versioned probe has booted on the user's real Naomi. The user confirmed that all cabinet buttons and analog inputs respond. The MIE/JVS input path is therefore verified on this cabinet; this is not yet a test of the original VF3 executable's game-level input path.
+
 ## Finding
 
 For a normal Naomi Port A JVS setup, the correct software abstraction is not a
@@ -37,8 +39,7 @@ The state contains both:
 - `jvs`: native JVS inputs, including P1/P2 switches, system/panel
   switches, eight analog channels and two coin meters.
 
-This is useful because the native JVS values can be recorded before we choose
-how VF3's fighting-game controls should be mapped.
+This gives us a verified hardware source for VF3 input. The user's real Naomi test confirmed that all buttons and analog inputs respond through this path. Keep the native JVS switch words and eight `jvs.analog[]` channels as the source of truth. The dedicated `wheel`, `accel` and `brake` fields are alternate representations of analog controls and are not needed for this fighting game.
 
 ## Relevant switch mapping
 
@@ -87,8 +88,9 @@ ELF or flat `objcopy` binary is not an acceptable substitute. This follows the
 known-good Daytona `naomi_cart_probe_v1.bin` build recipe. The first VF3
 hardware attempt was rejected by the main board with error 01 because the
 workflow had uploaded a flat binary; the workflow and Makefile have now been
-corrected to emit a `naomibintool` image. The corrected image is awaiting
-hardware validation.
+corrected to emit a versioned `naomibintool` image. The corrected image has
+booted on the user's real Naomi, and all cabinet buttons and analog inputs
+were confirmed responsive.
 
 - Port A mode and MIE enumeration;
 - mapped P1 controller buttons;
@@ -102,9 +104,10 @@ as Daytona v5. The important difference was in the KOS library build: Daytona
 v5 removed the two Retail guards from `mie_init()` and `mie_init_fw()`. The VF3
 workflow now applies that exact Naomi-only patch before building KOS. The first packaged image was not
 accepted by the Naomi main board; that failure occurred before the program
-could execute and therefore says nothing about MIE/JVS behavior. The corrected
-Naomi ROM image must first boot, then report `MIE_PORT0_JVS` and a changing raw
-P1 switch word when a cabinet control is pressed.
+could execute and therefore said nothing about MIE/JVS behavior. The corrected
+versioned Naomi ROM image booted successfully. The user then tested all cabinet
+buttons and analog inputs and confirmed that they respond. No further probe
+changes are needed to add the dedicated `wheel`, `accel` or `brake` fields.
 
 ## Flycast validation path
 
