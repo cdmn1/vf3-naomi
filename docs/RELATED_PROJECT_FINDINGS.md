@@ -43,8 +43,9 @@ Our earlier executable measurement is also 1,179,648 bytes and was recorded with
 The related research harness documents:
 
 - A real ISO9660/GD-ROM loader path.
-- A GDFS resource-name table with 222 embedded `.BIN` filename records.
-- Name-to-tag lookup and observed tag families for high-priority overlays, motion, BGM, stage tables and canvas packages.
+- A GDFS resource-name table regenerated from the corrected, non-descrambled executable image: the current generated header contains 234 rows (the earlier 222-row count is superseded).
+- Our Dropbox comparison finds 232 of those rows match actual `.BIN` filenames after stripping a leading underscore from 13 extracted names. The two remaining table rows appear to be extraction-boundary false positives; the tag extraction also has visible cases where it swallows following text. See [GDFS resource map](GDFS_RESOURCE_MAP.md).
+- Name-to-tag lookup and candidate tag families for motion, BGM/dump staging, stage tables, canvas packages and high-priority overlays. These tag meanings remain the related project's interpretation, not a complete proven loader specification.
 - A GD-ROM BIOS service model that handles request, status polling, DMA-read setup and sector transfer.
 - A boot run that loads 367 files from the disc.
 
@@ -80,7 +81,7 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 
 1. **Keep the Dreamcast executable as the initial reference.** It is the closest hardware/software lineage to Naomi, but direct binary execution is not established.
 2. **Use the related project as a behavioral oracle.** Its GDFS, GD-ROM, Maple, PVR2 and AICA notes can help us classify Dreamcast dependencies and avoid rediscovering them.
-3. **Prioritize storage and boot boundaries.** The documented 222-name resource table, GDFS tag decoding, BIOS service vectors and 367-file boot ladder give us concrete targets for a Naomi asset-provider design.
+3. **Prioritize storage and boot boundaries.** The 234-row GDFS table (232 names align with our Dropbox `.BIN` files), positional loader model, `_gdFsDaPlaySct` anchor, BIOS service vectors and 367-file boot ladder give us concrete targets for a Naomi asset-provider design.
 4. **Compare the resident module separately.** A root-level `RELOAD.BIN` is now confirmed in the user's Dropbox folder at 655,360 bytes, exactly the size listed by the related project's executable inventory. It is absent from `DATELIST.ASC`, and its bytes/provenance have not yet been verified; treat it as a high-priority separate artifact, not as proven retail disc content.
 5. **Do not treat the native port as finished or Naomi-compatible.** Its current value is evidence and reverse-engineering leverage, not a completed game port.
 
@@ -88,7 +89,7 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 
 - Reconcile the related project's documented executable identities against our own `1ST_READ.BIN` hash and disc inventory; do not rely on file size alone.
 - Inspect the Dropbox `RELOAD.BIN` bytes and establish its provenance; metadata confirms 655,360 bytes, but it is absent from `DATELIST.ASC`.
-- Use the GDFS name/tag model to map the resource names already found in our own asset inventory to actual file groups and destination buffers.
+- Trace the positional GDFS lookup and `_gdFsDaPlaySct` calls from named asset loaders; validate the table's four-byte tag/flag format and map actual destination buffers.
 - Once the original executable bytes are available in this working session, resume instruction-level tracing around the Naomi source-path references and distinguish active loader calls from diagnostics.
 - Build Naomi-side probes independently for ROMFS reads, JVS input, PVR2 display and AICA startup before attempting game integration.
 
@@ -97,6 +98,7 @@ This track may eventually offer reusable, readable game-logic and asset-format i
 - [celsowm/vf3-decomp README](https://github.com/celsowm/vf3-decomp)
 - [Executable inventory and library banners](https://github.com/celsowm/vf3-decomp/blob/main/docs/executables.md)
 - [Dreamcast boot/SDL3 research plan](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/plan_sdl3_port.md)
+- [GDFS resource table and loader map](GDFS_RESOURCE_MAP.md)
 - [REIOS memory map findings](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/boot_memory_map.md)
 - [Boot reaches the attract fight](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/boot_attract.md)
 - [Off-inventory code and Maple input findings](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/boot_offinv_and_pad.md)
