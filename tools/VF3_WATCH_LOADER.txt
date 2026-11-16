@@ -1,6 +1,8 @@
 # VF3 loader trace: PC probes + memory ranges
 # Use with the patched Flycast interpreter and VF3_WATCH=<this file>.
 # PC values are guest SH-4 addresses; the upstream probe hook normalizes P2 aliases.
+#
+# Core loader and runtime table:
 pc 0x8C02DCEC
 pc 0x8C04BDA2
 pc 0x8C08232E
@@ -8,3 +10,31 @@ pc 0x8C0360C8
 pc 0x8C0CBC40
 mem 0x8C1069BC 0x210
 mem 0x8C5F0000 0x270000
+
+# Naomi source-path literal-load sites found in the Dreamcast executable.
+# These are exact MOV.L reference PCs, not confirmed function entries.
+# A hit proves the instruction executed, not that the referenced module is
+# part of the normal gameplay path.
+# /pub/data3/vf3/naomi/c/nlrom.c
+pc 0x8C0A2820
+pc 0x8C0A288C
+pc 0x8C0A28B4
+# /pub/data3/vf3/naomi/c/obj_load.c
+pc 0x8C0A2FD2
+pc 0x8C0A2FF6
+# /pub/data3/vf3/naomi/c/rob_load.c
+pc 0x8C0B2578
+pc 0x8C0B25AE
+pc 0x8C0BEEA0
+pc 0x8C0BEEC2
+pc 0x8C0BEFBE
+pc 0x8C0BEFE0
+# /pub/data3/vf3/naomi/c/sound.c
+pc 0x8C0C5F68
+pc 0x8C0C6120
+pc 0x8C0C62E4
+pc 0x8C0C6528
+# /pub/data3/vf3/naomi/c/stage.c
+pc 0x8C0C794A
+pc 0x8C0C7966
+pc 0x8C0C7AA0
