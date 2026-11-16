@@ -89,3 +89,5 @@ jobs:
           PY
 
 # Re-run the PR analysis after correcting the SH-4 instruction byte order.
+
+# Retry with little-endian SH-4 instruction decoding.
