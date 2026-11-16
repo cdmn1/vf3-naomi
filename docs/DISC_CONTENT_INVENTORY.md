@@ -34,6 +34,12 @@ The inventory also lists:
 - large scroll/canvas assets under `SCROLL/CNVS`;
 - sound and voice assets under `SOUND/BIN.981013`, including music, voice, and sound-effect banks.
 
+## Additional root-level executable: RELOAD.BIN
+
+A separate root-level file, `RELOAD.BIN`, is present in the Dropbox folder at `/Vf3-naomi/RELOAD.BIN` (655,360 bytes; modified 2026-11-16). This exactly matches the size and filename/role documented independently by [celsowm/vf3-decomp's executable inventory](https://github.com/celsowm/vf3-decomp/blob/main/docs/executables.md), which describes a 655,360-byte SH-4 re-init/resident module containing Shinobi, Naomi-library and NEC PowerVR identifiers.
+
+`RELOAD.BIN` does **not** appear in the 418-line `DATELIST.ASC` listing. Its presence and matching size are a strong lead, but its provenance and byte identity are not established by size alone. The file has not yet been inspected at the byte level in this working session. Keep it separate from the retail `1ST_READ.BIN` until its role and relationship to this disc dump are verified.
+
 ## Interpretation
 
 This is a substantial game-data set, not merely a menu/intro package. The presence of character motion match-up banks, character model/texture assets, stage geometry, collision data, and sound banks gives us a clear target for identifying the runtime's asset-loading interfaces.
@@ -65,8 +71,8 @@ The Dropbox copy of `1ST_READ.BIN` is 1,179,648 bytes, matching the executable u
 
 1. Reconcile the Dropbox asset set against the DATELIST byte sizes and establish whether the files are raw, padded, transformed, or otherwise modified.
 2. Analyze the small driver and motion-header files locally if byte-level access is available; avoid downloading the two large FMVs unless a specific video-format question requires them.
-3. Use asset filenames and path mappings to search the executable for file-open/load references and determine whether it uses a filesystem abstraction or hard-coded disc paths.
-4. Identify the SFD movie playback path separately from the main game loop.
-5. Continue SH-4 startup and hardware dependency analysis using the confirmed US executable and boot-sector metadata.
+4. Use asset filenames and path mappings to search the executable for file-open/load references and determine whether it uses a filesystem abstraction or hard-coded disc paths.
+5. Identify the SFD movie playback path separately from the main game loop.
+6. Continue SH-4 startup and hardware dependency analysis using the confirmed US executable and boot-sector metadata.
 
 Commercial game binaries and assets remain outside this Git repository; only analysis notes are committed.
