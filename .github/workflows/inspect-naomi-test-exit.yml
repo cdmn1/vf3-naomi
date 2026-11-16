@@ -97,3 +97,5 @@ jobs:
 # Re-run with explicit SH-4 address range printing.
 
 # Trace BSR callers of Naomi BIOS syscall 0x11.
+
+# Trace indirect BIOS syscall table references.
