@@ -99,3 +99,5 @@ jobs:
 # Trace BSR callers of Naomi BIOS syscall 0x11.
 
 # Trace indirect BIOS syscall table references.
+
+# Trace references into the game-test menu strings.
