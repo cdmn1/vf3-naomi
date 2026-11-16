@@ -107,3 +107,5 @@ jobs:
 # Inspect menu callback table targets.
 
 # Inspect test-segment startup and return path.
+
+# Disassemble the reference test application entrypoint.
