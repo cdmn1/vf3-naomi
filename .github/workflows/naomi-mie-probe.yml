@@ -64,7 +64,7 @@ jobs:
 
       - name: Restore SH-4 toolchain cache
         id: sh-toolchain
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .toolchain/sh-elf
           key: sh-elf-gcc15-stable-${{ runner.os }}-naomi-v1
@@ -87,6 +87,13 @@ jobs:
               "$KOS_BASE/utils/kos-chain/Makefile.cfg"
             make -C "$KOS_BASE/utils/kos-chain"
           fi
+
+      - name: Save SH-4 toolchain cache immediately
+        if: steps.sh-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .toolchain/sh-elf
+          key: sh-elf-gcc15-stable-${{ runner.os }}-naomi-v1
 
       - name: Configure and build KOS for Naomi
         env:
