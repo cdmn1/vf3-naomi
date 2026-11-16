@@ -10,6 +10,7 @@ The analysis below is based on the user's supplied US Dreamcast `1ST_READ.BIN`:
 - SHA-256: `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`
 - The file is a raw binary, not an ELF image.
 - Offsets below are file offsets in this raw binary, not virtual addresses.
+- For the SH-4 analysis, the Dreamcast executable load base used is `0x8c010000`.
 
 ## High-value evidence
 
@@ -37,7 +38,25 @@ The executable also contains these source paths:
 - `/pub/data3/vf3/naomi/c/sound.c` at `0xd9f18`
 - `/pub/data3/vf3/naomi/c/stage.c` at `0xd9f38`
 
-These strings are strong evidence that Naomi-targeted modules, diagnostics, or shared source-derived components are linked into the Dreamcast executable. The source paths specifically name object loading, robot/character loading, sound, stage and an `nlrom` module. Their precise runtime role still needs to be established.
+These strings are strong evidence that Naomi-targeted modules, diagnostics, or shared source-derived components are linked into the Dreamcast executable. The source paths specifically name object loading, robot/character loading, sound, stage and an `nlrom` module.
+
+## SH-4 cross-reference findings
+
+A first cross-reference pass was performed against the raw executable using the SH-4 PC-relative `MOV.L @(disp,PC),Rn` encoding. The effective literal-pool address was calculated from the instruction PC, then the loaded 32-bit value was compared with the executable's physical/uncached-style pointer representation of each embedded source path.
+
+This found actual code instructions loading pointers to the Naomi source-path strings; they are not just unreferenced strings sitting in the binary.
+
+| Naomi source path | Code file offsets containing PC-relative loads of its pointer | Nearest preceding `STS.L PR,@-R15` prologue candidates |
+|---|---|---|
+| `nlrom.c` | `0x92820`, `0x9288c`, `0x928b4` | `0x92804`, `0x9283c` |
+| `obj_load.c` | `0x92fd2`, `0x92ff6` | `0x92f90` |
+| `rob_load.c` | `0xa2578`, `0xa25ae`, `0xaeea0`, `0xaeec2`, `0xaefbe`, `0xaefe0` | `0xa2518`, `0xa259a`, `0xaed08`, `0xaef2e` |
+| `sound.c` | `0xb5f68`, `0xb6120`, `0xb62e4`, `0xb6528` | `0xb5f52`, `0xb6104`, `0xb6298`, `0xb6482` |
+| `stage.c` | `0xb794a`, `0xb7966`, `0xb7aa0` | `0xb78e0`, `0xb7a88` |
+
+The prologue column is deliberately described as *candidate*: a nearby `STS.L PR,@-R15` is a useful SH-4 function-entry heuristic, not proof of a complete function boundary. The source-path pointers are passed through stack/register setup near these instructions, consistent with source-location or diagnostic arguments. The next step is to map each candidate's complete control-flow body and its callers before assigning semantic function names.
+
+This is a meaningful step beyond string discovery: there are code-level references to all five Naomi source paths. It still does not prove that every referenced path is part of the normal gameplay path; some may be error/reporting paths or dormant platform-specific code.
 
 ## Evidence of both arcade and Dreamcast subsystems
 
@@ -68,15 +87,21 @@ A likely research direction is to separate:
 3. Dreamcast boot, GD-ROM, Maple and memory-card services;
 4. movie playback and console front-end code.
 
-This remains a hypothesis until code references, control flow, register accesses and file-loading behaviour are mapped.
+This remains a hypothesis until control flow, register accesses and file-loading behaviour are mapped.
+
+## Disassembler/tooling note
+
+The public `sp00nznet/dcrecomp` project includes `tools/sh4_disasm.py` and `tools/static_recompile.py`, with a documented Dreamcast load base of `0x8c010000`. Its function finder uses direct BSR targets, stack-prologue patterns, literal-pool call targets and other heuristics. This is a useful starting point for this executable, but its own documentation/code makes clear that indirect control flow and mid-function entries require special handling. Its output must therefore be validated against instruction boundaries and control flow rather than treated as ground truth.
 
 ## Next reverse-engineering steps
 
-1. Disassemble the raw SH-4 image and establish load/entry addresses from the Dreamcast boot process.
-2. Determine whether Naomi library/source strings are referenced by live code or are merely retained diagnostics/debug strings.
-3. Trace the `obj_load.c`, `rob_load.c`, `sound.c`, `stage.c` and `nlrom.c` modules via references and call sites.
-4. Identify Dreamcast-specific accesses to GD-ROM, Maple and VMU, and the corresponding Naomi/JVS/ROM-board paths.
-5. Determine whether the executable contains conditional platform branches or separately linked platform modules.
+1. Establish the real entry point and boot handoff from the supplied IP.BIN.
+2. Trace callers and callees around the Naomi source-path reference sites.
+3. Determine whether `nlrom.c` represents Naomi ROM-board access, and whether the Dreamcast build routes equivalent assets through GD-ROM/GDFS.
+4. Trace object, character/robot and stage loading to determine whether the same data formats are shared.
+5. Trace the `sound.c` references and the AICA driver startup sequence.
+6. Identify Dreamcast-specific accesses to GD-ROM, Maple and VMU, and the corresponding Naomi/JVS/ROM-board paths.
+7. Determine whether the executable contains conditional platform branches or separately linked platform modules.
 
 No claim of direct Naomi boot or playable compatibility is made.
 
