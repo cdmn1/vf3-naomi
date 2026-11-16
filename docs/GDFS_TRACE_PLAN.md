@@ -37,19 +37,19 @@ mem 0x8C5F0000 0x270000
 ```
 
 - `0x8C1069BC`, length `0x210`: the 132-pointer runtime table (132 × 4 bytes).
-- `0x8C5F0000`, length `0x270000`: broad resident MT destination window. Earlier research found `MTJACLAU.BIN` resident from approximately `0x8C5F4100`; the broad range leaves room for the header and scattered records.
+- `0x8C5F0000`, length `0x270000` (end-exclusive `0x8C860000`): broad resident MT destination window. Earlier research found `MTJACLAU.BIN` resident from approximately `0x8C5F4100`; the broad range leaves room for the header and scattered records.
 
 Memory records include the executing PC, access width, read/write flag, address and value. The watch is interpreter-only; dynarec memory accesses bypass these hooks.
 
 ## Capture sequence
 
-1. Use the related project's pre-fight `vf3_6` savestate (or an equivalent fresh state immediately before character select). The state and the patched Flycast build are local research artifacts, not included in the public repository.
-2. Create a `VF3_WATCH` file containing all five `pc` watches and both `mem` ranges above.
+1. Use the related project's pre-fight `vf3_6` savestate if it is available locally, or an equivalent state immediately before the actual character-select confirmation / round-one load. The state and patched Flycast build are local research artifacts, not included in either public repository. A state from an already-running attract/demo fight is too late.
+2. Use the checked-in [`tools/VF3_WATCH_LOADER.txt`](../tools/VF3_WATCH_LOADER.txt) as the `VF3_WATCH` file. It contains all five `pc` watches and both `mem` ranges above; do not edit the addresses unless the executable/load map changes.
 3. Run the patched Flycast interpreter with `VF3_INTERPRETER=1`, `VF3_FULL=1`, `VF3_WATCH=<watch-file>`, `VF3_TRACE=<trace-output>`, `VF3_TRACE_FRAMES=<sufficient-frame-count>`, and `VF3_STATE=<pre-fight-state>`.
-4. Drive character select through round one using a reproducible `VF3_PLAY` script. Do not use an attract-only state; the target is the moment the selected fighter's MT pack is loaded.
+4. Drive character select through round one using a verified `VF3_PLAY` script, or start from a manually captured state at the character-select/load boundary. Important: the related project's published `vf3_play_frontend_ladder.txt` and repeated corrected Start/A cold-boot scans (Start `0x8`, A `0x4`) delivered button events to Maple but did **not** reach the controller-merge/action-update path; the scanned checkpoints remained autonomous attract/demo states. Treat that ladder as an input/navigation probe, not as a proven character-select-to-round-one script. A real transition state is still required.
 5. Retain the trace and emulator log. Record the exact state, script, emulator revision and frame count so the result is reproducible.
 
-The related project's `tools/mem_watch.py` shows the environment setup for memory-only traces, while `docs/re/probe_mode.md` documents the PC-probe record format. A combined PC+memory capture may require writing the watch file and setting the environment variables directly, because the helper script's normal CLI constructs memory-only watch files.
+The related project's `tools/mem_watch.py` shows the environment setup for memory-only traces, while `docs/re/probe_mode.md` documents the PC-probe record format. The checked-in watch file avoids manually retyping the addresses. The upstream helper's normal CLI constructs memory-only watch files, so use the combined file directly with the environment variables rather than relying on that helper's default watch generation.
 
 ## Analysis order
 
@@ -74,6 +74,8 @@ This plan is based on the related project's published M33/M66 notes and the prev
 ## Sources
 
 - [Probe-mode trace format](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/probe_mode.md)
+- [Front-end / character-select capture attempts and their limits](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/front_to_fight.md)
+- [Checked-in combined PC + memory watch list](../tools/VF3_WATCH_LOADER.txt)
 - [GDFS / loader pointer investigation](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/loader_m66.md)
 - [MT resident scatter evidence](https://github.com/celsowm/vf3-decomp/blob/main/docs/re/mt_mount_m33.md)
 - [MT asset layout](https://github.com/celsowm/vf3-decomp/blob/main/docs/formats/MT.md)
