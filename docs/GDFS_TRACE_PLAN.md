@@ -66,7 +66,7 @@ This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loade
 1. **Runtime table pointer:** at the first hit in `mt_loader` / `load_mt_*`, inspect `r13` and `r14` and trace the pointer chain to `0x8C1069BC`. Confirm whether the selected table index is zero-based or one-based and whether it selects a string pointer, a file descriptor or a loader object.
 2. **GDFS call contract:** correlate the `load_mt_*` hit with `_gdFsDaPlaySct`; capture `r4..r7`, any pointed-to parameter block and the returned status. Do not assume the BIOS `REQ_CMD`/`GET_CMD_STAT` ABI is the same as the GDFS library function ABI.
 3. **Disc resource mapping:** use `GDFS_ASSET_INDEX.csv` to map the selected filename to its manifest LBA, byte size and SHA-1. Compare the actual sector range requested with the manifest entry; account for Mode1/2352 track sectors and the 150-sector FAD/LBA offset where applicable.
-4. **MT scatter:** correlate reads from the selected MT file's 8,880-slot table with writes to `0x8C5F0000..0x8C810000`. The goal is to find the function that reads the three-offset row for a motion ID and constructs the runtime `ops[63]`, count, time and tuple streams.
+4. **MT scatter:** correlate reads from the selected MT file's 8,880-slot table with writes to `0x8C5F0000..0x8C860000`. The goal is to find the function that reads the three-offset row for a motion ID and constructs the runtime `ops[63]`, count, time and tuple streams.
 5. **Validate:** compare at least two different pair packs and two motion IDs. A single `MTJACLAU` capture is not enough to generalize the loader.
 
 ## Expected deliverables
