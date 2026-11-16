@@ -115,3 +115,15 @@ The Sega GD-ROM system manual documents the user-facing lifecycle: select GAME T
 3. Enter GAME TEST MODE from the actual Naomi System Menu and confirm the separate test executable starts.
 4. Confirm PSW2/PSW1 navigation and live INPUT TEST.
 5. Establish the actual EXIT path by tracing BIOS/game behaviour or comparing a known-working commercial title; only then implement EXIT.
+
+
+### BIOS return path candidate found in KallistiOS
+
+KallistiOS exposes a standard BIOS-menu exit path:
+- `arch_set_exit_path(ARCH_EXIT_MENU)` selects the menu exit path;
+- the normal KOS `exit()` shutdown flow runs `arch_shutdown()`;
+- `arch_exit_handler()` dispatches to `arch_menu()`;
+- `arch_menu()` calls `syscall_system_bios_menu()`;
+- that syscall invokes the system BIOS vector with `FUNC_SYSTEM_BIOS_MENU`.
+
+The test program now uses this KOS path when EXIT is selected. This is materially better grounded than a reset or guessed address. The KOS API documentation calls it the BIOS menu exit path, but it has not yet been verified on this Naomi BIOS. The next build is a test candidate, not proof that the screen returns to the exact Naomi System Menu shown in the supplied screenshots.
