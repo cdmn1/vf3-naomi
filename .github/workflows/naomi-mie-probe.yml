@@ -43,26 +43,26 @@ jobs:
           cache-from: type=gha,scope=vf3-naomi-kos-toolchain
           cache-to: type=gha,mode=max,scope=vf3-naomi-kos-toolchain
 
-
+      - name: Apply proven Daytona v5 Naomi MIE workaround to KOS
         run: |
           python3 - <<'PY'
-from pathlib import Path
-p = Path("kos/kernel/arch/dreamcast/hardware/maple/mie/mie.c")
-s = p.read_text()
-replacements = (
-    ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return false;\n    }\n\n"),
-    ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return;\n    }\n\n"),
-)
-for function, guard in replacements:
-    start = s.find(function)
-    if start < 0:
-        raise SystemExit(f"Could not find {function}")
-    guard_at = s.find(guard, start + len(function))
-    if guard_at < 0:
-        raise SystemExit(f"Could not find Retail guard in {function}")
-    s = s[:guard_at] + s[guard_at + len(guard):]
-p.write_text(s)
-PY
+          from pathlib import Path
+          p = Path("kos/kernel/arch/dreamcast/hardware/maple/mie/mie.c")
+          s = p.read_text()
+          replacements = (
+              ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return false;\n    }\n\n"),
+              ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return;\n    }\n\n"),
+          )
+          for function, guard in replacements:
+              start = s.find(function)
+              if start < 0:
+                  raise SystemExit(f"Could not find {function}")
+              guard_at = s.find(guard, start + len(function))
+              if guard_at < 0:
+                  raise SystemExit(f"Could not find Retail guard in {function}")
+              s = s[:guard_at] + s[guard_at + len(guard):]
+          p.write_text(s)
+          PY
       - name: Build KallistiOS and package a Naomi ROM image
         run: |
           docker run --rm \
