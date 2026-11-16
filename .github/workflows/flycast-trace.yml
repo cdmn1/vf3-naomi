@@ -49,7 +49,8 @@ jobs:
           cmake -S flycast -B flycast/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/flycast-install" \
-            -DUSE_DISCORD=OFF
+            -DUSE_DISCORD=OFF \
+            -DUSE_BREAKPAD=OFF
 
       - name: Build and install Flycast
         shell: msys2 {0}
