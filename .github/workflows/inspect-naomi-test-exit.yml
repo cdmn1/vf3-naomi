@@ -87,3 +87,5 @@ jobs:
               print(f"file+{test_off + pos:#x} RAM {test_addr + pos:#010x}")
               pos += 1
           PY
+
+# Re-run the PR analysis after correcting the SH-4 instruction byte order.
