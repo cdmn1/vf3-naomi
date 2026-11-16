@@ -41,6 +41,24 @@ mem 0x8C5F0000 0x270000
 
 Memory records include the executing PC, access width, read/write flag, address and value. The watch is interpreter-only; dynarec memory accesses bypass these hooks.
 
+## Input-path evidence and harness distinction
+
+See [INPUT_PATH_FINDINGS.md](INPUT_PATH_FINDINGS.md) for the detailed
+cross-check. The related project's native `vf3sdl` harness once published
+a zero-valued Maple pad when no script was active; because the wire is
+active-low, that looked like every button pressed. Its later per-frame neutral
+publication fixed that host bug, and a Start hold passed its press-start
+screen. This is **not** a result from patched Flycast running the original
+executable.
+
+The separate Flycast cold-boot captures logged the correct Start/A Maple
+words (`0x8` / `0x4` pressed masks), yet their scanned checkpoints did not
+execute selected-port reader `0x0C09B006`, controller merge
+`0x0C09AF6C`, or action update `0x0C0AD1B8`. Therefore, button delivery is
+verified at Maple, but the game-level route to a player-controlled round is
+not. Do not treat either harness's navigation sequence as a proven
+character-select-to-round-one script.
+
 ## Capture sequence
 
 1. Prefer a cold boot and drive the game to the actual character-select confirmation / round-one load using a verified input sequence. A savestate at that boundary can shorten repeated experiments, but it is optional and is not an expected user deliverable. The existing `vf3_play_frontend_ladder.txt` is not yet a verified route to the boundary; continue solving the input/navigation path rather than assuming it works. A state from an already-running attract/demo fight is too late.
