@@ -28,7 +28,7 @@ selected-port reader at `0x8C09B006`. It calls the packet lookup at
 `0x0C0A1282`, checks the disconnected status sentinel
 `0xFFFFFFFE`, and returns the selected packet word. Its
 `src/fight/controller_merge.c` reconstructs `0x8C09AF6C`: it reads the
-packet lookup, uses selector state at `0x0C29BCCC), chooses packet zero,
+packet lookup, uses selector state at `0x0C29BCCC`, chooses packet zero,
 packet one, or their bitwise OR, then writes the merged word at shared-state
 offset `+0x1EC`. These are reconstructed C implementations from the
 related project, not direct proof of runtime execution in our Naomi target.
