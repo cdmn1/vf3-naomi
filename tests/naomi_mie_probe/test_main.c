@@ -94,7 +94,8 @@ static mie_state_t *mie_status(void)
     return dev ? (mie_state_t *)maple_dev_status(dev) : NULL;
 }
 
-static void render_menu(char lines[][TEST_LINE_MAX], int selected)
+static void render_menu(char lines[][TEST_LINE_MAX], int selected,
+                        mie_state_t *s)
 {
     snprintf(lines[0], TEST_LINE_MAX, "VF3 GAME TEST MODE");
     snprintf(lines[1], TEST_LINE_MAX, "------------------------------");
@@ -104,10 +105,18 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected)
     snprintf(lines[5], TEST_LINE_MAX, "SELECT BY SERVICE BUTTON");
     snprintf(lines[6], TEST_LINE_MAX, "AND PRESS TEST BUTTON");
     lines[7][0] = 0;
-    snprintf(lines[8], TEST_LINE_MAX, "SERVICE: PANEL PSW2");
-    snprintf(lines[9], TEST_LINE_MAX, "TEST: PANEL PSW1");
-    lines[10][0] = 0;
-    snprintf(lines[11], TEST_LINE_MAX, "NAOMI TEST ENTRY EXPERIMENT");
+    if(s) {
+        snprintf(lines[8], TEST_LINE_MAX, "MIE: FOUND  PANEL: %02X", s->jvs.panel.psw.raw);
+        snprintf(lines[9], TEST_LINE_MAX, "PSW1 TEST:%u PSW2 SERVICE:%u",
+                 s->jvs.panel.psw.test, s->jvs.panel.psw.service);
+        snprintf(lines[10], TEST_LINE_MAX, "SYSTEM TEST: %u P1 SERVICE: %u",
+                 s->jvs.system.test, s->jvs.p1.service);
+    } else {
+        snprintf(lines[8], TEST_LINE_MAX, "MIE: NOT FOUND");
+        snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
+        snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
+    }
+    snprintf(lines[11], TEST_LINE_MAX, "RAW PANEL BITS: PSW1=BIT0 PSW2=BIT1");
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -133,7 +142,8 @@ static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
     snprintf(lines[8], TEST_LINE_MAX, "ANALOG: %u %u %u %u",
              s->jvs.analog[0], s->jvs.analog[1],
              s->jvs.analog[2], s->jvs.analog[3]);
-    snprintf(lines[9], TEST_LINE_MAX, "P1 BUTTONS: %04X", s->jvs.p1.raw);
+    snprintf(lines[9], TEST_LINE_MAX, "PANEL RAW: %02X SYSTEM RAW: %02X",
+             s->jvs.panel.psw.raw, s->jvs.system.raw);
     lines[10][0] = 0;
     snprintf(lines[11], TEST_LINE_MAX, "PRESS TEST TO RETURN TO MENU");
 }
@@ -177,7 +187,7 @@ int main(int argc, char **argv)
                     exit(EXIT_SUCCESS);
                 }
             }
-            render_menu(lines, selected);
+            render_menu(lines, selected, s);
         } else if(page == 1) {
             if(test_edge) page = 0;
             render_input(lines, s);
