@@ -98,13 +98,13 @@ static void render_menu(char lines[][LINE_MAX], int selected)
     snprintf(lines[1], LINE_MAX, "------------------------------");
     snprintf(lines[2], LINE_MAX, "%s INPUT TEST", selected == 0 ? "->" : "  ");
     snprintf(lines[3], LINE_MAX, "%s EXIT", selected == 1 ? "->" : "  ");
-    snprintf(lines[4], LINE_MAX, "");
+    lines[4][0] = 0;
     snprintf(lines[5], LINE_MAX, "SELECT BY SERVICE BUTTON");
     snprintf(lines[6], LINE_MAX, "AND PRESS TEST BUTTON");
-    snprintf(lines[7], LINE_MAX, "");
+    lines[7][0] = 0;
     snprintf(lines[8], LINE_MAX, "SERVICE: PANEL PSW2");
     snprintf(lines[9], LINE_MAX, "TEST: PANEL PSW1");
-    snprintf(lines[10], LINE_MAX, "");
+    lines[10][0] = 0;
     snprintf(lines[11], LINE_MAX, "NAOMI TEST ENTRY EXPERIMENT");
 }
 
@@ -144,6 +144,7 @@ int main(int argc, char **argv)
     int prev_service = 0, prev_test = 0;
     (void)argc; (void)argv;
 
+    pvr_init_defaults();
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
     font_tex = pvr_mem_malloc(256 * 256 * 2);
