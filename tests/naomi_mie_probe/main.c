@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "vf3_input_map.h"
+
 #include <kos.h>
 #include <kos/init.h>
 #include <dc/minifont.h>
@@ -18,7 +20,7 @@
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 
 #define UI_LINE_MAX 64
-#define UI_LINE_COUNT 9
+#define UI_LINE_COUNT 12
 #define UI_FONT_W 12
 #define UI_FONT_H 24
 
@@ -127,8 +129,8 @@ static void build_report(char lines[][UI_LINE_MAX])
     if(!state) {
         snprintf(lines[2], UI_LINE_MAX, "MIE device: not enumerated");
         snprintf(lines[3], UI_LINE_MAX, "Waiting for MIE/JVS input...");
-        lines[4][0] = lines[5][0] = lines[6][0] = lines[7][0] = '\0';
-        snprintf(lines[8], UI_LINE_MAX, "KOS MIE driver / INIT_MIE");
+        for(int i = 4; i < UI_LINE_COUNT; ++i) lines[i][0] = '\0';
+        snprintf(lines[11], UI_LINE_MAX, "KOS MIE driver / INIT_MIE");
         return;
     }
 
@@ -148,6 +150,11 @@ static void build_report(char lines[][UI_LINE_MAX])
     snprintf(lines[8], UI_LINE_MAX, "Analog 4-7: %u %u %u %u",
              state->jvs.analog[4], state->jvs.analog[5],
              state->jvs.analog[6], state->jvs.analog[7]);
+    snprintf(lines[9], UI_LINE_MAX, "P1 Maple (active-low): %04x",
+             vf3_jvs_to_maple_buttons(state->jvs.p1.raw));
+    snprintf(lines[10], UI_LINE_MAX, "P2 Maple (active-low): %04x",
+             vf3_jvs_to_maple_buttons(state->jvs.p2.raw));
+    snprintf(lines[11], UI_LINE_MAX, "Map: SW1=P SW2=K SW3=G SW4=E");
 }
 
 int main(int argc, char *argv[])

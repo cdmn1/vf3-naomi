@@ -38,6 +38,14 @@ jobs:
             zlib1g-dev libncurses-dev pkg-config \
             git subversion python3 wget curl
 
+      - name: Test JVS-to-Maple input adapter
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            tests/naomi_mie_probe/vf3_input_map.c \
+            tests/naomi_mie_probe/test_input_map.c \
+            -o /tmp/vf3_input_map_test
+          /tmp/vf3_input_map_test
+
       - name: Restore SH-4 toolchain cache
         id: sh-toolchain
         uses: actions/cache@v4

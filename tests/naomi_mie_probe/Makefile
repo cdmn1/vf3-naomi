@@ -10,7 +10,7 @@ endif
 
 TARGET = vf3_mie_probe.elf
 ROM = vf3_mie_probe.bin
-OBJS = main.o
+OBJS = main.o vf3_input_map.o
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
 
 all: $(TARGET)

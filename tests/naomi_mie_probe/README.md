@@ -30,7 +30,9 @@ Every 250 ms the probe refreshes an on-screen status page showing:
 - native JVS player 1/player 2 switch words, system switches and cabinet
   panel test/service switches;
 - both coin meter counts, insert pulses and fault flags;
-- all eight raw JVS analog channels.
+- all eight raw JVS analog channels;
+- the JVS-to-Dreamcast-Maple button word for each player, in active-low wire
+  form.
 
 The program uses KOS's `INIT_MIE` startup flag and the public
 `MAPLE_FUNC_MIE` / `mie_state_t` API. KOS documents the MIE as the Naomi
@@ -46,9 +48,15 @@ build uploaded a raw flat binary rather than a Naomi ROM image. The packaging
 has now been corrected to use `naomibintool`, matching the known-good Daytona
 cart-probe recipe. The corrected image still requires a fresh hardware test.
 
-A successful build is not a hardware test. The runtime success criterion is
-whether Port A reports MIE/JVS and the native P1 switch word changes when a
-control-panel switch is pressed.
+The probe now also exercises a small, host-unit-tested input adapter. Its
+provisional default layout maps JVS push switches 1–4 to VF3 Punch, Kick,
+Guard and Escape, respectively, then encodes the buttons and directions as a
+standard Dreamcast Maple controller word (active-low). The mapping is visible
+on screen and can be adjusted if the cabinet's switch wiring differs.
+
+This proves the JVS-to-Maple conversion independently; it does not yet mean
+the original VF3 guest executable is consuming the generated word. That
+requires the Maple HLE/input seam to be integrated into the game runtime.
 
 The automatic `INIT_MIE` path expects the MIE bridge firmware to already
 be active (for example, initialized by the Naomi BIOS). KOS also exposes
