@@ -6,21 +6,25 @@ This repository is independent of the Daytona Naomi port. Daytona's proven build
 
 ## Current status
 
-**Phase 0 — repository and technical investigation.**
+**Phase 1 — executable reconnaissance in progress.**
 
 The initial target is the Dreamcast VF3tb executable and assets, not the Model 3 arcade recompilation. Dreamcast and Naomi share the SH-4 CPU, PowerVR2 graphics family and AICA audio architecture, making this the most promising starting point. They are not binary-compatible by default: Naomi boot, memory layout, storage, peripherals and arcade I/O must be checked.
 
-No playable port or hardware compatibility is claimed yet.
+Our supplied US retail executable is recorded as 1,179,648 bytes with SHA-256 `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`. Initial analysis found Naomi library identifiers and code references to Naomi source modules, alongside Dreamcast-specific GDFS, Maple and memory-card material. These references do not yet prove normal gameplay reachability or direct Naomi compatibility.
+
+A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), now documents a Dreamcast research harness that loads 367 disc files and reaches a rendered attract fight, plus a separate incomplete native C reconstruction. We will use its documented GDFS, GD-ROM, Maple, PVR2 and AICA findings as a behavioral reference—not as proof of Naomi compatibility. See [related-project findings](docs/RELATED_PROJECT_FINDINGS.md).
+
+No playable Naomi port or hardware compatibility is claimed yet.
 
 ## Chosen research sources
 
-- [Dreamcast VF3tb native decompilation](https://github.com/celsowm/vf3-decomp) — game/asset research; currently incomplete.
-- [Dreamcast/Naomi SH-4 recompilation framework](https://github.com/sp00nznet/dcrecomp) — useful architectural reference; currently early-stage.
+- [Dreamcast VF3tb native decompilation](https://github.com/celsowm/vf3-decomp) — asset and gameplay reconstruction plus a separate Dreamcast runtime research harness; useful evidence, but neither is a completed Naomi port.
+- [Dreamcast/Naomi SH-4 recompilation framework](https://github.com/sp00nznet/dcrecomp) — useful architectural reference; early-stage.
 - [Model 3 arcade VF3 recompilation](https://github.com/mr-finster/vf3-recomp) — arcade behavior/reference, but its PPC 603e and Real3D Model 3 platform are not a direct Naomi base.
 
 ## First milestone
 
-Inspect a legally obtained Dreamcast VF3tb executable (1ST_READ.BIN) and map:
+Inspect a legally obtained Dreamcast VF3tb executable (`1ST_READ.BIN`) and map:
 
 1. executable format, entry point and SH-4 code characteristics;
 2. memory addresses and hardware-register access;
@@ -44,7 +48,7 @@ The target is a fighting-game layout, not Daytona's racing controls. The intende
 
 ## Required input
 
-The first required game artifact is the Dreamcast VF3tb 1ST_READ.BIN extracted from the user's own disc dump. Do not commit copyrighted game binaries, ROMs or extracted commercial assets to this repository. Keep such files local and use them only for analysis/builds as appropriate.
+The first required game artifact is the Dreamcast VF3tb `1ST_READ.BIN` extracted from the user's own disc dump. Do not commit copyrighted game binaries, ROMs or extracted commercial assets to this repository. Keep such files local and use them only for analysis/builds as appropriate.
 
 ## Working rules
 
