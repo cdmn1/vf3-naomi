@@ -11,6 +11,10 @@ on:
       - ".github/workflows/flycast-trace.yml"
   workflow_dispatch:
 
+concurrency:
+  group: vf3-flycast-trace-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
