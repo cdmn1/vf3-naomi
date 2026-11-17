@@ -49,7 +49,7 @@ Detailed source analysis: [NAOMI_BIOS_TEST_HANDOFF.md](NAOMI_BIOS_TEST_HANDOFF.m
 
 - MIE/JVS detection and input reporting have been tested separately.
 - dev.43 BIOS hand-off failed in Flycast.
-- The KOS shutdown-based hand-off is committed but awaits GitHub Actions compilation.
-- No successful return to the Naomi System Test Menu is yet claimed.
+- The KOS shutdown-based hand-off compiled successfully in [GitHub Actions run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844); artifact dev.57 was produced.
+- Flycast and real-hardware return behavior remain untested. No successful return to the Naomi System Test Menu is yet claimed.
 - After the new build compiles, test both entry paths in Flycast before real hardware.
 - The full VF3 game-test menu, settings persistence, and Daytona lifecycle remain separate unfinished work.
