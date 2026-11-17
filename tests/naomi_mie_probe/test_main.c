@@ -2,8 +2,8 @@
  * Naomi title-test experiment for the VF3 MIE/JVS probe.
  *
  * This is built as a separate KOS executable and placed in the Naomi ROM's
- * test segment/entry point. EXIT uses KOS's BIOS-menu exit path, which still
- * needs confirmation on the target Naomi BIOS.
+ * test segment/entry point. EXIT returns through KOS to the Naomi loader,
+ * which should resume the normal game-mode path.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -179,10 +179,12 @@ int main(int argc, char **argv)
                     page = 1;
                 } else {
                     /*
-                     * Leave the title test program through KOS's BIOS-menu
-                     * path, not its default return-to-loader path.
+                     * The Naomi service manual says title-test EXIT returns
+                     * to game mode. Return through the loader that entered
+                     * the test executable; do not invoke the BIOS-menu
+                     * syscall, which is a different exit destination.
                      */
-                    arch_set_exit_path(ARCH_EXIT_MENU);
+                    arch_set_exit_path(ARCH_EXIT_RETURN);
                     exit_requested = 1;
                 }
             }
