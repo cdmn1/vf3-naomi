@@ -69,7 +69,10 @@ References:
 
 ## Validation status
 
-The new KOS shutdown-based implementation has been committed but has not yet passed a build or Flycast/hardware test.
+- GitHub Actions build passed: [run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844).
+- Built ROM: `vf3_mie_probe_v0.1.1-dev.57+8be15a8.bin`.
+- The build compiled the patched Naomi KOS shutdown destination and packaged both the running probe and separate title-test program.
+- Flycast and real-Naomi hand-off behavior are still untested.
 
 The prior dev.43 direct-call implementation failed in Flycast:
 - Physical TEST froze the application.
