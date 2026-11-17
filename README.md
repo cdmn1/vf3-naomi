@@ -6,19 +6,31 @@ This repository is independent of the Daytona Naomi port. Daytona's proven build
 
 ## Current status
 
-**Phase 1 — executable reconnaissance in progress. Naomi JVS input is now verified on real hardware.**
+**Phase 1 — executable reconnaissance in progress. Naomi JVS input and the System Test Menu hand-off are verified on real hardware.**
 
 The initial target is the Dreamcast VF3tb executable and assets, not the Model 3 arcade recompilation. Dreamcast and Naomi share the SH-4 CPU, PowerVR2 graphics family and AICA audio architecture, making this the most promising starting point. They are not binary-compatible by default: Naomi boot, memory layout, storage, peripherals and arcade I/O must be checked.
 
 Our supplied US retail executable is recorded as 1,179,648 bytes with SHA-256 `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`. Initial analysis found Naomi library identifiers and code references to Naomi source modules, alongside Dreamcast-specific GDFS, Maple and memory-card material. These references do not yet prove normal gameplay reachability or direct Naomi compatibility.
 
-A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), now documents a Dreamcast research harness that loads 367 disc files and reaches a rendered attract fight, plus a separate incomplete native C reconstruction. We will use its documented GDFS, GD-ROM, Maple, PVR2 and AICA findings as a behavioral reference—not as proof of Naomi compatibility. See [related-project findings](docs/RELATED_PROJECT_FINDINGS.md). The user's 412-file Dropbox set matches the related project's US GD-ROM manifest by filename and size; its corrected embedded filename-string inventory has 234 candidate rows, 232 of which align with extracted `.BIN` assets after normalizing leading underscore prefixes. This is distinct from the 132-pointer runtime table identified at `0x8C1069BC`. The loader and asset-boundary analysis is in [GDFS_RESOURCE_MAP.md](docs/GDFS_RESOURCE_MAP.md).
+A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), documents a Dreamcast research harness that loads 367 disc files and reaches a rendered attract fight, plus a separate incomplete native C reconstruction. We use its documented GDFS, GD-ROM, Maple, PVR2 and AICA findings as a behavioral reference—not as proof of Naomi compatibility. See [related-project findings](docs/RELATED_PROJECT_FINDINGS.md). The user's 412-file Dropbox set matches the related project's US GD-ROM manifest by filename and size; its corrected embedded filename-string inventory has 234 candidate rows, 232 of which align with extracted `.BIN` assets after normalizing leading underscore prefixes. This is distinct from the 132-pointer runtime table identified at `0x8C1069BC`. The loader and asset-boundary analysis is in [GDFS_RESOURCE_MAP.md](docs/GDFS_RESOURCE_MAP.md).
 
 No playable Naomi port or hardware compatibility is claimed yet.
 
-## Current loader investigation
+## Immediate next task: original VF3 controller path
 
-The current blocking reverse-engineering task is to capture the character-select-to-round-one resource load. The 132-entry runtime name-pointer table, candidate MT loaders and GDFS sector-read endpoint are documented in [the loader trace plan](docs/GDFS_TRACE_PLAN.md). A combined watch list is provided at [tools/VF3_WATCH_LOADER.txt](tools/VF3_WATCH_LOADER.txt), with a CSV decoder at [tools/loader_trace_decode.py](tools/loader_trace_decode.py) and a first-pass report generator at [tools/loader_trace_summary.py](tools/loader_trace_summary.py). Synthetic regression tests are in [tests/](tests/) and run with `python -m unittest discover -s tests -v`. A pre-fight savestate is an optional convenience, not a required user-provided artifact: the intended route is to start the game in a research Flycast build and drive it to the load boundary once the input sequence is reliable. Current Maple/input findings and the distinction between the related project's native harness and patched Flycast captures are recorded in [INPUT_PATH_FINDINGS.md](docs/INPUT_PATH_FINDINGS.md). A real capture still requires the patched interpreter hooks. The standalone Naomi MIE/JVS probe has separately booted on the user's cabinet, and the user confirmed that all buttons and analog inputs respond. This verifies hardware input delivery, not the original guest's game-level controller path.
+The Naomi cabinet → JVS → MIE → KOS input path is confirmed on the user's real hardware, but the original Dreamcast VF3 executable's game-level controller path has not yet been observed.
+
+The focused Flycast trace profile now watches:
+
+- `0x8C09B006` — selected controller-port reader;
+- `0x8C09AF6C` — controller input merge;
+- `0x8C0AD1B8` — player action update.
+
+The default Windows launcher uses the compact PC-only profile `tools/VF3_WATCH_INPUT.txt`. The separate `tools/VF3_WATCH_LOADER.txt` profile retains GDFS/MT loader and memory watches for the later resource-load investigation. Build status, instructions and verification gates are in [FLYCAST_TRACE_TOOLING.md](docs/FLYCAST_TRACE_TOOLING.md). Do not ask the user to run a package until its GitHub Actions artifact is built, inspected and smoke-tested.
+
+## Resource-loader investigation
+
+The 132-entry runtime name-pointer table, candidate MT loaders and GDFS sector-read endpoint are documented in [the loader trace plan](docs/GDFS_TRACE_PLAN.md). The trace decoder is [tools/loader_trace_decode.py](tools/loader_trace_decode.py), with the loader-specific report generator at [tools/loader_trace_summary.py](tools/loader_trace_summary.py). Synthetic regression tests are in [tests/](tests/) and run with `python -m unittest discover -s tests -v`.
 
 ## Chosen research sources
 
@@ -53,18 +65,6 @@ The flow is confirmed in Flycast and on real Naomi 1 hardware, including
 both physical TEST entry and GAME TEST MODE EXIT. This is a platform-level
 handoff, not a complete title-specific test menu.
 
-## First milestone
-
-Inspect a legally obtained Dreamcast VF3tb executable (`1ST_READ.BIN`) and map:
-
-1. executable format, entry point and SH-4 code characteristics;
-2. memory addresses and hardware-register access;
-3. boot and runtime dependencies on Dreamcast services;
-4. file, disc and asset loading;
-5. graphics, sound and controller initialization.
-
-Then build a minimal Naomi-side boot/runtime test before attempting game integration.
-
 ## Proposed milestones
 
 1. **Executable reconnaissance** — identify binary layout, imports/calls, memory map and platform dependencies.
@@ -79,7 +79,7 @@ The target is a fighting-game layout, not Daytona's racing controls. The intende
 
 ## Required input
 
-The first required game artifact is the Dreamcast VF3tb `1ST_READ.BIN` extracted from the user's own disc dump. Do not commit copyrighted game binaries, ROMs or extracted commercial assets to this repository. Keep such files local and use them only for analysis/builds as appropriate.
+The Dreamcast VF3tb `1ST_READ.BIN` has already been inventoried. Do not commit copyrighted game binaries, ROMs or extracted commercial assets to this repository. Keep such files local and use them only for analysis/builds as appropriate.
 
 ## Working rules
 
