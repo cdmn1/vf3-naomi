@@ -71,8 +71,9 @@ A test-menu implementation is not complete merely because a menu renders. Verify
 
 - The four reference screenshots are present in `test menu flow/` and have been inspected.
 - The standalone VF3 JVS/MIE probe proves the physical cabinet input path on the user's Naomi, but it is not the full VF3 game.
-- Commercial VF4 Final Tuned game and test-program code identifies the retail Naomi BIOS helper entry 0x44 as the hand-off to the Naomi System Test Menu. Both the running-game TEST handler and the separate test-program EXIT handler call it.
-- A shared helper implementation is now in platform/naomi/naomi_bios.c. The probe's game executable calls it on a physical TEST edge, and its separate test executable calls it on EXIT.
-- The new helper path has compiled successfully in GitHub Actions and produced probe ROM dev.43. Flycast and real-Naomi hand-off validation are still pending. No working VF3 game-test menu is yet considered validated.
+- Naomi-specific DragonMinded/libnaomi source independently identifies the Naomi System Test Mode vector at 0xAC018000 + 0x11 * 4 (byte offset 0x44).
+- libnaomi only calls that vector after unwinding to its top-level exit trampoline and shutting down its runtime. This is a different runtime from KOS; the shutdown sequence is not directly reusable.
+- Probe dev.43 attempted a direct call from a live KOS application. In Flycast, TEST froze the application and GAME TEST MODE EXIT garbled the display and stopped the emulator responding. Both hand-off paths are considered failed.
+- The probe's direct BIOS hand-off calls have been disabled pending a safe KOS shutdown/trampoline implementation. No Naomi System Test Menu return is validated.
 - No successful Daytona game-test menu implementation is assumed. The Daytona port must be evaluated against the same lifecycle and validation gates.
 - The VF3 porting work must still establish which surviving Dreamcast arcade test routines are callable and how they depend on Naomi-specific services versus Dreamcast-specific devices. The BIOS test-menu hand-off itself is no longer an unknown.
