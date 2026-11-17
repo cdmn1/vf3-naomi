@@ -42,20 +42,15 @@ stub found in unrelated early recompilation frameworks.
 
 ## Validation
 
-The source has compiled, but the first packaged build was rejected by the
-Naomi main board with error 01 ("game not acceptable by main board"). That
-build uploaded a raw flat binary rather than a Naomi ROM image. The packaging
-has now been corrected to use `naomibintool`, matching the known-good Daytona
-cart-probe recipe. The corrected image has now built successfully in GitHub Actions (run
-[43966016866](https://github.com/cdmn1/vf3-naomi/actions/runs/43966016866)).
-The packaged ROM contains the separate title-test entry point and remains
-untested on the target Naomi after this rebuild.
+The source has compiled, and the packaged ROM has been tested successfully
+in Flycast and on real Naomi hardware. MIE/JVS detection, the menu, and the
+input display work. The EXIT hand-off is the one remaining item under test.
 
-The probe now also exercises a small, host-unit-tested input adapter. Its
+The probe also exercises a small, host-unit-tested input adapter. Its
 provisional default layout maps JVS push switches 1–4 to VF3 Punch, Kick,
-Guard and Escape, respectively, then encodes the buttons and directions as a
-standard Dreamcast Maple controller word (active-low). The mapping is visible
-on screen and can be adjusted if the cabinet's switch wiring differs.
+Guard and Escape, respectively, then encodes the buttons and directions as
+a standard Dreamcast Maple controller word (active-low). The mapping is
+visible on screen and can be adjusted if the cabinet's switch wiring differs.
 
 This proves the JVS-to-Maple conversion independently; it does not yet mean
 the original VF3 guest executable is consuming the generated word. That
@@ -74,7 +69,6 @@ of bad wiring until bridge firmware state is known.
 - KallistiOS Naomi ROM packaging tool: https://github.com/KallistiOS/KallistiOS/tree/master/utils/naomibintool
 - KallistiOS 2.1 release notes: https://github.com/KallistiOS/KallistiOS/releases
 
-
 ## Naomi title-test entry and exit
 
 The ROM's separate test entry displays a small `VF3 GAME TEST MODE` menu
@@ -82,8 +76,9 @@ with `INPUT TEST` and `EXIT`. SERVICE cycles the selection; the physical
 JVS system TEST input selects it. The input page displays the native JVS
 switch values.
 
-Selecting EXIT explicitly sets KallistiOS `ARCH_EXIT_MENU` before returning
-from `main()`. This requests KOS's BIOS System Menu shutdown path instead of
-its default return-to-loader path. The Naomi BIOS behaviour is not yet
-confirmed on hardware; do not treat the successful build as proof of the
-screen transition.
+EXIT now explicitly selects KallistiOS `ARCH_EXIT_RETURN`. KOS restores the
+stack and return address saved on entry and hands control back to the Naomi
+loader. This is the path intended to resume game mode after a title-test
+program exits. It replaces the earlier `ARCH_EXIT_MENU` experiment, which
+called the BIOS System Menu syscall and caused a reset on the tested setup.
+The new return path still requires confirmation on Naomi hardware.
