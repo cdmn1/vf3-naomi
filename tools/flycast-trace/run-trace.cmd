@@ -4,7 +4,9 @@ cd /d "%~dp0"
 set "VF3_INTERPRETER=1"
 set "VF3_WATCH=%~dp0VF3_WATCH_INPUT.txt"
 set "VF3_TRACE=%~dp0vf3-loader-trace.bin"
+set "VF3_DIAG=%VF3_TRACE%.diag.txt"
 if exist "%VF3_TRACE%" del "%VF3_TRACE%"
+if exist "%VF3_DIAG%" del "%VF3_DIAG%"
 echo.
 echo VF3 tracing is enabled.
 echo Load the Dreamcast version of Virtua Fighter 3 in Flycast.
@@ -22,5 +24,13 @@ if exist "%VF3_TRACE%" (
 ) else (
   echo.
   echo No trace file was created. Check that Flycast started correctly.
+)
+if exist "%VF3_DIAG%" (
+  echo.
+  echo PC diagnostics created:
+  echo %VF3_DIAG%
+) else (
+  echo.
+  echo WARNING: PC diagnostics file was not created.
 )
 pause
