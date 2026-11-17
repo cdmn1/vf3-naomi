@@ -1,6 +1,6 @@
 # VF3 input-path findings
 
-Reviewed: 2026-11-16
+Reviewed: 2026-11-17
 
 ## Naomi hardware input validation
 
@@ -38,8 +38,9 @@ selected-port reader at `0x8C09B006`. It calls the packet lookup at
 `src/fight/controller_merge.c` reconstructs `0x8C09AF6C`: it reads the
 packet lookup, uses selector state at `0x0C29BCCC`, chooses packet zero,
 packet one, or their bitwise OR, then writes the merged word at shared-state
-offset `+0x1EC`. These are reconstructed C implementations from the
-related project, not direct proof of runtime execution in our Naomi target.
+offset `+0x1EC`. The player action update candidate is `0x8C0AD1B8`.
+These are reconstructed C implementations from the related project, not
+direct proof of runtime execution in our Naomi target.
 
 ## Two different harness findings — do not conflate them
 
@@ -50,7 +51,7 @@ bug: the harness published pad state only when a scripted press was active.
 With no script, the Maple model's static zero button word meant every
 active-low button appeared pressed. Publishing the neutral pad every frame
 fixed that. The note reports that holding Start with
-`VF3_PRESS=8,0,900,1000` passed the press-start screen and reached menu code.
+`VF3_PRESS=8,0,900,1000` passed its press-start screen and reached menu code.
 
 That is a finding about the native `vf3sdl` harness and its host-side Maple
 model. It is not evidence that the patched Flycast cold-boot ladder reaches
@@ -69,10 +70,9 @@ attract/demo paths. In those scans:
 - Player action update `0x0C0AD1B8` was not reached.
 
 The documented `vf3_play_frontend_ladder.txt` is therefore only an input /
-navigation probe, not a verified route to a player-controlled round. The
-separate `vf3_play_start_hold.txt` is also explicitly described as a
-navigation probe; its recorded Flycast scans did not establish player
-control.
+navigation probe, not a verified route to the boundary. The separate
+`vf3_play_start_hold.txt` is also explicitly described as a navigation
+probe; its recorded Flycast scans did not establish player control.
 
 ## Consequence for this Naomi project
 
@@ -85,10 +85,11 @@ control.
    reader and controller-merge path.
 4. Do not reuse the native harness's `VF3_PRESS` result as proof of a
    successful Flycast menu route.
-5. The next useful original-executable capture must distinguish menu states
-   and record the first transition into the selected-port reader /
-   controller-merge path. Once that boundary is found, the existing GDFS/MT
-   watches can be combined with it to capture character-load resources.
+5. The maintained Flycast watch list now probes the selected-port reader
+   (`0x8C09B006`), controller merge (`0x8C09AF6C`) and player action update
+   (`0x8C0AD1B8`) on every interpreter execution. The first capture should
+   determine which of these routines are reached during normal navigation.
+   Existing GDFS/MT watches remain enabled.
 6. Once the guest input seam is observed, add a small adapter that translates
    JVS active-high switches and the required analog channels into the exact
    guest-facing Maple/controller representation. Do not invent the mapping
