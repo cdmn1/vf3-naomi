@@ -1,66 +1,83 @@
 # Naomi System Test Menu hand-off
 
-## Current status: direct hand-off is unsafe in the KOS probe
+## Current implementation
 
-Probe build `vf3-naomi-mie-probe-v0.1.1-dev.43+d49eebe` was tested in Flycast:
+The probe now uses KallistiOS's normal application exit path before entering the Naomi System Test Menu.
 
-- Selecting EXIT in the in-app GAME TEST MODE produced a garbled display and Flycast stopped responding.
-- Pressing the in-app/physical TEST path froze the application.
+The flow is:
 
-Treat both paths as failed. Do not use dev.43 to test BIOS hand-off again.
+1. The running probe detects a rising edge on the physical JVS system TEST switch, or the title-test program selects EXIT.
+2. The application calls `arch_set_exit_path(ARCH_EXIT_MENU)`, then `exit(0)`.
+3. KOS runs its normal exit handler and `arch_shutdown()`.
+4. KOS tears down the runtime, including audio, Maple/MIE, hardware services, timers, PVR, threads and interrupts.
+5. The Naomi-specific `arch_menu()` destination reads the Naomi BIOS System Test Mode vector at `0xAC018000 + 0x11 * 4`, converts the cached function address to its uncached P2 alias with `| 0xA0000000`, and calls it.
 
-The previous implementation called BIOS vector entry `0x11` / byte offset `0x44` directly from a running KallistiOS application. That is not a safe hand-off because KOS's runtime, drivers, interrupts, threads, and video/audio services are still active.
+This replaces the failed direct call from inside a live KOS application.
 
-## Naomi 1 reference: DragonMinded/libnaomi
+## Naomi 1 vector reference: DragonMinded/libnaomi
 
-The independent Naomi homebrew project [libnaomi](https://github.com/DragonMinded/libnaomi) provides a directly relevant Naomi 1 implementation in [libnaomi/system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c).
+The independent Naomi homebrew project [libnaomi](https://github.com/DragonMinded/libnaomi) provides the relevant Naomi 1 implementation in [libnaomi/system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c).
 
 Its constants identify:
 
 - System-call vector base: `0xAC018000`
 - Enter-test-mode vector index: `0x11`
-- Therefore the vector's byte offset is `0x11 * 4 = 0x44`
+- Byte offset: `0x11 * 4 = 0x44`
+- Uncached mirror: `0xA0000000`
 
-This reconciles the notation used by the two sources: libnaomi calls it vector index `0x11`; the VF4 decomp refers to byte offset `0x44`. They identify the same table slot. This is independent Naomi 1 evidence for the vector location, not a reason to assume VF4's Naomi 2 title cleanup is applicable to VF3.
+libnaomi's `enter_test_mode()` does not call the vector immediately. It calls `call_unmanaged()`, which records the BIOS call and `longjmp`s to the top-level runtime entry. The runtime then runs `_shutdown()` before invoking the BIOS function.
 
-The important part is the call sequence. libnaomi does not invoke the vector from inside the running application. Its `enter_test_mode()` calls `call_unmanaged()`. That records the requested BIOS call and performs a `longjmp` to the runtime's top-level entry point. The runtime then runs `_shutdown()` before invoking the requested BIOS function.
+The libnaomi shutdown sequence runs global destructors, frees audio and video, and tears down ROMFS, POSIX, IRQ, Maple, audio, thread and timer subsystems.
 
-The observed libnaomi shutdown sequence runs global destructors, frees audio and video, then tears down ROMFS, POSIX, IRQ, Maple, audio, thread, and timer subsystems. The vector call happens only after this teardown. This is the key missing piece in the KOS probe.
+## KOS shutdown evidence
+
+KallistiOS already provides the equivalent lifecycle:
+
+- `exit(0)` enters Newlib's `_exit()`, which calls KOS's registered `kos_shutdown()` unless `INIT_NO_SHUTDOWN` is set.
+- `arch_exit_handler()` calls `arch_shutdown()` before selecting the configured exit destination.
+- `arch_shutdown()` runs destructors and `arch_auto_shutdown()`, then shuts down IRQs.
+- `arch_auto_shutdown()` shuts down sound and hardware, disables interrupts, shuts down timers and PVR, and finally shuts down threads and remaining runtime services.
+- On Naomi, `hardware_shutdown()` calls `maple_shutdown()`. The Maple shutdown calls `mie_shutdown()`; the MIE shutdown removes callbacks and unregisters the MIE driver.
 
 Sources:
-- [libnaomi system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c) — vector index, `enter_test_mode()`, `call_unmanaged()`, and runtime `_shutdown()`.
-- [libnaomi README](https://github.com/DragonMinded/libnaomi) — describes libnaomi as a Naomi-specific bare-metal system library and documents its hardware/runtime coverage.
+- [KOS newlib_exit.c](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/libc/newlib/newlib_exit.c)
+- [KOS kernel init.c](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/kernel/init.c)
+- [KOS hardware.c](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/hardware/hardware.c)
+- [KOS Maple shutdown](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/hardware/maple/maple_init_shutdown.c)
+- [KOS MIE shutdown](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/hardware/maple/mie/mie.c)
+- [libnaomi system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c)
 
-## What this does and does not establish
+## KOS Naomi-specific destination patch
 
-Established by the Naomi 1 libnaomi source:
-- The Naomi System Test Mode vector is read from `0xAC018000 + 0x11 * 4`.
-- The runtime must be shut down before the BIOS call in that implementation.
-- libnaomi's shutdown is part of its own runtime and is not a KOS API.
+The probe build workflow checks out KallistiOS and patches its `arch_menu()` implementation:
 
-Not established:
-- That directly calling the vector from a live KOS application is safe. dev.43 demonstrates the opposite.
-- That libnaomi's internal shutdown functions can be called from KOS. They belong to a different runtime and cannot simply be linked into this project.
-- That a particular KOS shutdown sequence is sufficient to return to the Naomi System Test Menu.
-- That Naomi 2-specific VF4 cleanup is needed or appropriate for VF3 on original Naomi.
+- Naomi builds call the Naomi BIOS vector described above.
+- Non-Naomi builds retain the original `syscall_system_bios_menu()` behavior.
 
-## Required next implementation step
+The application itself uses the public KOS `arch_set_exit_path(ARCH_EXIT_MENU)` and standard `exit(0)` APIs. The workflow patch is idempotent so a restored KOS build cache does not apply it twice.
 
-Do not call the BIOS vector from either probe executable while KOS is active.
+The old VF4-derived helper-table copy at `0xAC018000` has been removed from the VF3 probe. It was not part of the libnaomi Naomi 1 call path and must not be used here.
 
-First determine a supported KOS shutdown/exit path for a Naomi application, including how to stop the PVR/TA, audio, Maple/MIE, interrupts, timers, and threads without leaving KOS callbacks or background work running. Then arrange for the BIOS vector call to occur only after that shutdown has completed, analogous to libnaomi's `call_unmanaged()` design.
+## Naomi 2 VF4 evidence
 
-If KOS has no safe way to resume at a top-level exit trampoline after shutting down its subsystems, a small standalone libnaomi-based Naomi test program may be the better way to validate the BIOS vector independently. That would be a separate test target, not a drop-in replacement for the existing KOS probe.
-
-## VF4 decompilation: useful but Naomi 2 evidence
-
-The recovered Virtua Fighter 4 Final Tuned Ver. B source remains useful for understanding how a commercial title handles its own TEST and test-program EXIT events. However, VF4 is a Naomi 2 title. Its title-specific shutdown sequence must not be copied wholesale into VF3 or treated as proof of Naomi 1 BIOS internals.
+The recovered Virtua Fighter 4 Final Tuned Ver. B source remains useful for title-side TEST/EXIT behavior, but VF4 is a Naomi 2 title. It is not the authority for the Naomi 1 BIOS vector or for KOS shutdown behavior.
 
 References:
 - [VF4FT game-side TEST handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src/vf4lib/libbase/src/system.c)
 - [VF4FT test-program EXIT handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/testmode/testmode.c)
-- [VF4FT BIOS helper implementation](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/sdk/libam/nlasrvdt.c)
+- [VF4FT helper implementation](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/sdk/libam/nlasrvdt.c)
 
-## Validation
+## Validation status
 
-No BIOS hand-off is currently validated in Flycast or on real Naomi hardware. A successful compile is not evidence that the hand-off works. The next ROM must not be sent for user testing until the KOS shutdown/trampoline problem has been addressed.
+The new KOS shutdown-based implementation has been committed but has not yet passed a build or Flycast/hardware test.
+
+The prior dev.43 direct-call implementation failed in Flycast:
+- Physical TEST froze the application.
+- GAME TEST MODE EXIT garbled the display and stopped Flycast responding.
+
+Do not use dev.43 again. The next build must first pass GitHub Actions compilation. Then validate in Flycast:
+1. Physical TEST from the running probe enters the Naomi System Test Menu.
+2. GAME TEST MODE loads the separate probe test program.
+3. Selecting EXIT returns to the Naomi System Test Menu.
+
+Only after Flycast passes should the same build be tested on the real Naomi.
