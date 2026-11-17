@@ -6,6 +6,7 @@ on:
     paths:
       - "tools/flycast-trace/**"
       - "tools/VF3_WATCH_LOADER.txt"
+      - "tools/loader_trace_summary.py"
       - ".github/workflows/flycast-trace.yml"
   workflow_dispatch:
 
@@ -50,7 +51,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/flycast-install" \
             -DUSE_DISCORD=OFF \
-            -DUSE_BREAKPAD=OFF
+            -DUSE_BREAKPAD=OFF \
+            -DUSE_OPENMP=OFF
 
       - name: Build and install Flycast
         shell: msys2 {0}
@@ -74,7 +76,8 @@ jobs:
           VF3 tooling commit: $env:GITHUB_SHA
           Built by GitHub Actions run: $env:GITHUB_RUN_ID
           Instrumentation: PC probe groups (FA10/FA11), guest memory access records (FA20)
-          "@ | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
+          Controller probes: selected-port reader, controller merge, player action update
+          "@" | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
           Get-ChildItem $package -File | Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash)  $($_.Path | Split-Path -Leaf)" } |
             Set-Content -Encoding ascii (Join-Path $package "SHA256SUMS.txt")
