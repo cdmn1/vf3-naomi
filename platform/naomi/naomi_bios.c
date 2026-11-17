@@ -72,6 +72,12 @@ bool naomi_bios_test_switch_update(bool pressed)
     return edge;
 }
 
+/*
+ * Low-level BIOS vector call only. Calling this while KOS is still active
+ * is unsafe; libnaomi demonstrates that runtime teardown must happen first.
+ * Keep this function unused by KOS application paths until a top-level
+ * shutdown/trampoline has been implemented and validated.
+ */
 void naomi_bios_enter_system_test(void)
 {
     volatile uint32_t *table =
