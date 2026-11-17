@@ -133,7 +133,7 @@ static int build_report(char lines[][UI_LINE_MAX])
         for(int i = 4; i < UI_LINE_COUNT; ++i) lines[i][0] = '\0';
         snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
                  "WAITING FOR JVS TEST INPUT" : "BIOS TEST SERVICE UNAVAILABLE");
-        return 0;
+        return -1;
     }
 
     snprintf(lines[2], UI_LINE_MAX, "MIE device: detected");
@@ -185,7 +185,8 @@ int main(int argc, char *argv[])
 
     for(;;) {
         int test_pressed = build_report(lines);
-        if(naomi_bios_test_switch_update(test_pressed) &&
+        if(test_pressed >= 0 &&
+           naomi_bios_test_switch_update(test_pressed) &&
            naomi_bios_helpers_ready()) {
             naomi_bios_enter_system_test();
         }
