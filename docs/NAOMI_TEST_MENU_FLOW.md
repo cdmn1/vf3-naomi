@@ -45,11 +45,17 @@ This replaces the failed dev.43 direct-call approach. dev.43 froze in Flycast on
 
 Detailed source analysis: [NAOMI_BIOS_TEST_HANDOFF.md](NAOMI_BIOS_TEST_HANDOFF.md).
 
-## Validation status
+## Validation status — hand-off confirmed
 
-- MIE/JVS detection and input reporting have been tested separately.
-- dev.43 BIOS hand-off failed in Flycast.
-- The KOS shutdown-based hand-off compiled successfully in [GitHub Actions run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844); artifact dev.57 was produced.
-- Flycast and real-hardware return behavior remain untested. No successful return to the Naomi System Test Menu is yet claimed.
-- After the new build compiles, test both entry paths in Flycast before real hardware.
-- The full VF3 game-test menu, settings persistence, and Daytona lifecycle remain separate unfinished work.
+The KOS shutdown-based BIOS hand-off is confirmed working in **both Flycast and real Naomi 1 hardware**.
+
+Validated sequence:
+1. Physical cabinet TEST from the running VF3 probe enters the Naomi System Test Menu.
+2. Selecting GAME TEST MODE starts the separate probe test program.
+3. Selecting EXIT returns to the Naomi System Test Menu.
+
+The validated build is dev.57 from [GitHub Actions run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844), source commit `8be15a81d418fc848f3e5eb515527c40fc4bbdf4`.
+
+The reusable KOS integration recipe, including the exact Naomi-only KOS destination patch and application-side exit calls, is documented in [KOS_NAOMI_SYSTEM_TEST_HANDOFF.md](KOS_NAOMI_SYSTEM_TEST_HANDOFF.md). The detailed source investigation is in [NAOMI_BIOS_TEST_HANDOFF.md](NAOMI_BIOS_TEST_HANDOFF.md).
+
+The earlier dev.43 direct BIOS call failed in Flycast and must not be reused. The full VF3 game-test menu, settings persistence, and Daytona's title-specific test functionality remain separate work.
