@@ -1,6 +1,6 @@
 # Naomi system and game test-menu flow
 
-Date: 2026-11-16
+Date: 2026-11-17
 
 ## User-provided reference
 
@@ -70,7 +70,9 @@ A test-menu implementation is not complete merely because a menu renders. Verify
 ## Current status
 
 - The four reference screenshots are present in `test menu flow/` and have been inspected.
-- The standalone VF3 JVS/MIE probe proves the physical cabinet input path on the user's Naomi, but it is not a game test menu and does not integrate the game's input path.
-- No working VF3 game-test menu has yet been implemented or validated.
+- The standalone VF3 JVS/MIE probe proves the physical cabinet input path on the user's Naomi, but it is not the full VF3 game.
+- Commercial VF4 Final Tuned game and test-program code identifies the retail Naomi BIOS helper entry 0x44 as the hand-off to the Naomi System Test Menu. Both the running-game TEST handler and the separate test-program EXIT handler call it.
+- A shared helper implementation is now in platform/naomi/naomi_bios.c. The probe's game executable calls it on a physical TEST edge, and its separate test executable calls it on EXIT.
+- The new helper path has not yet been compiled and validated in Flycast or on real Naomi hardware. No working VF3 game-test menu is yet considered validated.
 - No successful Daytona game-test menu implementation is assumed. The Daytona port must be evaluated against the same lifecycle and validation gates.
-- The current VF3 porting work must first establish whether surviving Dreamcast arcade test routines are callable, and how they depend on Naomi-specific services versus Dreamcast-specific devices.
+- The VF3 porting work must still establish which surviving Dreamcast arcade test routines are callable and how they depend on Naomi-specific services versus Dreamcast-specific devices. The BIOS test-menu hand-off itself is no longer an unknown.
