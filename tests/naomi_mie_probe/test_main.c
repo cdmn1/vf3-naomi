@@ -166,6 +166,13 @@ int main(int argc, char **argv)
     font_init();
     maple_wait_scan();
 
+    /* Do not treat a TEST button held during boot as a fresh menu press. */
+    {
+        mie_state_t *initial = mie_status();
+        prev_service = initial ? !!initial->jvs.p1.service : 0;
+        prev_test = initial ? !!initial->jvs.system.test : 0;
+    }
+
     int exit_requested = 0;
     for(;;) {
         mie_state_t *s = mie_status();
@@ -182,12 +189,6 @@ int main(int argc, char **argv)
                 if(selected == 0) {
                     page = 1;
                 } else {
-                    /*
-                     * The Naomi service manual says title-test EXIT returns
-                     * to game mode. Return through the loader that entered
-                     * the test executable; do not invoke the BIOS-menu
-                     * syscall, which is a different exit destination.
-                     */
                     exit_requested = 1;
                 }
             }
