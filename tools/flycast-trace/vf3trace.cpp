@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -21,7 +22,12 @@ struct MemoryRange
 FILE *traceFile = nullptr;
 bool initialized = false;
 std::vector<u32> pcWatches;
+std::vector<u64> pcWatchHits;
 std::vector<MemoryRange> memoryWatches;
+std::map<u32, u64> executedPcPages;
+u64 instructionCount = 0;
+std::string diagnosticsPath;
+std::string initializationStatus = "not initialized";
 
 u32 normalizeAddress(u32 address)
 {
@@ -30,9 +36,9 @@ u32 normalizeAddress(u32 address)
 
 bool watchedPc(u32 pc)
 {
-    const u32 normalized = pc | 0x80000000;
+    const u32 normalized = normalizeAddress(pc);
     for (u32 watched : pcWatches)
-        if ((watched | 0x80000000) == normalized)
+        if (normalizeAddress(watched) == normalized)
             return true;
     return false;
 }
@@ -54,6 +60,34 @@ void writeWord(u64 word)
     if (traceFile != nullptr)
         fwrite(&word, sizeof(word), 1, traceFile);
 }
+
+void writeDiagnostics()
+{
+    if (diagnosticsPath.empty())
+        return;
+
+    std::ofstream output(diagnosticsPath);
+    if (!output)
+        return;
+
+    output << "VF3 Flycast trace diagnostics\n";
+    output << "Initialization: " << initializationStatus << "\n";
+    output << "Executed SH-4 instructions: " << instructionCount << "\n";
+    output << "PC watchpoints:\n";
+    for (size_t i = 0; i < pcWatches.size(); ++i)
+        output << "  0x" << std::hex << pcWatches[i] << std::dec
+               << " hits=" << pcWatchHits[i] << "\n";
+
+    output << "Executed PC pages (4 KiB, normalized addresses):\n";
+    for (const auto &entry : executedPcPages)
+        output << "  0x" << std::hex << entry.first << std::dec
+               << " instructions=" << entry.second << "\n";
+}
+
+struct DiagnosticsAtExit
+{
+    ~DiagnosticsAtExit() { writeDiagnostics(); }
+};
 
 ReadMem8Func baseRead8 = nullptr;
 ReadMem16Func baseRead16 = nullptr;
@@ -130,11 +164,16 @@ void vf3TraceInit()
 
     const char *tracePath = std::getenv("VF3_TRACE");
     if (tracePath == nullptr || tracePath[0] == '\0')
+    {
+        initializationStatus = "VF3_TRACE is not set";
         return;
+    }
 
+    diagnosticsPath = std::string(tracePath) + ".diag.txt";
     traceFile = fopen(tracePath, "wb");
     if (traceFile == nullptr)
     {
+        initializationStatus = "could not open binary trace output";
         fprintf(stderr, "[vf3trace] cannot open trace output: %s\n", tracePath);
         return;
     }
@@ -143,6 +182,7 @@ void vf3TraceInit()
     const char *watchPath = std::getenv("VF3_WATCH");
     if (watchPath == nullptr || watchPath[0] == '\0')
     {
+        initializationStatus = "VF3_WATCH is not set";
         fprintf(stderr, "[vf3trace] VF3_TRACE is set but VF3_WATCH is empty\n");
         return;
     }
@@ -150,6 +190,7 @@ void vf3TraceInit()
     std::ifstream input(watchPath);
     if (!input)
     {
+        initializationStatus = std::string("could not open watch file: ") + watchPath;
         fprintf(stderr, "[vf3trace] cannot open watch file: %s\n", watchPath);
         return;
     }
@@ -164,7 +205,10 @@ void vf3TraceInit()
         if (kind == "pc" && row >> first)
         {
             if (pcWatches.size() < 128)
+            {
                 pcWatches.push_back(static_cast<u32>(std::stoul(first, nullptr, 0)));
+                pcWatchHits.push_back(0);
+            }
         }
         else if (kind == "mem" && row >> first >> second)
         {
@@ -179,6 +223,7 @@ void vf3TraceInit()
         }
     }
 
+    initializationStatus = "watch file loaded";
     fprintf(stderr, "[vf3trace] tracing to %s (%zu PC watches, %zu memory ranges)\n",
             tracePath, pcWatches.size(), memoryWatches.size());
 }
@@ -189,6 +234,14 @@ void vf3TraceInstruction(Sh4Context *ctx)
         return;
 
     const u32 pc = ctx->pc - 2;
+    ++instructionCount;
+    const u32 normalizedPc = normalizeAddress(pc);
+    executedPcPages[normalizedPc & 0xfffff000]++;
+
+    for (size_t i = 0; i < pcWatches.size(); ++i)
+        if (normalizeAddress(pcWatches[i]) == normalizedPc)
+            ++pcWatchHits[i];
+
     if (!watchedPc(pc))
         return;
 
@@ -227,3 +280,5 @@ void vf3TraceInstallMemoryHooks()
     if (WriteMem32 != &traceWrite32) { baseWrite32 = WriteMem32; WriteMem32 = &traceWrite32; }
     if (WriteMem64 != &traceWrite64) { baseWrite64 = WriteMem64; WriteMem64 = &traceWrite64; }
 }
+
+DiagnosticsAtExit diagnosticsAtExit;
