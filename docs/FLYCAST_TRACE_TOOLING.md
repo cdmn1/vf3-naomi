@@ -23,7 +23,7 @@ The initial Windows build (run `43915068665`) failed during the Breakpad configu
 
 ### First capture target: original guest input path
 
-The maintained watch list now includes:
+The focused default input watch list (`VF3_WATCH_INPUT.txt`) includes:
 
 | Guest PC | Reconstructed role |
 |---|---|
@@ -31,9 +31,9 @@ The maintained watch list now includes:
 | `0x8C09AF6C` | Controller input merge |
 | `0x8C0AD1B8` | Player action update |
 
-These addresses originate in the related VF3 decompilation/research notes. They are hypotheses about the original executable's input path until this tracer records actual hits. The same capture retains the GDFS/MT loader watches and memory ranges, so later captures can serve both investigations.
+These addresses originate in the related VF3 decompilation/research notes. They are hypotheses about the original executable's input path until this tracer records actual hits. A separate `VF3_WATCH_LOADER.txt` preserves the GDFS/MT loader watches and memory ranges. Keeping the first input capture PC-only avoids the potentially large memory trace and makes its result easier to inspect.
 
-The user should load the **Dreamcast** VF3 image (not the Naomi probe ROM), navigate with the normal controls as far as possible, ideally into a player-controlled match, and close Flycast normally. If the game remains in attract/demo mode, the capture is still useful: absence of hits in the three controller routines confirms only that they were not executed during that capture.
+The user should load the **Dreamcast** VF3 image (not the Naomi probe ROM), use Start/confirm and gameplay controls to navigate as far as possible, ideally into a player-controlled match, and close Flycast normally. The launcher defaults to `VF3_WATCH_INPUT.txt`; the loader profile is retained separately for a later capture. If the game remains in attract/demo mode, the capture is still useful: absence of hits in the three controller routines confirms only that they were not executed during that capture.
 
 ### Deliberate limits
 
@@ -63,4 +63,4 @@ Until those steps are complete, the user's required action is **none**. In parti
 
 ## Scope distinction
 
-The existing `vf3-decomp` captures and savestates are evidence from the Dreamcast research environment. They are not captures from this Naomi project, and the documented fight savestate was already past the one-time character/stage loading boundary. The current tracer first targets the missing guest controller-path evidence; resource loading remains a secondary benefit of the same trace.
+The existing `vf3-decomp` captures and savestates are evidence from the Dreamcast research environment. They are not captures from this Naomi project, and the documented fight savestate was already past the one-time character/stage loading boundary. The current tracer first targets the missing guest controller-path evidence. Resource loading is a separate follow-up capture using `VF3_WATCH_LOADER.txt`.
