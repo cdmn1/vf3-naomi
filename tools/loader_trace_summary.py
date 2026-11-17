@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize decoded VF3 loader trace CSVs for the first investigation pass."""
+"""Summarize decoded VF3 trace CSVs for the first investigation pass."""
 from __future__ import annotations
 
 import argparse
@@ -10,6 +10,9 @@ from pathlib import Path
 TABLE_START, TABLE_END = 0x8C1069BC, 0x8C1069BC + 0x210
 MT_START, MT_END = 0x8C5F0000, 0x8C860000
 WATCH_PCS = {
+    0x8C09B006: "selected_port_reader",
+    0x8C09AF6C: "controller_merge",
+    0x8C0AD1B8: "player_action_update",
     0x8C02DCEC: "mt_loader",
     0x8C04BDA2: "load_mt_to_u_pai",
     0x8C08232E: "load_mt_aki_jef",
@@ -70,10 +73,14 @@ def summarize(pc_path: Path, memory_path: Path) -> str:
             group = "outside watched ranges"
         by_range[group][access] += 1
 
-    lines = ["VF3 loader trace summary", "", "PC probe hits:"]
-    for pc, label in WATCH_PCS.items():
-        lines.append(f"  {label:20s} 0x{pc:08X}: {pc_counts.get(pc, 0)}")
-    lines.append(f"  {'other watched PCs':20s} {sum(n for p, n in pc_counts.items() if p not in WATCH_PCS)}")
+    lines = ["VF3 trace summary", "", "Controller-path PC probe hits:"]
+    for pc in (0x8C09B006, 0x8C09AF6C, 0x8C0AD1B8):
+        lines.append(f"  {WATCH_PCS[pc]:24s} 0x{pc:08X}: {pc_counts.get(pc, 0)}")
+    lines.extend(["", "Resource-loader PC probe hits:"])
+    for pc in (0x8C02DCEC, 0x8C04BDA2, 0x8C08232E, 0x8C0360C8, 0x8C0CBC40):
+        lines.append(f"  {WATCH_PCS[pc]:24s} 0x{pc:08X}: {pc_counts.get(pc, 0)}")
+    known_pcs = set(WATCH_PCS)
+    lines.append(f"  {'other watched PCs':24s} {sum(n for p, n in pc_counts.items() if p not in known_pcs)}")
 
     lines.extend(["", "First register snapshot at each watched function:"])
     for pc, label in WATCH_PCS.items():
