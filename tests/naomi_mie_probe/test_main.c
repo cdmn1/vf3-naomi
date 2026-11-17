@@ -2,23 +2,19 @@
  * Naomi title-test experiment for the VF3 MIE/JVS probe.
  *
  * This is built as a separate KOS executable and placed in the Naomi ROM's
- * test segment/entry point. EXIT returns through KOS to the Naomi loader,
- * which should resume the normal game-mode path.
+ * test segment/entry point. EXIT uses the retail Naomi BIOS helper 0x44
+ * to return to the Naomi System Test Menu.
  */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <kos.h>
 #include <kos/init.h>
-#include <arch/arch.h>
 #include <dc/minifont.h>
 #include <dc/maple.h>
 #include <dc/maple/mie.h>
 #include <dc/pvr.h>
-
-/* KOS startup.S saves the BIOS-entry stack and PR here. */
-extern uint32_t __arch_old_stack;
-extern void arch_real_exit(int ret_code) __noreturn;
+#include "../../platform/naomi/naomi_bios.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 
@@ -28,6 +24,7 @@ KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 #define FONT_H 24
 
 static pvr_ptr_t font_tex;
+static int bios_exit_ready;
 
 static void font_init(void)
 {
@@ -99,7 +96,7 @@ static mie_state_t *mie_status(void)
 }
 
 static void render_menu(char lines[][TEST_LINE_MAX], int selected,
-                        mie_state_t *s)
+                        mie_state_t *s, int bios_ready)
 {
     snprintf(lines[0], TEST_LINE_MAX, "VF3 GAME TEST MODE");
     snprintf(lines[1], TEST_LINE_MAX, "------------------------------");
@@ -120,9 +117,8 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected,
         snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
         snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
     }
-    uint32_t *saved_stack = (uint32_t *)__arch_old_stack;
-    uint32_t return_pc = saved_stack ? *saved_stack : 0;
-    snprintf(lines[11], TEST_LINE_MAX, "BIOS RETURN PC: %08lX", (unsigned long)return_pc);
+    snprintf(lines[11], TEST_LINE_MAX, "%s", bios_ready ?
+             "EXIT RETURNS TO NAOMI SYSTEM MENU" : "BIOS TEST SERVICE UNAVAILABLE");
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -161,6 +157,8 @@ int main(int argc, char **argv)
     int prev_service = 0, prev_test = 0;
     (void)argc; (void)argv;
 
+    bios_exit_ready = naomi_bios_helpers_init();
+
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
     font_tex = pvr_mem_malloc(256 * 256 * 2);
@@ -193,20 +191,21 @@ int main(int argc, char **argv)
                     exit_requested = 1;
                 }
             }
-            render_menu(lines, selected, s);
+            render_menu(lines, selected, s, bios_exit_ready);
         } else if(page == 1) {
             if(test_edge) page = 0;
             render_input(lines, s);
         }
         draw_lines(lines);
         if(exit_requested) {
-            /*
-             * Do not run KOS arch_shutdown() here. Its peripheral teardown
-             * is intended for a loader/debugger, not the Naomi BIOS that
-             * launched the title-test entry. Restore the saved BIOS CPU
-             * context directly, as startup.S does for ARCH_EXIT_RETURN.
-             */
-            arch_real_exit(0);
+            if(bios_exit_ready) {
+                /*
+                 * This is the same retail Naomi BIOS helper used by
+                 * commercial titles (VF4 Final Tuned): helper table +0x44.
+                 */
+                naomi_bios_enter_system_test();
+            }
+            exit_requested = 0;
         }
         thd_sleep(50);
     }
