@@ -1,20 +1,17 @@
 # Flycast tracing toolchain — availability and reproducibility
 
-Reviewed: 2026-11-16
+Reviewed: 2026-11-17
 
 ## Current status
 
-A reproducible first-pass tracer is now in the Naomi repository under `tools/flycast-trace/`. It is being built against a pinned public upstream revision:
+A reproducible first-pass tracer is maintained in `tools/flycast-trace/` and built against a pinned public upstream revision:
 
 - Upstream: `flyinghead/flycast`
 - Pinned commit: `3a5267a5e32438026e1c5b97d5de6cd77236f72c`
 - Patch and Windows launcher: `tools/flycast-trace/`
 - Build workflow: `.github/workflows/flycast-trace.yml`
 
-The first Windows workflow run is `43915068665`:
-https://github.com/cdmn1/vf3-naomi/actions/runs/43915068665
-
-At the time of this update, it is still checking out upstream Flycast. No executable artifact has been published or verified yet. Do not give the user a download link until the build completes and the ZIP has been inspected.
+The initial Windows build (run `43915068665`) failed during the Breakpad configure step. The workflow had not actually passed `USE_BREAKPAD=OFF` to CMake, so the optional Breakpad dependency was still built; its MinGW dependency-tracking bootstrap failed. The workflow now explicitly disables Breakpad and OpenMP for this tracing build. This is a build configuration correction, not a change to Flycast runtime behavior.
 
 ## What the maintained first-pass patch implements
 
@@ -22,9 +19,25 @@ At the time of this update, it is still checking out upstream Flycast. No execut
 - `VF3_WATCH` reads `pc 0xADDR` and `mem 0xADDR 0xLEN` entries.
 - Watched PCs emit the eight-u64 `FA10/FA11` register probe group.
 - Watched guest-memory reads and writes emit four-u64 `FA20` records understood by `tools/loader_trace_decode.py`.
-- `run-trace.cmd` sets the environment and points output to `vf3-loader-trace.bin` beside the executable. The user will not need to create that file or type environment variables.
+- `run-trace.cmd` sets the environment and points output to `vf3-loader-trace.bin` beside the executable. The user does not need to create that file or type environment variables.
 
-This is a deliberate minimum for the loader-transition capture. It does **not** yet recreate the private research build's `VF3_FULL` entry/exit oracle snapshots, frame-clock `vf3script` commands (`KEYF`, `SAVEF`, `EXITF`), or savestate staging (`VF3_STATE`). The current launcher expects manual navigation in the Flycast GUI. Do not claim those omitted features exist.
+### First capture target: original guest input path
+
+The maintained watch list now includes:
+
+| Guest PC | Reconstructed role |
+|---|---|
+| `0x8C09B006` | Selected controller-port reader |
+| `0x8C09AF6C` | Controller input merge |
+| `0x8C0AD1B8` | Player action update |
+
+These addresses originate in the related VF3 decompilation/research notes. They are hypotheses about the original executable's input path until this tracer records actual hits. The same capture retains the GDFS/MT loader watches and memory ranges, so later captures can serve both investigations.
+
+The user should load the **Dreamcast** VF3 image (not the Naomi probe ROM), navigate with the normal controls as far as possible, ideally into a player-controlled match, and close Flycast normally. If the game remains in attract/demo mode, the capture is still useful: absence of hits in the three controller routines confirms only that they were not executed during that capture.
+
+### Deliberate limits
+
+This does **not** recreate the private research build's `VF3_FULL` entry/exit oracle snapshots, frame-clock `vf3script` commands (`KEYF`, `SAVEF`, `EXITF`), or savestate staging (`VF3_STATE`). The current launcher expects manual navigation in the Flycast GUI. Do not claim those omitted features exist.
 
 ## Why the old executable could not be downloaded
 
@@ -36,7 +49,7 @@ The related documentation names local outputs such as:
 - `tools/emu/flycast-build/flycast_v3.exe` (later headless build)
 - `tools/emu/flycast-build-gui/flycast.exe` (GUI/navigation build)
 
-These are paths on the original research machine, not downloadable assets. The public notes do not identify the exact source revision or publish the custom executable. The pinned upstream commit above is therefore our new reproducible baseline, not a claim that it matches the old private fork.
+These are paths on the original research machine, not downloadable assets. The public notes do not identify the exact source revision or publish the custom executable. The pinned upstream commit above is therefore our reproducible baseline, not a claim that it matches the old private fork.
 
 ## Verification gates before asking the user to run it
 
@@ -46,8 +59,8 @@ These are paths on the original research machine, not downloadable assets. The p
 4. Confirm the executable launches and the trace file is created using a short smoke test.
 5. Only then provide one ZIP and short Windows instructions. Keep trace decoding and analysis on the development side.
 
-Until those steps are complete, the user's required action is **none**. In particular, `C:\\vf3-loader-trace.bin` is a future output path, not a file the user should already possess.
+Until those steps are complete, the user's required action is **none**. In particular, `vf3-loader-trace.bin` is an output created by the launcher, not a file the user should already possess.
 
 ## Scope distinction
 
-The existing `vf3-decomp` captures and savestates are evidence from the Dreamcast research environment. They are not captures from this Naomi project, and the documented fight savestate was already past the one-time character/stage loading boundary. The new tracer is intended to capture the missing transition from character select into Round 1.
+The existing `vf3-decomp` captures and savestates are evidence from the Dreamcast research environment. They are not captures from this Naomi project, and the documented fight savestate was already past the one-time character/stage loading boundary. The current tracer first targets the missing guest controller-path evidence; resource loading remains a secondary benefit of the same trace.
