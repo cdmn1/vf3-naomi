@@ -1,90 +1,66 @@
-# Naomi retail BIOS test-menu hand-off
+# Naomi System Test Menu hand-off
 
-## Confirmed commercial-game implementation
+## Current status: direct hand-off is unsafe in the KOS probe
 
-The Virtua Fighter 4 Final Tuned (VF4FT) decompilation contains both sides of
-the Naomi test-menu lifecycle, including the separate test.bin program.
+Probe build `vf3-naomi-mie-probe-v0.1.1-dev.43+d49eebe` was tested in Flycast:
 
-Its SDK routine bios_helpers_copy():
+- Selecting EXIT in the in-app GAME TEST MODE produced a garbled display and Flycast stopped responding.
+- Pressing the in-app/physical TEST path froze the application.
 
-1. Reads the Naomi BIOS helper table at 0xA0060000.
-2. Checks that its first eight entries point into the BIOS helper region
-   0x0C01xxxx.
-3. Copies 0x7000 bytes (0x1c00 words) to 0xAC018000.
-4. Sets the game's helper-table pointer to that copied block.
+Treat both paths as failed. Do not use dev.43 to test BIOS hand-off again.
 
-The BIOS helper table entry at offset 0x44 is the system-test hand-off.
-VF4FT's bios_helper_44() waits until G1 DMA is idle, acknowledges the
-cartridge bus by writing 0xC000 to 0xA05F700C, and calls the helper
-through its uncached P2 alias. In the observed VF4FT build, the table entry
-resolves to cached address 0x0C018188, called as 0xAC018188. The call
-does not return.
+The previous implementation called BIOS vector entry `0x11` / byte offset `0x44` directly from a running KallistiOS application. That is not a safe hand-off because KOS's runtime, drivers, interrupts, threads, and video/audio services are still active.
 
-## Both transitions use the same service
+## Naomi 1 reference: DragonMinded/libnaomi
 
-### Running game -> Naomi System Test Menu
+The independent Naomi homebrew project [libnaomi](https://github.com/DragonMinded/libnaomi) provides a directly relevant Naomi 1 implementation in [libnaomi/system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c).
 
-VF4FT's test_switch_exit_to_bios() polls the merged JVS TEST input using
-mask 0x10000004; bit 2 is the physical JVS TEST switch. Once pressed, the
-game waits for card-unit operations to finish, then shuts down networking,
-clears hardware breakpoints, stops sound, holds the G1 bus, quiesces Naomi 2
-ELAN registers where applicable, and calls bios_helper_44().
+Its constants identify:
 
-### Game Test Menu -> Naomi System Test Menu
+- System-call vector base: `0xAC018000`
+- Enter-test-mode vector index: `0x11`
+- Therefore the vector's byte offset is `0x11 * 4 = 0x44`
 
-The separate VF4FT test.bin program's test_menu_exit_to_bios() handles
-the EXIT item. It shuts down networking, holds the G1 bus, quiesces Naomi 2
-ELAN registers where applicable, and calls the same bios_helper_44().
+This reconciles the notation used by the two sources: libnaomi calls it vector index `0x11`; the VF4 decomp refers to byte offset `0x44`. They identify the same table slot. This is independent Naomi 1 evidence for the vector location, not a reason to assume VF4's Naomi 2 title cleanup is applicable to VF3.
 
-This is direct evidence for the intended flow:
+The important part is the call sequence. libnaomi does not invoke the vector from inside the running application. Its `enter_test_mode()` calls `call_unmanaged()`. That records the requested BIOS call and performs a `longjmp` to the runtime's top-level entry point. The runtime then runs `_shutdown()` before invoking the requested BIOS function.
 
-GAME RUNNING -- physical JVS TEST --> NAOMI SYSTEM TEST MENU
-GAME TEST MENU -- select EXIT -----> NAOMI SYSTEM TEST MENU
+The observed libnaomi shutdown sequence runs global destructors, frees audio and video, then tears down ROMFS, POSIX, IRQ, Maple, audio, thread, and timer subsystems. The vector call happens only after this teardown. This is the key missing piece in the KOS probe.
 
-The KOS arch_menu() / syscall_system_bios_menu() path is not this
-service. Nor is KOS ARCH_EXIT_RETURN. DreamShell's HOLLYSH_TEST_ADDR
-is a separate entry point in its custom HollySH BIOS and must not be used as
-a retail-BIOS address.
+Sources:
+- [libnaomi system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c) — vector index, `enter_test_mode()`, `call_unmanaged()`, and runtime `_shutdown()`.
+- [libnaomi README](https://github.com/DragonMinded/libnaomi) — describes libnaomi as a Naomi-specific bare-metal system library and documents its hardware/runtime coverage.
 
-## Shared implementation in this repository
+## What this does and does not establish
 
-platform/naomi/naomi_bios.c provides:
+Established by the Naomi 1 libnaomi source:
+- The Naomi System Test Mode vector is read from `0xAC018000 + 0x11 * 4`.
+- The runtime must be shut down before the BIOS call in that implementation.
+- libnaomi's shutdown is part of its own runtime and is not a KOS API.
 
-- naomi_bios_helpers_init(): validates and copies the retail BIOS helper
-  block to the reserved RAM area.
-- naomi_bios_test_switch_update(): reports a rising edge of the physical
-  TEST input.
-- naomi_bios_enter_system_test(): invokes helper entry 0x44; it does
-  not return.
+Not established:
+- That directly calling the vector from a live KOS application is safe. dev.43 demonstrates the opposite.
+- That libnaomi's internal shutdown functions can be called from KOS. They belong to a different runtime and cannot simply be linked into this project.
+- That a particular KOS shutdown sequence is sufficient to return to the Naomi System Test Menu.
+- That Naomi 2-specific VF4 cleanup is needed or appropriate for VF3 on original Naomi.
 
-The caller must stop title-specific activity before invoking the hand-off.
-VF4FT's shutdown list is the reference; networking, card units, audio,
-pending G1/DIMM transfers and Naomi 2 ELAN activity should be handled only
-when the title actually uses them.
+## Required next implementation step
 
-The standalone VF3 MIE/JVS probe now exercises both paths: the game-side
-probe exits on a physical TEST press, and the separate test executable's
-EXIT item calls helper 0x44.
+Do not call the BIOS vector from either probe executable while KOS is active.
 
-## Validation still required
+First determine a supported KOS shutdown/exit path for a Naomi application, including how to stop the PVR/TA, audio, Maple/MIE, interrupts, timers, and threads without leaving KOS callbacks or background work running. Then arrange for the BIOS vector call to occur only after that shutdown has completed, analogous to libnaomi's `call_unmanaged()` design.
 
-The code path is now grounded in a commercial title and has been integrated
-into the probe build, but it is not yet hardware-validated in this project.
-The next gate is a build followed by these checks in Flycast and on the
-user's Naomi:
+If KOS has no safe way to resume at a top-level exit trampoline after shutting down its subsystems, a small standalone libnaomi-based Naomi test program may be the better way to validate the BIOS vector independently. That would be a separate test target, not a drop-in replacement for the existing KOS probe.
 
-1. Boot the probe game executable.
-2. Press the physical TEST button; confirm the Naomi System Test Menu appears.
-3. Select GAME TEST MODE; confirm the VF3 probe test menu loads.
-4. Select EXIT; confirm the Naomi System Test Menu reappears without reset.
+## VF4 decompilation: useful but Naomi 2 evidence
 
-Do not treat a successful compile as proof of the BIOS hand-off.
+The recovered Virtua Fighter 4 Final Tuned Ver. B source remains useful for understanding how a commercial title handles its own TEST and test-program EXIT events. However, VF4 is a Naomi 2 title. Its title-specific shutdown sequence must not be copied wholesale into VF3 or treated as proof of Naomi 1 BIOS internals.
 
-## Source references
+References:
+- [VF4FT game-side TEST handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src/vf4lib/libbase/src/system.c)
+- [VF4FT test-program EXIT handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/testmode/testmode.c)
+- [VF4FT BIOS helper implementation](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/sdk/libam/nlasrvdt.c)
 
-The recovered VF4 Final Tuned Ver. B source used for this finding is
-available here:
+## Validation
 
-- [Game-side TEST handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src/vf4lib/libbase/src/system.c) — test_switch_exit_to_bios().
-- [Test-program EXIT handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/testmode/testmode.c) — test_menu_exit_to_bios().
-- [BIOS helper copy and helper 0x44](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/sdk/libam/nlasrvdt.c) — bios_helpers_copy() and bios_helper_44().
+No BIOS hand-off is currently validated in Flycast or on real Naomi hardware. A successful compile is not evidence that the hand-off works. The next ROM must not be sent for user testing until the KOS shutdown/trampoline problem has been addressed.
