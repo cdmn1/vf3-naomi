@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     maple_wait_scan();
 
     for(;;) {
-        int test_pressed = build_report(lines);
+        (void)build_report(lines);
         ui_draw(lines, UI_LINE_COUNT);
         thd_sleep(250);
     }
