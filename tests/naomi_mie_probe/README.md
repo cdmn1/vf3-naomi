@@ -71,14 +71,23 @@ of bad wiring until bridge firmware state is known.
 
 ## Naomi title-test entry and exit
 
-The ROM's separate test entry displays a small `VF3 GAME TEST MODE` menu
-with `INPUT TEST` and `EXIT`. SERVICE cycles the selection; the physical
-JVS system TEST input selects it. The input page displays the native JVS
-switch values.
+Both directions now use the retail Naomi BIOS helper used by commercial
+software:
 
-EXIT now explicitly selects KallistiOS `ARCH_EXIT_RETURN`. KOS restores the
-stack and return address saved on entry and hands control back to the Naomi
-loader. This is the path intended to resume game mode after a title-test
-program exits. It replaces the earlier `ARCH_EXIT_MENU` experiment, which
-called the BIOS System Menu syscall and caused a reset on the tested setup.
-The new return path still requires confirmation on Naomi hardware.
+- While the game-side probe is running, a rising edge on the JVS system TEST
+  input transfers control to the Naomi System Test Menu.
+- From the separate GAME TEST MODE program, selecting EXIT transfers control
+  to that same Naomi System Test Menu.
+
+The shared implementation is in platform/naomi/naomi_bios.c. It validates
+the retail BIOS helper table at 0xA0060000, copies its 0x7000-byte helper
+block to 0xAC018000, and calls BIOS helper entry 0x44 through its
+uncached address. This is based on the recovered Virtua Fighter 4 Final
+Tuned game and test-program code, where both the in-game TEST handler and
+the title-test EXIT handler call helper 0x44.
+
+This replaces the unsuccessful KOS ARCH_EXIT_MENU and
+ARCH_EXIT_RETURN experiments. The helper is the Naomi BIOS hand-off,
+not a Dreamcast BIOS menu syscall or a return to the game loader.
+
+The new implementation still requires Flycast and real-Naomi validation.
