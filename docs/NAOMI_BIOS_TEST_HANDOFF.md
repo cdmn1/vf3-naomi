@@ -67,20 +67,20 @@ References:
 - [VF4FT test-program EXIT handler](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/testmode/testmode.c)
 - [VF4FT helper implementation](https://github.com/djanice1980/VF4-Final-Tuned-Rev-B-Decomp-Source/blob/5646898aca5eedd45ae7495ad52bc7bd479604d4/src_test/sdk/libam/nlasrvdt.c)
 
-## Validation status
+## Validation status — confirmed
 
-- GitHub Actions build passed: [run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844).
+The KOS shutdown-based hand-off is now **confirmed working in both Flycast and on real Naomi 1 hardware**.
+
+- GitHub Actions build: [run 44175121844](https://github.com/cdmn1/vf3-naomi/actions/runs/44175121844).
+- Source commit: `8be15a81d418fc848f3e5eb515527c40fc4bbdf4`.
 - Built ROM: `vf3_mie_probe_v0.1.1-dev.57+8be15a8.bin`.
-- The build compiled the patched Naomi KOS shutdown destination and packaged both the running probe and separate title-test program.
-- Flycast and real-Naomi hand-off behavior are still untested.
+- Both the running probe and separate title-test program were included in the build.
 
-The prior dev.43 direct-call implementation failed in Flycast:
-- Physical TEST froze the application.
-- GAME TEST MODE EXIT garbled the display and stopped Flycast responding.
-
-Do not use dev.43 again. The next build must first pass GitHub Actions compilation. Then validate in Flycast:
-1. Physical TEST from the running probe enters the Naomi System Test Menu.
-2. GAME TEST MODE loads the separate probe test program.
+Verified sequence on both environments:
+1. Physical cabinet TEST from the running probe enters the Naomi System Test Menu.
+2. Selecting GAME TEST MODE starts the separate probe test program.
 3. Selecting EXIT returns to the Naomi System Test Menu.
 
-Only after Flycast passes should the same build be tested on the real Naomi.
+The earlier dev.43 direct-call implementation remains a known-bad experiment: it froze in Flycast on physical TEST and garbled the display/hung Flycast on GAME TEST MODE EXIT. Do not reuse that implementation.
+
+For the reusable integration recipe, including the application-side calls, KOS build patch, source references and porting checklist, see [KOS_NAOMI_SYSTEM_TEST_HANDOFF.md](KOS_NAOMI_SYSTEM_TEST_HANDOFF.md).
