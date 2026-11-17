@@ -7,9 +7,10 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <arch/arch.h>
 
 #include "vf3_input_map.h"
-#include "../../platform/naomi/naomi_bios.h"
 
 #include <kos.h>
 #include <kos/init.h>
@@ -131,8 +132,7 @@ static int build_report(char lines[][UI_LINE_MAX])
         snprintf(lines[2], UI_LINE_MAX, "MIE device: not enumerated");
         snprintf(lines[3], UI_LINE_MAX, "Waiting for MIE/JVS input...");
         for(int i = 4; i < UI_LINE_COUNT; ++i) lines[i][0] = '\0';
-        snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
-                 "WAITING FOR JVS TEST INPUT" : "BIOS TEST SERVICE UNAVAILABLE");
+        snprintf(lines[11], UI_LINE_MAX, "TEST: RETURN TO NAOMI SYSTEM MENU");
         return -1;
     }
 
@@ -156,8 +156,7 @@ static int build_report(char lines[][UI_LINE_MAX])
              vf3_jvs_to_maple_buttons(state->jvs.p1.raw));
     snprintf(lines[10], UI_LINE_MAX, "P2 Maple (active-low): %04x",
              vf3_jvs_to_maple_buttons(state->jvs.p2.raw));
-    snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
-             "BIOS VECTOR FOUND - HANDOFF DISABLED" : "BIOS TEST SERVICE UNAVAILABLE");
+    snprintf(lines[11], UI_LINE_MAX, "TEST: RETURN TO NAOMI SYSTEM MENU");
     return !!state->jvs.system.test;
 }
 
@@ -167,8 +166,6 @@ int main(int argc, char *argv[])
 
     (void)argc;
     (void)argv;
-
-    (void)naomi_bios_helpers_init();
 
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
@@ -183,10 +180,30 @@ int main(int argc, char *argv[])
 
     maple_wait_scan();
 
-    for(;;) {
-        (void)build_report(lines);
-        ui_draw(lines, UI_LINE_COUNT);
-        thd_sleep(250);
+    /* Ignore TEST if it was already held while the application started. */
+    {
+        maple_device_t *dev = maple_enum_type(0, MAPLE_FUNC_MIE);
+        mie_state_t *state = dev ? (mie_state_t *)maple_dev_status(dev) : NULL;
+        int prev_test = state ? !!state->jvs.system.test : 0;
+
+        for(;;) {
+            int test_pressed = build_report(lines);
+            int test_now = test_pressed > 0;
+
+            if(test_now && !prev_test) {
+                /*
+                 * ARCH_EXIT_MENU performs the complete KOS shutdown first.
+                 * The Naomi build patches arch_menu() to call BIOS vector
+                 * 0x11 only after that shutdown has completed.
+                 */
+                arch_set_exit_path(ARCH_EXIT_MENU);
+                exit(0);
+            }
+
+            prev_test = test_now;
+            ui_draw(lines, UI_LINE_COUNT);
+            thd_sleep(250);
+        }
     }
 
     return 0;
