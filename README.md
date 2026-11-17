@@ -28,17 +28,30 @@ The current blocking reverse-engineering task is to capture the character-select
 
 ## Naomi I/O bring-up
 
-A standalone KallistiOS MIE/JVS probe is now in
-[`tests/naomi_mie_probe/`](tests/naomi_mie_probe/README.md). It reports the
-native JVS switch words, KOS-mapped controller state, coin meters and analog
+A standalone KallistiOS MIE/JVS probe is in
+[`tests/naomi_mie_probe/`](tests/naomi_mie_probe/README.md). It reports native
+JVS switch words, KOS-mapped controller state, coin meters and analog
 channels. The API and firmware caveats are documented in
-[`NAOMI_IO_RESEARCH.md`](docs/NAOMI_IO_RESEARCH.md). The repository has a GitHub Actions workflow to build KallistiOS for Naomi
-and package the probe as a Naomi ROM image with `naomibintool`. The first
-hardware attempt was rejected because the workflow uploaded a raw flat binary
-rather than a Naomi ROM image; the packaging recipe has been corrected using
-the known-good Daytona cart-probe build. The corrected artifact still needs a
-fresh hardware boot and input test. This is a hardware-validation tool, not a
-VF3 port.
+[`NAOMI_IO_RESEARCH.md`](docs/NAOMI_IO_RESEARCH.md). Its Naomi ROM packaging,
+JVS input path, and System Test Menu hand-off have been exercised in Flycast
+and on real Naomi hardware. This remains a hardware-validation tool, not a
+VF3 game port.
+
+## Reusable Naomi System Test Menu hand-off
+
+The VF3 probe established and hardware-validated a reusable KallistiOS
+pattern for returning to the Naomi BIOS System Test Menu: request
+`ARCH_EXIT_MENU`, call `exit(0)`, let KOS complete its normal shutdown, then
+invoke the Naomi 1 BIOS vector from the Naomi-specific `arch_menu()` exit
+destination. Directly calling the BIOS vector from a live KOS application
+was tested and failed.
+
+The complete integration recipe, KOS patch, source references, validation
+record and reuse checklist are in
+[`docs/KOS_NAOMI_SYSTEM_TEST_HANDOFF.md`](docs/KOS_NAOMI_SYSTEM_TEST_HANDOFF.md).
+The flow is confirmed in Flycast and on real Naomi 1 hardware, including
+both physical TEST entry and GAME TEST MODE EXIT. This is a platform-level
+handoff, not a complete title-specific test menu.
 
 ## First milestone
 
