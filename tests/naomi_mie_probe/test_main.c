@@ -24,7 +24,6 @@ KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 #define FONT_H 24
 
 static pvr_ptr_t font_tex;
-static int bios_exit_ready;
 
 static void font_init(void)
 {
@@ -96,7 +95,7 @@ static mie_state_t *mie_status(void)
 }
 
 static void render_menu(char lines[][TEST_LINE_MAX], int selected,
-                        mie_state_t *s, int bios_ready)
+                        mie_state_t *s)
 {
     snprintf(lines[0], TEST_LINE_MAX, "VF3 GAME TEST MODE");
     snprintf(lines[1], TEST_LINE_MAX, "------------------------------");
@@ -117,8 +116,7 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected,
         snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
         snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
     }
-    snprintf(lines[11], TEST_LINE_MAX, "%s", bios_ready ?
-             "EXIT RETURNS TO NAOMI SYSTEM MENU" : "BIOS TEST SERVICE UNAVAILABLE");
+    snprintf(lines[11], TEST_LINE_MAX, "EXIT HANDOFF DISABLED - KOS SHUTDOWN NEEDED");
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -157,7 +155,7 @@ int main(int argc, char **argv)
     int prev_service = 0, prev_test = 0;
     (void)argc; (void)argv;
 
-    bios_exit_ready = naomi_bios_helpers_init();
+    (void)naomi_bios_helpers_init();
 
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
@@ -173,7 +171,6 @@ int main(int argc, char **argv)
         prev_test = initial ? !!initial->jvs.system.test : 0;
     }
 
-    int exit_requested = 0;
     for(;;) {
         mie_state_t *s = mie_status();
         int service = s ? !!s->jvs.p1.service : 0;
@@ -188,26 +185,14 @@ int main(int argc, char **argv)
             if(test_edge) {
                 if(selected == 0) {
                     page = 1;
-                } else {
-                    exit_requested = 1;
                 }
             }
-            render_menu(lines, selected, s, bios_exit_ready);
+            render_menu(lines, selected, s);
         } else if(page == 1) {
             if(test_edge) page = 0;
             render_input(lines, s);
         }
         draw_lines(lines);
-        if(exit_requested) {
-            if(bios_exit_ready) {
-                /*
-                 * This is the same retail Naomi BIOS helper used by
-                 * commercial titles (VF4 Final Tuned): helper table +0x44.
-                 */
-                naomi_bios_enter_system_test();
-            }
-            exit_requested = 0;
-        }
         thd_sleep(50);
     }
     return 0;
