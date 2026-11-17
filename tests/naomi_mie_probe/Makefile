@@ -12,7 +12,7 @@ TARGET = vf3_mie_probe.elf
 TEST_TARGET = vf3_mie_test.elf
 ROM = vf3_mie_probe.bin
 TEST_ROM = vf3_mie_test.bin
-OBJS = main.o vf3_input_map.o
+OBJS = main.o vf3_input_map.o naomi_bios.o
 TEST_OBJS = test_main.o naomi_bios.o
 
 naomi_bios.o: ../../platform/naomi/naomi_bios.c ../../platform/naomi/naomi_bios.h
