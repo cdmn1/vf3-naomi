@@ -64,6 +64,15 @@ jobs:
         run: |
           cmake --build flycast/build --target install --parallel 2
           test -s flycast-install/bin/flycast.exe
+          # CMake installs Flycast itself, but MinGW runtime DLLs must also
+          # sit beside the executable for a portable Windows ZIP.
+          ldd flycast-install/bin/flycast.exe |
+            awk '{for (i=1; i<=NF; i++) if ($i ~ /^\/mingw64\/bin\/.*\.dll$/) print $i}' |
+            sort -u |
+            while IFS= read -r dll; do
+              test -f "$dll" && cp -f "$dll" flycast-install/bin/
+            done
+          test -f flycast-install/bin/libwinpthread-1.dll
 
       - name: Assemble trace package
         shell: pwsh
