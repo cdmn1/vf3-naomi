@@ -20,8 +20,13 @@ bool naomi_bios_helpers_ready(void);
 bool naomi_bios_test_switch_update(bool pressed);
 
 /*
- * Transfers control to the Naomi BIOS System Test Menu through BIOS helper
- * entry 0x44. This routine does not return.
+ * LOW-LEVEL ONLY: transfers control through Naomi System Test Mode vector
+ * 0x11 (byte offset 0x44). This routine does not return.
+ *
+ * Do not call this from a live KOS application. KOS services, drivers,
+ * interrupts, timers, Maple/MIE, PVR/audio and threads must first be shut
+ * down through a proven top-level exit trampoline. The probe intentionally
+ * does not call this function until that shutdown path exists.
  */
 #if defined(__GNUC__)
 __attribute__((noreturn))
