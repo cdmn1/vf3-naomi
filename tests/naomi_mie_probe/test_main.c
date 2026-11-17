@@ -9,12 +9,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <kos.h>
+#include <arch/arch.h>
 #include <kos/init.h>
 #include <dc/minifont.h>
 #include <dc/maple.h>
 #include <dc/maple/mie.h>
 #include <dc/pvr.h>
-#include "../../platform/naomi/naomi_bios.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 
@@ -116,7 +116,7 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected,
         snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
         snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
     }
-    snprintf(lines[11], TEST_LINE_MAX, "EXIT HANDOFF DISABLED - KOS SHUTDOWN NEEDED");
+    snprintf(lines[11], TEST_LINE_MAX, "EXIT RETURNS TO NAOMI SYSTEM MENU");
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -155,8 +155,6 @@ int main(int argc, char **argv)
     int prev_service = 0, prev_test = 0;
     (void)argc; (void)argv;
 
-    (void)naomi_bios_helpers_init();
-
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
     font_tex = pvr_mem_malloc(256 * 256 * 2);
@@ -185,6 +183,10 @@ int main(int argc, char **argv)
             if(test_edge) {
                 if(selected == 0) {
                     page = 1;
+                } else {
+                    /* KOS shuts down fully before patched Naomi arch_menu(). */
+                    arch_set_exit_path(ARCH_EXIT_MENU);
+                    exit(0);
                 }
             }
             render_menu(lines, selected, s);
