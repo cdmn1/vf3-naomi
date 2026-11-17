@@ -54,6 +54,7 @@ This is the key architectural separation: **the application requests the standar
 Use the public KOS exit-path API and the standard C exit function at each point where the title should return to the Naomi System Test Menu:
 
 ```c
+#include <stdint.h>
 #include <stdlib.h>
 #include <arch/arch.h>
 
@@ -78,14 +79,14 @@ The proven VF3 workflow applies this Naomi-only destination:
 
 ```c
 void arch_menu(void) {
-    dbglog(DBG_CRITICAL, "arch: exiting the system to the BIOS menu\\n");
+    dbglog(DBG_CRITICAL, "arch: exiting the system to the BIOS menu\n");
 #if KOS_PLATFORM_IS_NAOMI
     typedef void (*naomi_syscall_t)(void);
     volatile uint32_t *syscall_vector = (volatile uint32_t *)0xAC018000u;
     uint32_t entry = syscall_vector[0x11];
 
     if(entry == 0 || entry == 0xFFFFFFFFu) {
-        dbglog(DBG_CRITICAL, "arch: invalid Naomi System Test Mode vector\\n");
+        dbglog(DBG_CRITICAL, "arch: invalid Naomi System Test Mode vector\n");
         for(;;) { }
     }
 
@@ -109,7 +110,7 @@ Important:
 
 The VF3 dev.57 build (source commit `8be15a81d418fc848f3e5eb515527c40fc4bbdf4`) passed both build and runtime validation.
 
-<badge>Confirmed on Flycast</badge> <badge>Confirmed on real Naomi 1 hardware</badge>
+**Runtime validation:** confirmed on Flycast and real Naomi 1 hardware.
 
 Both return paths were tested:
 
