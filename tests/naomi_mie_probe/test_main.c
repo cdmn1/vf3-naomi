@@ -2,8 +2,9 @@
  * Naomi title-test experiment for the VF3 MIE/JVS probe.
  *
  * This is built as a separate KOS executable and placed in the Naomi ROM's
- * test segment/entry point. BIOS hand-off is currently disabled: calling
- * the Naomi vector before KOS has shut down freezes the tested runtime.
+ * test segment/entry point. EXIT selects ARCH_EXIT_MENU and calls exit(0),
+ * allowing KOS to complete shutdown before the Naomi-specific arch_menu()
+ * destination invokes the BIOS System Test Mode vector.
  */
 #include <stdint.h>
 #include <stdio.h>
