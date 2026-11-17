@@ -142,6 +142,36 @@ jobs:
                   s = s[:guard_at] + s[guard_at + len(guard):]
               # A restored cache already contains this exact source patch.
           p.write_text(s)
+
+          # Keep KOS's complete shutdown path, but use the Naomi 1 BIOS
+          # System Test Mode vector as the final ARCH_EXIT_MENU destination.
+          init_path = Path(os.environ["KOS_BASE"]) / "kernel/arch/dreamcast/kernel/init.c"
+          init_source = init_path.read_text()
+          old_arch_menu = """void arch_menu(void) {
+              dbglog(DBG_CRITICAL, "arch: exiting the system to the BIOS menu\\n");
+              syscall_system_bios_menu();
+          }"""
+          new_arch_menu = """void arch_menu(void) {
+              dbglog(DBG_CRITICAL, "arch: exiting the system to the BIOS menu\\n");
+          #if KOS_PLATFORM_IS_NAOMI
+              typedef void (*naomi_syscall_t)(void);
+              volatile uint32_t *syscall_vector = (volatile uint32_t *)0xAC018000u;
+              uint32_t entry = syscall_vector[0x11];
+              if(entry == 0 || entry == 0xFFFFFFFFu) {
+                  dbglog(DBG_CRITICAL, "arch: invalid Naomi System Test Mode vector\\n");
+                  for(;;) { }
+              }
+              ((naomi_syscall_t)(uintptr_t)(entry | 0xA0000000u))();
+              __builtin_unreachable();
+          #else
+              syscall_system_bios_menu();
+          #endif
+          }"""
+          if new_arch_menu not in init_source:
+              if old_arch_menu not in init_source:
+                  raise SystemExit("Could not find KOS arch_menu() for Naomi BIOS handoff patch")
+              init_source = init_source.replace(old_arch_menu, new_arch_menu)
+          init_path.write_text(init_source)
           PY
           make -C "$KOS_BASE" -j2
 
