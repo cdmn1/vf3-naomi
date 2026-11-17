@@ -157,7 +157,7 @@ static int build_report(char lines[][UI_LINE_MAX])
     snprintf(lines[10], UI_LINE_MAX, "P2 Maple (active-low): %04x",
              vf3_jvs_to_maple_buttons(state->jvs.p2.raw));
     snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
-             "TEST SWITCH: ENTER NAOMI SYSTEM MENU" : "BIOS TEST SERVICE UNAVAILABLE");
+             "BIOS VECTOR FOUND - HANDOFF DISABLED" : "BIOS TEST SERVICE UNAVAILABLE");
     return !!state->jvs.system.test;
 }
 
@@ -185,11 +185,6 @@ int main(int argc, char *argv[])
 
     for(;;) {
         int test_pressed = build_report(lines);
-        if(test_pressed >= 0 &&
-           naomi_bios_test_switch_update(test_pressed) &&
-           naomi_bios_helpers_ready()) {
-            naomi_bios_enter_system_test();
-        }
         ui_draw(lines, UI_LINE_COUNT);
         thd_sleep(250);
     }
