@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "vf3_input_map.h"
+#include "../../platform/naomi/naomi_bios.h"
 
 #include <kos.h>
 #include <kos/init.h>
@@ -118,7 +119,7 @@ static void ui_draw(const char lines[][UI_LINE_MAX], int count)
     pvr_scene_finish();
 }
 
-static void build_report(char lines[][UI_LINE_MAX])
+static int build_report(char lines[][UI_LINE_MAX])
 {
     maple_device_t *dev = maple_enum_type(0, MAPLE_FUNC_MIE);
     mie_state_t *state = dev ? (mie_state_t *)maple_dev_status(dev) : NULL;
@@ -130,8 +131,9 @@ static void build_report(char lines[][UI_LINE_MAX])
         snprintf(lines[2], UI_LINE_MAX, "MIE device: not enumerated");
         snprintf(lines[3], UI_LINE_MAX, "Waiting for MIE/JVS input...");
         for(int i = 4; i < UI_LINE_COUNT; ++i) lines[i][0] = '\0';
-        snprintf(lines[11], UI_LINE_MAX, "KOS MIE driver / INIT_MIE");
-        return;
+        snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
+                 "WAITING FOR JVS TEST INPUT" : "BIOS TEST SERVICE UNAVAILABLE");
+        return 0;
     }
 
     snprintf(lines[2], UI_LINE_MAX, "MIE device: detected");
@@ -154,7 +156,9 @@ static void build_report(char lines[][UI_LINE_MAX])
              vf3_jvs_to_maple_buttons(state->jvs.p1.raw));
     snprintf(lines[10], UI_LINE_MAX, "P2 Maple (active-low): %04x",
              vf3_jvs_to_maple_buttons(state->jvs.p2.raw));
-    snprintf(lines[11], UI_LINE_MAX, "Push1=P Push2=K Push3=G Push4=E");
+    snprintf(lines[11], UI_LINE_MAX, "%s", naomi_bios_helpers_ready() ?
+             "TEST SWITCH: ENTER NAOMI SYSTEM MENU" : "BIOS TEST SERVICE UNAVAILABLE");
+    return !!state->jvs.system.test;
 }
 
 int main(int argc, char *argv[])
@@ -163,6 +167,8 @@ int main(int argc, char *argv[])
 
     (void)argc;
     (void)argv;
+
+    (void)naomi_bios_helpers_init();
 
     pvr_init_defaults();
     pvr_set_bg_color(0.0f, 0.0f, 0.0f);
@@ -178,7 +184,11 @@ int main(int argc, char *argv[])
     maple_wait_scan();
 
     for(;;) {
-        build_report(lines);
+        int test_pressed = build_report(lines);
+        if(naomi_bios_test_switch_update(test_pressed) &&
+           naomi_bios_helpers_ready()) {
+            naomi_bios_enter_system_test();
+        }
         ui_draw(lines, UI_LINE_COUNT);
         thd_sleep(250);
     }
