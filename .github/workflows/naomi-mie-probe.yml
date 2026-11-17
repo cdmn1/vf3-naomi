@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "tests/naomi_mie_probe/**"
+      - "platform/naomi/**"
       - "VERSION"
       - ".github/workflows/naomi-mie-probe.yml"
   workflow_dispatch:
