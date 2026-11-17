@@ -16,78 +16,38 @@ make clean rom
 ```
 
 This produces `vf3_mie_probe.bin`, a Naomi ROM image packaged by KallistiOS's
-`naomibintool`. Do not upload the ELF or an `objcopy -O binary` output: those
-are not substitutes for the Naomi ROM image header/container. The packaging
-recipe follows the known-good Daytona `naomi_cart_probe_v1.bin` build path.
+`naomibintool`.
 
 ## What it reports
 
-Every 250 ms the probe refreshes an on-screen status page showing:
+The probe reports Port A mode, MIE enumeration, KOS-mapped player-one buttons,
+native JVS player 1/player 2 switch words, system and panel switches, coin
+counts, and raw analog channels.
 
-- Port A mode: MIE/JVS, standard Maple, or unknown;
-- whether the MIE device enumerated;
-- KOS-mapped player-one controller buttons;
-- native JVS player 1/player 2 switch words, system switches and cabinet
-  panel test/service switches;
-- both coin meter counts, insert pulses and fault flags;
-- all eight raw JVS analog channels;
-- the JVS-to-Dreamcast-Maple button word for each player, in active-low wire
-  form.
+It uses KOS's `INIT_MIE`, `MAPLE_FUNC_MIE`, and `mie_state_t` APIs.
 
-The program uses KOS's `INIT_MIE` startup flag and the public
-`MAPLE_FUNC_MIE` / `mie_state_t` API. KOS documents the MIE as the Naomi
-Maple-port-A bridge to the JVS I/O board; it is not a direct Dreamcast
-controller packet and should not be replaced with the simplified JVS DMA
-stub found in unrelated early recompilation frameworks.
+## Naomi System Test Menu hand-off status
 
-## Validation
+The BIOS hand-off is deliberately **disabled** in the probe after dev.43
+froze in Flycast on both the running-game TEST path and the GAME TEST MODE
+EXIT path. Do not use dev.43 to test the hand-off.
 
-The source has compiled, and the packaged ROM has been tested successfully
-in Flycast and on real Naomi hardware. MIE/JVS detection, the menu, and the
-input display work. The EXIT hand-off is the one remaining item under test.
+Research in DragonMinded's Naomi-specific libnaomi project confirms that the
+Naomi System Test Mode vector is at `0xAC018000 + 0x11 * 4` (byte offset
+`0x44`). More importantly, libnaomi does not call it while its runtime is
+active: it unwinds to a top-level exit trampoline, shuts down audio, video,
+interrupts, Maple, threads, timers and other services, and only then calls
+the BIOS vector.
 
-The probe also exercises a small, host-unit-tested input adapter. Its
-provisional default layout maps JVS push switches 1–4 to VF3 Punch, Kick,
-Guard and Escape, respectively, then encodes the buttons and directions as
-a standard Dreamcast Maple controller word (active-low). The mapping is
-visible on screen and can be adjusted if the cabinet's switch wiring differs.
+That shutdown sequence is part of libnaomi's own runtime; it is not a KOS
+shutdown API and cannot simply be copied into this KOS application. The probe
+therefore reports inputs but no longer attempts the unsafe direct call.
 
-This proves the JVS-to-Maple conversion independently; it does not yet mean
-the original VF3 guest executable is consuming the generated word. That
-requires the Maple HLE/input seam to be integrated into the game runtime.
-
-The automatic `INIT_MIE` path expects the MIE bridge firmware to already
-be active (for example, initialized by the Naomi BIOS). KOS also exposes
-`mie_init_fw(fw_path)` for uploading `mie_z80.bin` when required, but that
-firmware is not bundled here. Do not interpret an empty input page as proof
-of bad wiring until bridge firmware state is known.
+See [NAOMI_BIOS_TEST_HANDOFF.md](../../docs/NAOMI_BIOS_TEST_HANDOFF.md) for
+the source analysis and the requirements for a safe KOS implementation.
 
 ## Reference
 
-- KallistiOS MIE driver: https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/include/dc/maple/mie.h
-- KallistiOS official MIE example: https://github.com/KallistiOS/KallistiOS/tree/master/examples/dreamcast/mie/basic
-- KallistiOS Naomi ROM packaging tool: https://github.com/KallistiOS/KallistiOS/tree/master/utils/naomibintool
-- KallistiOS 2.1 release notes: https://github.com/KallistiOS/KallistiOS/releases
-
-## Naomi title-test entry and exit
-
-Both directions now use the retail Naomi BIOS helper used by commercial
-software:
-
-- While the game-side probe is running, a rising edge on the JVS system TEST
-  input transfers control to the Naomi System Test Menu.
-- From the separate GAME TEST MODE program, selecting EXIT transfers control
-  to that same Naomi System Test Menu.
-
-The shared implementation is in platform/naomi/naomi_bios.c. It validates
-the retail BIOS helper table at 0xA0060000, copies its 0x7000-byte helper
-block to 0xAC018000, and calls BIOS helper entry 0x44 through its
-uncached address. This is based on the recovered Virtua Fighter 4 Final
-Tuned game and test-program code, where both the in-game TEST handler and
-the title-test EXIT handler call helper 0x44.
-
-This replaces the unsuccessful KOS ARCH_EXIT_MENU and
-ARCH_EXIT_RETURN experiments. The helper is the Naomi BIOS hand-off,
-not a Dreamcast BIOS menu syscall or a return to the game loader.
-
-The new implementation still requires Flycast and real-Naomi validation.
+- [KallistiOS MIE driver](https://github.com/KallistiOS/KallistiOS/blob/master/kernel/arch/dreamcast/include/dc/maple/mie.h)
+- [KallistiOS MIE example](https://github.com/KallistiOS/KallistiOS/tree/master/examples/dreamcast/mie/basic)
+- [DragonMinded libnaomi system.c](https://github.com/DragonMinded/libnaomi/blob/main/libnaomi/system.c)
