@@ -54,7 +54,7 @@ These are paths on the original research machine, not downloadable assets. The p
 ## Verification gates before asking the user to run it
 
 1. Workflow completes successfully.
-2. ZIP exists and contains `flycast.exe`, required runtime files, `run-trace.cmd`, and `VF3_WATCH_LOADER.txt`.
+2. ZIP exists and contains `flycast.exe`, required runtime files, `run-trace.cmd`, `VF3_WATCH_INPUT.txt`, and `VF3_WATCH_LOADER.txt`.
 3. SHA-256 is recorded and the archive is inspected.
 4. Confirm the executable launches and the trace file is created using a short smoke test.
 5. Only then provide one ZIP and short Windows instructions. Keep trace decoding and analysis on the development side.
