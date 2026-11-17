@@ -1,14 +1,8 @@
-# VF3 trace: original guest input path + resource loader
+# VF3 loader trace: PC probes + memory ranges
 # Use with the patched Flycast interpreter and VF3_WATCH=<this file>.
 # PC values are guest SH-4 addresses; the upstream probe hook normalizes P2 aliases.
 #
-# First priority: confirm the original executable consumes controller input.
-# These three PCs are the selected-port read, controller merge, and player action update.
-pc 0x8C09B006
-pc 0x8C09AF6C
-pc 0x8C0AD1B8
-
-# Resource loader watches (useful if the same capture reaches character load).
+# Core loader and runtime table:
 pc 0x8C02DCEC
 pc 0x8C04BDA2
 pc 0x8C08232E
