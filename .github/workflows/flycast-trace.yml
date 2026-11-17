@@ -6,6 +6,7 @@ on:
     paths:
       - "tools/flycast-trace/**"
       - "tools/VF3_WATCH_LOADER.txt"
+      - "tools/VF3_WATCH_INPUT.txt"
       - "tools/loader_trace_summary.py"
       - ".github/workflows/flycast-trace.yml"
   workflow_dispatch:
@@ -69,6 +70,7 @@ jobs:
           Copy-Item -Path "flycast-install/bin/*" -Destination $package -Recurse -Force
           Copy-Item "tools/flycast-trace/run-trace.cmd" $package
           Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
+          Copy-Item "tools/VF3_WATCH_INPUT.txt" $package
           @"
           VF3 Flycast trace build
           Upstream repository: https://github.com/flyinghead/flycast
@@ -76,6 +78,7 @@ jobs:
           VF3 tooling commit: $env:GITHUB_SHA
           Built by GitHub Actions run: $env:GITHUB_RUN_ID
           Instrumentation: PC probe groups (FA10/FA11), guest memory access records (FA20)
+          Default watch profile: VF3_WATCH_INPUT.txt (three controller-path PCs)
           Controller probes: selected-port reader, controller merge, player action update
           "@" | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
           Get-ChildItem $package -File | Get-FileHash -Algorithm SHA256 |
