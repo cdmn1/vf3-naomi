@@ -16,6 +16,10 @@
 #include <dc/maple/mie.h>
 #include <dc/pvr.h>
 
+/* KOS startup.S saves the BIOS-entry stack and PR here. */
+extern uint32_t __arch_old_stack;
+extern void arch_real_exit(int ret_code) __noreturn;
+
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MIE);
 
 #define TEST_LINE_MAX 64
@@ -116,7 +120,9 @@ static void render_menu(char lines[][TEST_LINE_MAX], int selected,
         snprintf(lines[9], TEST_LINE_MAX, "PANEL INPUT DATA UNAVAILABLE");
         snprintf(lines[10], TEST_LINE_MAX, "CHECK INIT_MIE / MAPLE SCAN");
     }
-    snprintf(lines[11], TEST_LINE_MAX, "CONTROLS: JVS SYSTEM TEST / P1 SERVICE");
+    uint32_t *saved_stack = (uint32_t *)__arch_old_stack;
+    uint32_t return_pc = saved_stack ? *saved_stack : 0;
+    snprintf(lines[11], TEST_LINE_MAX, "BIOS RETURN PC: %08lX", (unsigned long)return_pc);
 }
 
 static void render_input(char lines[][TEST_LINE_MAX], mie_state_t *s)
@@ -184,7 +190,6 @@ int main(int argc, char **argv)
                      * the test executable; do not invoke the BIOS-menu
                      * syscall, which is a different exit destination.
                      */
-                    arch_set_exit_path(ARCH_EXIT_RETURN);
                     exit_requested = 1;
                 }
             }
@@ -194,7 +199,15 @@ int main(int argc, char **argv)
             render_input(lines, s);
         }
         draw_lines(lines);
-        if(exit_requested) break;
+        if(exit_requested) {
+            /*
+             * Do not run KOS arch_shutdown() here. Its peripheral teardown
+             * is intended for a loader/debugger, not the Naomi BIOS that
+             * launched the title-test entry. Restore the saved BIOS CPU
+             * context directly, as startup.S does for ARCH_EXIT_RETURN.
+             */
+            arch_real_exit(0);
+        }
         thd_sleep(50);
     }
     return 0;
