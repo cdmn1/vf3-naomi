@@ -14,7 +14,6 @@
 #include <kos.h>
 #include <dc/minifont.h>
 #include <dc/pvr.h>
-#include <dc/cdrom.h>
 #include <dc/syscalls.h>
 #include <dc/memory.h>
 #include <dc/g1ata.h>
@@ -37,10 +36,48 @@ static uint32_t data_track_fad;
 static uint8_t *sector_buf;
 static cd_toc_t toc;
 
+static int exec_bios_command(cd_cmd_code_t command, void *params,
+                             cd_cmd_chk_status_t *final_status) {
+    cd_cmd_chk_status_t status;
+    gdc_cmd_hnd_t handle = 0;
+    for (int retry = 0; retry < 500; ++retry) {
+        handle = syscall_gdrom_send_command(command, params);
+        if (handle > 0) break;
+        syscall_gdrom_exec_server();
+        thd_sleep(1);
+    }
+    if (handle <= 0) return -20;
+    for (int retry = 0; retry < 5000; ++retry) {
+        syscall_gdrom_exec_server();
+        const cd_cmd_chk_t result = syscall_gdrom_check_command(handle, &status);
+        if (result == CD_CMD_COMPLETED) {
+            if (final_status) *final_status = status;
+            return 0;
+        }
+        if (result == CD_CMD_FAILED || result == CD_CMD_NOT_FOUND) {
+            if (final_status) *final_status = status;
+            return -21 - (int)status.err1;
+        }
+        thd_sleep(1);
+    }
+    syscall_gdrom_abort_command(handle);
+    return -22;
+}
+
+static uint32_t locate_data_track(const cd_toc_t *table) {
+    const int first = (int)((table->first >> 16) & 0xffu);
+    const int last = (int)((table->last >> 16) & 0xffu);
+    for (int track = last; track >= first && track >= 1 && track <= 99; --track) {
+        const uint32_t entry = table->entry[track - 1];
+        if (((entry >> 28) & 0x0fu) == 4u)
+            return entry & 0x00ffffffu;
+    }
+    return 0;
+}
+
 static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
     cd_read_params_t params;
     cd_cmd_chk_status_t status;
-    gdc_cmd_hnd_t handle = 0;
 
     if (!buffer || (((uintptr_t)buffer & 31u) != 0))
         return -10;
@@ -55,36 +92,12 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
     params.buffer = (void *)((uintptr_t)buffer & MEM_AREA_CACHE_MASK);
     params.is_test = 0;
 
-    /* Queue the same BIOS DMAREAD command used by the VF3 GDFS loader. */
-    for (int retry = 0; retry < 500; ++retry) {
-        handle = syscall_gdrom_send_command(CD_CMD_DMAREAD, &params);
-        if (handle > 0)
-            break;
-        syscall_gdrom_exec_server();
-        thd_sleep(1);
-    }
-    if (handle <= 0) {
-        g1_ata_mutex_unlock();
-        return -11;
-    }
-
-    for (int retry = 0; retry < 5000; ++retry) {
-        syscall_gdrom_exec_server();
-        const cd_cmd_chk_t result = syscall_gdrom_check_command(handle, &status);
-        if (result == CD_CMD_COMPLETED) {
-            dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
-            g1_ata_mutex_unlock();
-            return 0;
-        }
-        if (result == CD_CMD_FAILED || result == CD_CMD_NOT_FOUND) {
-            g1_ata_mutex_unlock();
-            return -12 - (int)status.err1;
-        }
-        thd_sleep(1);
-    }
-    syscall_gdrom_abort_command(handle);
+    /* Same BIOS DMAREAD command (0x11) used by VF3's original GDFS loader. */
+    const int result = exec_bios_command(CD_CMD_DMAREAD, &params, &status);
+    if (result == 0)
+        dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
     g1_ata_mutex_unlock();
-    return -13;
+    return result;
 }
 
 static void font_init(void) {
@@ -171,11 +184,22 @@ static void draw_screen(void) {
 }
 
 int main(void) {
-    cdrom_init();
-    drive_rc = cdrom_get_status(&drive_status, &disc_type);
-    toc_rc = cdrom_read_toc(&toc, true);
-    if (toc_rc == ERR_OK)
-        data_track_fad = cdrom_locate_data_track(&toc);
+    syscall_gdrom_init();
+
+    cd_check_drive_status_t drive_info;
+    memset(&drive_info, 0, sizeof(drive_info));
+    drive_rc = syscall_gdrom_check_drive(&drive_info);
+    if (drive_rc == 0) {
+        drive_status = (int)drive_info.status;
+        disc_type = (int)drive_info.disc_type;
+    }
+
+    cd_cmd_toc_params_t toc_params;
+    toc_params.area = CD_AREA_HIGH;
+    toc_params.buffer = &toc;
+    toc_rc = exec_bios_command(CD_CMD_GETTOC2, &toc_params, NULL);
+    if (toc_rc == 0)
+        data_track_fad = locate_data_track(&toc);
 
     sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
     if (sector_buf)
