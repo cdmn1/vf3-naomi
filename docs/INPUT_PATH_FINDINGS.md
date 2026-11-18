@@ -61,8 +61,8 @@ character select or a live round.
 
 The related project's `docs/re/front_to_fight.md` records that corrected
 Start/A masks reached Maple (the expected active-low words were logged), but
-the tested cold-boot scripts and checkpoint replays remained on autonomous
-attract/demo paths. In those scans:
+the tested cold-boot scripts and checkpoint replays remained on
+autonomous attract/demo paths. In those scans:
 
 - Fight workers and the MT evaluator sometimes executed.
 - Controller merge `0x0C09AF6C` was not reached.
@@ -85,7 +85,8 @@ probe; its recorded Flycast scans did not establish player control.
    reader and controller-merge path.
 4. Do not reuse the native harness's `VF3_PRESS` result as proof of a
    successful Flycast menu route.
-5. The maintained Flycast watch list now probes the packet lookup at `0x8C0A1282` as well as the selected-port reader
+5. The maintained Flycast watch list now probes the packet lookup at
+   `0x8C0A1282` as well as the selected-port reader
    (`0x8C09B006`), controller merge (`0x8C09AF6C`) and player action update
    (`0x8C0AD1B8`) on every interpreter execution. The first capture should
    determine which of these routines are reached during normal navigation.
@@ -106,6 +107,42 @@ probe; its recorded Flycast scans did not establish player control.
 
 ## Follow-up trace instrumentation (2026-11-18)
 
-The first capture reached the controller merge and player action update, but did not hit the reconstructed selected-port reader entry. The related source shows that the merge calls the packet lookup at `0x0C0A1282`; the selected-port reader also calls that lookup and resumes at `alias+0x09b00e`. The next capture therefore watches `0x8C0A1282` in addition to the three existing addresses.
+The first expanded capture reached controller merge `0x0C09AF6C` 138 times,
+player action update `0x0C0AD1B8` 17 times, and packet lookup
+`0x0C0A1282` 6,654 times. The selected-port reader entry
+`0x0C09B006` remained at zero. The lookup's PR distribution included
+`0x0C09AF82`, `0x0C09B068` and `0x0C09B070`, each exactly 138 times.
 
-Watched-PC records now include the SH-4 procedure return register (`PR`) and all general registers (`R0`-`R15`; `R15` is the stack pointer). This will allow the caller path and live packet values to be examined without enabling a high-volume instruction trace. The decoder accepts both the previous compact record and the new expanded record.
+Inspection of the related project's instruction-level reconstruction
+`src/fight/vf3_09b_adapter.c` resolves those return sites:
+
+- `0x0C09B058` calls controller merge `0x0C09AF6C`; its return
+  continuation is `0x0C09B05C`.
+- The same wrapper then loads a function pointer from
+  `0x0C09B130` and calls it indirectly twice, first with `R4=0`
+  (return continuation `0x0C09B068`) and then with `R4=1`
+  (return continuation `0x0C09B070`).
+- At both lookup-entry snapshots, `R3=0x0C0A1282`. These are therefore
+  confirmed indirect calls to the same packet-record lookup, for port 0 and
+  port 1—not unrelated callers.
+- The lookup at `0x0C0A1282` computes a record address from the base pointer
+  stored at `0x0C0A1300`, using a 20-byte stride per port. The wrapper then
+  checks the status word at each returned record against the disconnected
+  sentinel `0xFFFFFFFE`.
+- The merge's own lookup return site `0x0C09AF82` also occurred 138 times.
+  The other two conditional merge lookup return sites
+  (`0x0C09AF94` and `0x0C09AFA8`) were not observed in this capture.
+
+This is the first direct Flycast evidence that the original guest executes a
+controller-management sequence: the wrapper calls the merge routine and then
+queries both port records. It does not yet prove that a player-controlled
+round is active, that the queried record contains live Maple button data, or
+that `0x0C0AD1B8` consumes the merged word. The Naomi JVS-to-Maple adapter
+therefore remains provisional.
+
+The input watch profile has been expanded to capture the return continuations
+(`0x0C09AF82`, `0x0C09B068`, `0x0C09B070`), the two status-check sites
+(`0x0C09B074`, `0x0C09B07C`), and reads/writes of the fixed packet-base
+pointer (`0x0C0A1300`), merge selector (`0x0C29BCC4`) and merged output
+(`0x0C29BA50`). The next capture should reveal the computed per-port record
+addresses, connection status values and merged controller word.
