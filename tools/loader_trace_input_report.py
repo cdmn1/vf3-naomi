@@ -100,6 +100,14 @@ def main() -> int:
             lines.append(" ` → ` ".join(f"`{v}`" for v in write_values[:160]))
             if len(write_values) > 160:
                 lines.append(f"… {len(write_values) - 160:,} additional write transitions omitted.")
+        if address in (0x0C2CF83C, 0x0C29BA50):
+            reads = [row for row in rows if row["access"] == "R"]
+            if reads:
+                read_sites = Counter(row["pc"] for row in reads)
+                lines += ["", "Read instruction sites:", "",
+                          "| Guest PC | Reads |", "|---|---:|"]
+                for pc, count in read_sites.most_common(20):
+                    lines.append("| {} | {:,} |".format(pc, count))
         lines.append("")
 
     # Align transitions in the raw P1 guest record with the merged word.
