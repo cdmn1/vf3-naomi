@@ -445,3 +445,84 @@ observed flag read). Capturing their register snapshots should reveal whether
 the reads are direct scene-global access or use a pointer copied into a
 register, and should provide the next address range to reconstruct. These
 sites are leads, not yet proof of Punch/Kick/Defend/Escape action dispatch.
+
+
+## Analysis of the 2026-11-18 19:53 controlled training-mode capture
+
+The 19:53 capture was recovered through a GitHub Actions base64 export and
+decoded locally. The decoded file is 19,988,472 bytes (SHA-256
+`b3f56726b7ce4255288b0faee78cc44614e3af4f4cbbf6fd525673d0f817a0c6`).
+It contains 59,697 PC probe groups and 341,079 memory records, with no
+decoder warnings.
+
+The indexed conversion routine at `0x8C096258` ran 6,434 times. The raw
+port-0 digital word at `0x0C2CF83C` recorded these non-zero input writes
+in order:
+
+| Raw KOS word | KOS button | Converted word at `0x0C29B9A0` |
+|---:|---|---:|
+| `0x0008` | START | `0x0010` |
+| `0x0020` | DOWN | `0x1000` |
+| `0x0004` | A | `0x0400` |
+| `0x0400` | X | `0x0100` |
+| `0x0200` | Y | `0x0200` |
+| `0x0004` | A | `0x0400` |
+| `0x0040` | LEFT | `0x8000` |
+| `0x0080` | RIGHT | `0x4000` |
+
+The final five entries match the controlled training-mode test order
+(Punch, Kick, Defend, LEFT, RIGHT). Under the test's one-control-at-a-time
+assumption, the capture therefore correlates the named actions as follows:
+
+| Controlled action | Raw KOS word | Internal VF3 flag |
+|---|---:|---:|
+| Punch | X = `0x0400` | `0x0100` |
+| Kick | Y = `0x0200` | `0x0200` |
+| Defend | A = `0x0004` | `0x0400` |
+| LEFT | `0x0040` | `0x8000` |
+| RIGHT | `0x0080` | `0x4000` |
+
+This is the first controlled capture that ties the test's named fight
+controls to both the guest-facing KOS bits and the game's converted flags.
+It does not include a controlled Escape press, so Escape remains unmapped.
+The KOS labels above describe the Dreamcast/Flycast input word; they are not
+Naomi cabinet switch names.
+
+### Fight-context reader at `0x8C0C8D2C`
+
+The reader at `0x8C0C8D2C` was hit 2,522 times and read
+`0x0C29B9A0` 2,522 times. Of those reads, 2,517 were zero and the five
+non-zero reads were exactly the final five controlled inputs:
+
+`0x0100`, `0x0200`, `0x0400`, `0x8000`, `0x4000`.
+
+Its register snapshots show `R0=0x13C` and `R5=0x0C29B864`, so the
+effective address is `R5+R0 = 0x0C29B9A0`. The same snapshots carry
+`R4=R11=R14=0x0C21B4B8`, the fighter-structure address identified in the
+Dreamcast reconstruction, and `R1=R2=0x04064008`. The caller return address
+is `PR=0x0C090FD2`.
+
+This makes `0x8C0C8D2C` the strongest current fight-context consumer lead:
+unlike the general frame-step reader, its non-zero reads align one-for-one
+with the five controlled fight inputs, and its register context includes the
+fighter structure. The exact routine semantics and downstream action dispatch
+are not yet established; do not yet treat this instruction alone as proof
+that a specific move was selected.
+
+### General frame-step reader at `0x8C0C3C52`
+
+The reader at `0x8C0C3C52` was hit 3,216 times. Its snapshots show
+`R0=0x13C` and `R12=0x0C29B864`, again addressing
+`0x0C29B9A0`. The Dreamcast reconstruction decodes the instruction as a
+load from `R12+R0` into `R10`; the following instructions test the loaded
+word against masks and branch through the frame-step logic. This reader also
+sees earlier START/DOWN/menu activity, so it is a broader scene/frame path,
+not as specific to the controlled fight actions as `0x8C0C8D2C`.
+
+### Next probe
+
+The next trace profile adds adjacent instruction probes beginning at
+`0x8C0C8D2C`. Their register snapshots should reveal which register receives
+the loaded flag word and how the routine branches or calls onward. Keep the
+confirmed Punch/Kick/Defend/direction correlations above, but leave Escape
+and the exact downstream move-dispatch semantics open.
