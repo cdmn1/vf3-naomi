@@ -28,7 +28,7 @@ Build independent test programs for:
 - PowerVR2 video initialization and a basic rendered frame;
 - JVS input detection/polling;
 - audio/AICA initialization;
-- ROMFS-backed asset reads.
+- Naomi GD-ROM/NetDIMM-backed asset reads.
 
 Use Flycast for rapid iteration, then verify on real Naomi hardware. Keep tests small and isolate failures by subsystem.
 
@@ -60,9 +60,9 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 - [x] Cross-compile and execute the real VF3 MT motion-table parser on Naomi using a synthetic fixture (user confirmed PASS in Flycast).
 - [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap and parser smoke test are not VF3 gameplay.
 - [ ] Determine which portions of the Dreamcast runtime or native reconstruction can be compiled/adapted without importing SDL/host-only dependencies.
-- [x] Build and package the versioned Naomi BIOS GD-ROM probe (`v19`); the ROM checks the service vector, high-density TOC and one `MTJACLAU.BIN` sector read.
-- [ ] Validate the Naomi BIOS GD-ROM `DMAREAD` path against a real VF3 high-density asset through the NetDIMM; runtime confirmation is pending.
-- [ ] Verify Naomi PVR2 video, AICA audio and BIOS GD-ROM-backed asset reads in isolated probes before attempting full game integration.
+- [ ] Trace the actual Naomi GD-ROM/NetDIMM guest-visible read path and DMA contract. Do not assume the Dreamcast BIOS GD-ROM syscall vector (0x8C0000BC) exists or is valid on Naomi.
+- [x] Withdraw the experimental v19 probe: it compiled but used an unverified Dreamcast BIOS syscall assumption and is not a valid Naomi storage test.
+- [ ] Verify Naomi PVR2 video, AICA audio and Naomi GD-ROM/NetDIMM-backed asset reads in isolated probes before attempting full game integration.
 
 The original VF3 input path is now documented in `docs/INPUT_PATH_FINDINGS.md` and is not the current build priority.
 - [x] Identify the supplied executable as US retail VF3tb `MK-51001`, V1.002; recorded SHA-256:
