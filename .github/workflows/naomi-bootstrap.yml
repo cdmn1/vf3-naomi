@@ -187,30 +187,33 @@ jobs:
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
-          make -C tests/naomi_bootstrap rom
-          test -s tests/naomi_bootstrap/vf3_naomi_bootstrap.bin
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_bootstrap rom
+          test -s "tests/naomi_bootstrap/vf3_naomi_bootstrap-v${GITHUB_RUN_NUMBER}.bin"
 
       - name: Validate and describe Naomi ROM
         run: |
           set -euo pipefail
           mkdir -p build-artifacts
-          cp tests/naomi_bootstrap/vf3_naomi_bootstrap.bin build-artifacts/vf3_naomi_bootstrap.bin
-          SIZE="$(stat -c '%s' build-artifacts/vf3_naomi_bootstrap.bin)"
-          SHA="$(sha256sum build-artifacts/vf3_naomi_bootstrap.bin | awk '{print $1}')"
+          ROM="vf3_naomi_bootstrap-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_bootstrap/${ROM}" "build-artifacts/${ROM}"
+          SIZE="$(stat -c '%s' "build-artifacts/${ROM}")"
+          SHA="$(sha256sum "build-artifacts/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
           cat > build-artifacts/BUILD_INFO.txt <<EOF
           Target: VF3 Naomi bootstrap (not the game)
           Source commit: ${GITHUB_SHA}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
           Workflow run: ${GITHUB_RUN_ID}
-          ROM: vf3_naomi_bootstrap.bin
+          Build version: v${GITHUB_RUN_NUMBER}
+          ROM: ${ROM}
           Size: ${SIZE}
           SHA-256: ${SHA}
           Packaging: KallistiOS naomibintool
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## Naomi bootstrap artifact
-          - ROM: vf3_naomi_bootstrap.bin
+          - Build version: v${GITHUB_RUN_NUMBER}
+          - ROM: ${ROM}
           - Size: ${SIZE} bytes
           - SHA-256: ${SHA}
           - KOS commit: ${{ steps.kos-revision.outputs.sha }}
@@ -222,7 +225,7 @@ jobs:
       - name: Upload Naomi bootstrap ROM
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-naomi-bootstrap-${{ github.run_number }}
+          name: vf3-naomi-bootstrap-v${{ github.run_number }}
           path: build-artifacts/*
           if-no-files-found: error
 
@@ -283,23 +286,25 @@ jobs:
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
-          make -C tests/naomi_vf3core_smoke rom
-          test -s tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.bin
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_vf3core_smoke rom
+          test -s "tests/naomi_vf3core_smoke/vf3_naomi_mt_parser-v${GITHUB_RUN_NUMBER}.bin"
 
       - name: Validate and upload VF3 MT parser ROM
         run: |
           set -euo pipefail
           mkdir -p vf3-mt-artifact
-          cp tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.bin vf3-mt-artifact/
-          SIZE="$(stat -c '%s' vf3-mt-artifact/vf3_naomi_mt_parser.bin)"
-          SHA="$(sha256sum vf3-mt-artifact/vf3_naomi_mt_parser.bin | awk '{print $1}')"
+          ROM="vf3_naomi_mt_parser-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_vf3core_smoke/${ROM}" "vf3-mt-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "vf3-mt-artifact/${ROM}")"
+          SHA="$(sha256sum "vf3-mt-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
           cat > vf3-mt-artifact/BUILD_INFO.txt <<EOF
           Target: VF3 upstream MT parser smoke test
           VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
           Workflow run: ${GITHUB_RUN_ID}
-          ROM: vf3_naomi_mt_parser.bin
+          Build version: v${GITHUB_RUN_NUMBER}
+          ROM: ${ROM}
           Size: ${SIZE}
           SHA-256: ${SHA}
           Packaging: KallistiOS naomibintool
@@ -308,6 +313,8 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## VF3 MT parser on Naomi
           - Upstream source: ${{ steps.vf3-source-revision.outputs.sha }}
+          - Build version: v${GITHUB_RUN_NUMBER}
+          - ROM: ${ROM}
           - ROM size: ${SIZE} bytes
           - SHA-256: ${SHA}
           - VF3 MT object cache hit: ${{ steps.vf3-mt-cache.outputs.cache-hit }}
@@ -317,6 +324,6 @@ jobs:
       - name: Upload VF3 MT parser Naomi ROM
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-naomi-mt-parser-${{ github.run_number }}
+          name: vf3-naomi-mt-parser-v${{ github.run_number }}
           path: vf3-mt-artifact/*
           if-no-files-found: error
