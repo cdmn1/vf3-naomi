@@ -2,6 +2,12 @@
 # PC values are guest SH-4 addresses; P1/P2 aliases are normalized.
 #
 # Primary input routines.
+# Indexed node-flag conversion: candidate active digital-input consumer.
+pc 0x8C096258
+pc 0x8C096280
+pc 0x8C0962A0
+pc 0x8C0962C8
+pc 0x8C09648C
 pc 0x8C09B006
 pc 0x8C09AF6C
 pc 0x8C0AD1B8
