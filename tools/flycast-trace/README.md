@@ -9,7 +9,7 @@ The patch implements the project's current trace requirements:
 
 - `VF3_INTERPRETER=1` forces the SH-4 interpreter.
 - `VF3_WATCH` reads `pc 0xADDR` and `mem 0xADDR 0xLEN` entries.
-- Watched PCs emit the eight-u64 `FA10/FA11` register probe group.
+- Watched PCs emit an expanded `FA12/FA13` probe containing PR and R0-R15 (including the stack pointer in R15). The decoder remains backward-compatible with older `FA10/FA11` records.
 - Watched memory reads/writes emit the four-u64 `FA20` records understood by `tools/loader_trace_decode.py`.
 
 The default input watch profile prioritizes three original guest input routines:
@@ -17,6 +17,7 @@ The default input watch profile prioritizes three original guest input routines:
 - `0x8C09B006` — selected-port reader.
 - `0x8C09AF6C` — controller merge.
 - `0x8C0AD1B8` — player action update.
+- `0x8C0A1282` — packet lookup called by the controller routines.
 
 The input profile is intentionally PC-only and compact. The separate `VF3_WATCH_LOADER.txt` retains the GDFS/MT resource and memory watches for a later loader-focused capture. The first objective is to establish whether the original executable reaches its controller path during normal menu/gameplay navigation; the capture does not assume that it does.
 
