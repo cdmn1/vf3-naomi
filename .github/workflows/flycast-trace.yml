@@ -90,9 +90,9 @@ jobs:
           Upstream commit: 3a5267a5e32438026e1c5b97d5de6cd77236f72c
           VF3 tooling commit: $env:GITHUB_SHA
           Built by GitHub Actions run: $env:GITHUB_RUN_ID
-          Instrumentation: PC probe groups (FA10/FA11), guest memory access records (FA20)
-          Default watch profile: VF3_WATCH_INPUT.txt (three controller-path PCs)
-          Controller probes: selected-port reader, controller merge, player action update
+          Instrumentation: expanded PC probe groups (FA12/FA13: PR and R0-R15), guest memory access records (FA20)
+          Default watch profile: VF3_WATCH_INPUT.txt (four controller-path PCs)
+          Controller probes: selected-port reader, controller merge, player action update, packet lookup
           "@
           $buildInfo | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
           Get-ChildItem $package -File | Get-FileHash -Algorithm SHA256 |
