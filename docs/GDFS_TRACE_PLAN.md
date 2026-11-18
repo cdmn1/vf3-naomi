@@ -123,6 +123,20 @@ example, runtime table index 20 resolves to MTAKIPAI.BIN, whose manifest
 table_row_0based is 85. The ROB_* names were resolved from the executable,
 but are not present in that GDFS asset index, so no LBA/size is assigned here.
 
+The reads occurred in two six-entry bursts at the same instruction PC:
+
+| Trace words | Runtime table indices, in read order | Filenames |
+|---:|---|---|
+| 0–20 | 92, 93, 122, 123, 0, 25 | ROB_AKI.POL, ROB_AKI.TEX, ROB_WO2.POL, ROB_WO2.TEX, MOTHEAD.BIN, MTAKIWOL.BIN |
+| 126874–126894 | 92, 93, 118, 119, 0, 20 | ROB_AKI.POL, ROB_AKI.TEX, ROB_PA2.POL, ROB_PA2.TEX, MOTHEAD.BIN, MTAKIPAI.BIN |
+
+The second burst follows the observed object-loader source-path hits and the
+zeroing writes to nine destination-buffer starts. This is consistent with
+two different character-pair asset selections (Akira/Wolf and Akira/Pai),
+but the trace alone does not prove that either filename batch completed a
+disc read or identify which side of the match was selected. Treat the pairing
+interpretation as a lead, not a confirmed gameplay-state identification.
+
 This establishes that the observed table reads are filename-pointer lookups.
 It does not yet establish which lookup causes a file transfer, how the
 resource index is selected, or which loader consumes the returned filename.
