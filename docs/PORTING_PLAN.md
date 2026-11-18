@@ -53,9 +53,16 @@ Bring up a deterministic scene first, then menus, fighter selection, match logic
 
 Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where applicable, without sharing game-specific source or merging the repositories.
 
-## Current blockers
+## Current blockers and next work
 
 - [x] Obtain and inspect Dreamcast VF3tb `1ST_READ.BIN`.
+- [ ] Build the new standalone Naomi bootstrap and verify its visible screen in Flycast.
+- [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap is not VF3 gameplay.
+- [ ] Determine which portions of the Dreamcast runtime or native reconstruction can be compiled/adapted without importing SDL/host-only dependencies.
+- [ ] Define the Naomi ROMFS/NetDIMM asset-provider boundary and add encrypted, content-addressed asset checkpoints before any large conversion stage.
+- [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in isolated probes before attempting full game integration.
+
+The original VF3 input path is now documented in `docs/INPUT_PATH_FINDINGS.md` and is not the current build priority.
 - [x] Identify the supplied executable as US retail VF3tb `MK-51001`, V1.002; recorded SHA-256:
   `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`.
 - [x] Build and package the standalone KOS MIE/JVS probe as a versioned Naomi
@@ -64,10 +71,12 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
   cabinet buttons and analog inputs respond. The native JVS switch words and
   `jvs.analog[]` channels are the intended input source; dedicated racing-style
   `wheel`/`accel`/`brake` fields are not required.
-- [ ] Capture the original VF3 executable entering its selected-port reader
-  (`0x8C09B006`) and controller merge (`0x8C09AF6C`) paths. Current related-
-  project Flycast captures have not reached these routines, so guest-level
-  controls are not yet proven.
+- [x] Naomi MIE/JVS input path is confirmed on real hardware.
+- [x] Original VF3 digital input conversion has been traced in Flycast; the
+  current findings are documented but are not yet integrated into a Naomi
+  game runtime.
+- [ ] Boot the new Naomi bootstrap in Flycast and establish the first actual
+  game-runtime executable target.
 - [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in
   isolated probes before attempting full game integration.
 
