@@ -1,6 +1,6 @@
 # VF3 loader trace: PC probes + memory ranges
 # Use with the patched Flycast interpreter and VF3_WATCH=<this file>.
-# PC values are guest SH-4 addresses; the upstream probe hook normalizes P2 aliases.
+# PC values are guest SH-4 addresses; the upstream probe hook normalizes aliases.
 #
 # Core loader and runtime table:
 pc 0x8C02DCEC
@@ -10,6 +10,13 @@ pc 0x8C0360C8
 pc 0x8C0CBC40
 mem 0x8C1069BC 0x210
 mem 0x8C5F0000 0x270000
+
+# v32 follow-up probes: capture register context for the runtime table reads
+# and the observed object-loader buffer initialization path.
+pc 0x8C0A7F84
+pc 0x8C0A2F90
+pc 0x8C0A2EC8
+pc 0x8C0A304E
 
 # Naomi source-path literal-load sites found in the Dreamcast executable.
 # These are exact MOV.L reference PCs, not confirmed function entries.
