@@ -82,7 +82,7 @@ jobs:
           path: .cache/kos-naomi-build.tar
           key: kos-naomi-bootstrap-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-naomi-v2
           restore-keys: |
-            kos-naomi-bootstrap-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-naomi-v2
+            kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-
             kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-
 
       - name: Overlay cached KOS source and build outputs
