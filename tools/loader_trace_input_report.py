@@ -79,7 +79,7 @@ def main() -> int:
             lines += ["", "Value sequence (consecutive duplicates collapsed; trace order):", ""]
             lines.append(" ` → ` ".join(f"`{v}`" for v in values[:160]))
             if len(values) > 160:
-                lines.append(f"", f"… {len(values) - 160:,} additional transitions omitted.")
+                lines.append(f"… {len(values) - 160:,} additional transitions omitted.")
         lines.append("")
 
     if warnings:
