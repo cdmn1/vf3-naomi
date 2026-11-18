@@ -354,3 +354,31 @@ The A+X sample is a useful cross-check: the resulting 0x0500 is the combination 
 This is the first capture that demonstrates the complete runtime conversion from the guest's standard digital controller bits to the game's indexed digital-input flags. It substantially narrows the remaining work: identify where the 0x0C29B9A0 flags are consumed and what each internal flag means to VF3's action logic. The capture does **not** by itself prove that the 0x8C0AD1B8 routine is that consumer, and it does not justify assigning Punch/Kick/Defend/Escape names to the raw bits without correlating those labels to controlled samples.
 
 The analysis report is available as the [vf3-input-field-report-202611181844 workflow artifact](https://github.com/cdmn1/vf3-naomi/actions/runs/44373205735).
+
+
+## Static consumer found in the Dreamcast reconstruction
+
+A source-level cross-check in `celsowm/vf3-decomp` found a confirmed read
+of the digital-derived word at `0x0C29B9A0`: callable
+`0x8C0C9F54` (`src/fight/audio_input.c`, described there as the
+sound-selection input caller). It loads the word from scene base
+`0x0C29B864 + 0x13C` and tests several bits, including the direction flags
+`0x2000` (up), `0x1000` (down), `0x8000` (left) and `0x4000` (right).
+Those tests adjust and wrap a selection index before issuing audio requests.
+This confirms that the converted word is consumed by real guest code, rather
+than being an unused diagnostic/output buffer.
+
+This is **not yet the missing fight-action consumer**. The identified caller
+is specifically the sound-selection input path; its use of direction and
+other flags cannot be used to label Punch, Kick, Defend or Escape. The related
+fight audio transition at `0x8C099060` reads scene offset `+0x138`
+(`0x0C29B99C`), not the digital-derived `+0x13C` word, so it is not evidence
+that the latter drives fighter actions either.
+
+The action-consumer investigation remains open. In particular, do not
+promote `0x8C0AD1B8` as the consumer based only on its execution or register
+variation. Next, continue tracing reads of `0x0C29B9A0` (including indirect
+or table-driven accesses) in the fight/action update path and correlate those
+reads with individually controlled cabinet-button samples. Source reference:
+`celsowm/vf3-decomp/src/fight/audio_input.c` and
+`src/fight/audio_fight.c`.
