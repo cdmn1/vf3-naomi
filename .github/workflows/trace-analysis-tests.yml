@@ -44,17 +44,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Decode latest repository capture
+      - name: Base64-export and decode latest repository capture
+        shell: bash
         run: |
-          python tools/loader_trace_input_report.py \
-            "VF3-Flycast-Trace 202611181844/vf3-loader-trace.bin" \
-            --output input-field-report.md
+          TRACE="VF3-Flycast-Trace 202611181953/vf3-loader-trace.bin"
+          base64 -w 0 "$TRACE" > vf3-loader-trace.bin.b64
+          base64 -d vf3-loader-trace.bin.b64 > vf3-loader-trace.roundtrip.bin
+          cmp "$TRACE" vf3-loader-trace.roundtrip.bin
+          sha256sum "$TRACE" vf3-loader-trace.roundtrip.bin
+          python tools/loader_trace_input_report.py "$TRACE" --output input-field-report.md
           cat input-field-report.md >> "$GITHUB_STEP_SUMMARY"
           cat input-field-report.md
-      - name: Upload input-field report
+      - name: Upload base64 trace and decoded report
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-input-field-report-202611181844
-          path: input-field-report.md
+          name: vf3-input-capture-base64-202611181953
+          path: |
+            vf3-loader-trace.bin.b64
+            input-field-report.md
           if-no-files-found: error
           retention-days: 30
