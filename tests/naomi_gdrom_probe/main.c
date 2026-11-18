@@ -184,22 +184,28 @@ static void draw_screen(void) {
 }
 
 int main(void) {
-    syscall_gdrom_init();
+    if (g1_ata_mutex_lock() == 0) {
+        syscall_gdrom_init();
 
-    cd_check_drive_status_t drive_info;
-    memset(&drive_info, 0, sizeof(drive_info));
-    drive_rc = syscall_gdrom_check_drive(&drive_info);
-    if (drive_rc == 0) {
-        drive_status = (int)drive_info.status;
-        disc_type = (int)drive_info.disc_type;
+        cd_check_drive_status_t drive_info;
+        memset(&drive_info, 0, sizeof(drive_info));
+        drive_rc = syscall_gdrom_check_drive(&drive_info);
+        if (drive_rc == 0) {
+            drive_status = (int)drive_info.status;
+            disc_type = (int)drive_info.disc_type;
+        }
+
+        cd_cmd_toc_params_t toc_params;
+        toc_params.area = CD_AREA_HIGH;
+        toc_params.buffer = &toc;
+        toc_rc = exec_bios_command(CD_CMD_GETTOC2, &toc_params, NULL);
+        if (toc_rc == 0)
+            data_track_fad = locate_data_track(&toc);
+        g1_ata_mutex_unlock();
+    } else {
+        drive_rc = -14;
+        toc_rc = -14;
     }
-
-    cd_cmd_toc_params_t toc_params;
-    toc_params.area = CD_AREA_HIGH;
-    toc_params.buffer = &toc;
-    toc_rc = exec_bios_command(CD_CMD_GETTOC2, &toc_params, NULL);
-    if (toc_rc == 0)
-        data_track_fad = locate_data_track(&toc);
 
     sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
     if (sector_buf)
