@@ -21,7 +21,7 @@ FIELDS = {
 }
 PC_LABELS = {
     "0x8C09AF6C": "controller merge",
-    "0x8C0AD1B8": "player action update",
+    "0x8C0AD1B8": "unclassified fight-frame instruction (not a proven action consumer)",
     "0x8C0A1282": "packet-record lookup",
     "0x8C09AF82": "merge return",
     "0x8C09B068": "port 0 lookup return",
@@ -103,7 +103,7 @@ def main() -> int:
             lines.append(" ` → ` ".join(f"`{v}`" for v in write_values[:160]))
             if len(write_values) > 160:
                 lines.append(f"… {len(write_values) - 160:,} additional write transitions omitted.")
-        if address in (0x0C2CF83C, 0x0C29BA50):
+        if address in (0x0C2CF83C, 0x0C29BA50, 0x0C29B99C, 0x0C29B9A0, 0x0C29B9A4):
             reads = [row for row in rows if row["access"] == "R"]
             if reads:
                 read_sites = Counter(row["pc"] for row in reads)
@@ -182,7 +182,7 @@ def main() -> int:
         if pc == 0x0C09AF6C:
             timeline.append((int(row["word_index"]), "PC controller merge", "", row["pc"]))
         elif pc == 0x0C0AD1B8:
-            timeline.append((int(row["word_index"]), "PC player-action update", "", row["pc"]))
+            timeline.append((int(row["word_index"]), "PC unclassified fight-frame instruction", "", row["pc"]))
     lines += ["", "## P1 digital input / merge / action timeline", "",
               "| Trace word index | Event | Value | PC |", "|---:|---|---:|---|"]
     for index, field, value, pc in sorted(timeline):
@@ -190,8 +190,8 @@ def main() -> int:
 
     action_rows = [row for row in probes
                    if (int(row["pc"], 16) & 0x1FFFFFFF) == 0x0C0AD1B8]
-    lines += ["", "## Player-action update register snapshots", "",
-              "Selected registers at each watched execution of 0x8C0AD1B8.", "",
+    lines += ["", "## Unclassified fight-frame instruction snapshots", "",
+              "Selected registers at each watched execution of 0x8C0AD1B8. This is an interior instruction address in a larger adapter block, not an established function entry or proven input/action consumer.", "",
               "| Trace word index | PR | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R13 | R14 | R15 |",
               "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for row in action_rows:
