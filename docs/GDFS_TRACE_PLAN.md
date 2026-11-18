@@ -104,11 +104,11 @@ The pointer values were checked against the user's original Dreamcast
 1ST_READ.BIN (load base 0x8C010000). They resolve to filenames embedded in
 the executable:
 
-| Runtime table index | String pointer | Resolved filename | Manifest row | GDFS LBA | Size |
-|---:|---:|---|---:|---:|---:|
-| 0 | 0x8C0D6498 | MOTHEAD.BIN | 65 | 442686 | 168,391 B |
-| 20 | 0x8C0D65D4 | MTAKIPAI.BIN | 85 | 459459 | 1,572,408 B |
-| 25 | 0x8C0D6624 | MTAKIWOL.BIN | 90 | 463527 | 1,696,108 B |
+| Runtime table index | String pointer | Resolved filename | Manifest row | GDFS LBA | Candidate FAD (LBA+150) | Size |
+|---:|---:|---|---:|---:|---:|---:|
+| 0 | 0x8C0D6498 | MOTHEAD.BIN | 65 | 442686 | 442836 | 168,391 B |
+| 20 | 0x8C0D65D4 | MTAKIPAI.BIN | 85 | 459459 | 459609 | 1,572,408 B |
+| 25 | 0x8C0D6624 | MTAKIWOL.BIN | 90 | 463527 | 463677 | 1,696,108 B |
 | 92 | 0x8C0D6A54 | ROB_AKI.POL | — | — | — |
 | 93 | 0x8C0D6A60 | ROB_AKI.TEX | — | — | — |
 | 118 | 0x8C0D6B8C | ROB_PA2.POL | — | — | — |
