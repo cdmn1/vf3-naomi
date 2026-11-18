@@ -122,6 +122,11 @@ are a separate index space from the 132-entry runtime pointer table; for
 example, runtime table index 20 resolves to MTAKIPAI.BIN, whose manifest
 table_row_0based is 85. The ROB_* names were resolved from the executable,
 but are not present in that GDFS asset index, so no LBA/size is assigned here.
+The current GDFS asset index contains 232 entries and all are '.BIN'
+files. The runtime 132-pointer table is broader: it also exposes '.POL' and
+'.TEX' names. Do not assume those ROB_* entries use the same GDFS lookup/read
+path as the MTAKI*.BIN motion packs; the next call-target probe is intended to
+separate those loader paths.
 
 The reads occurred in two six-entry bursts at the same instruction PC:
 
