@@ -60,7 +60,7 @@ class LoaderTraceSummaryTests(unittest.TestCase):
                 w.writeheader()
             report = summarize(pc, mem)
         self.assertIn("obj_load_indirect_call 0x8C0A2FDE: 1", report)
-        self.assertIn("table_entry_load       0x8C0A7F84: 1", report)
+        self.assertRegex(report, r"table_entry_load +0x8C0A7F84: 1")
         self.assertIn("r1=0x8C0360C8", report)
         self.assertIn("r4=0x8C1069BC", report)
         self.assertIn("r5=0x00000014", report)
