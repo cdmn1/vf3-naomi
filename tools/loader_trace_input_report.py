@@ -102,6 +102,26 @@ def main() -> int:
                 lines.append(f"… {len(write_values) - 160:,} additional write transitions omitted.")
         lines.append("")
 
+    # Align transitions in the raw P1 guest record with the merged word.
+    timeline_addresses = {
+        0x0C2CF83C: "P1 record +8",
+        0x0C29BA50: "merged +0x1EC",
+    }
+    last_value = {}
+    timeline = []
+    for row in memory:
+        address = int(row["address"], 16)
+        if address not in timeline_addresses or row["access"] != "W":
+            continue
+        value = int(row["value"], 16)
+        if last_value.get(address) != value:
+            timeline.append((int(row["word_index"]), timeline_addresses[address], row["value"], row["pc"]))
+            last_value[address] = value
+    lines += ["", "## P1 digital input / merged-word transition timeline", "",
+              "| Trace word index | Field | Value | Writer PC |", "|---:|---|---:|---|"]
+    for index, field, value, pc in sorted(timeline):
+        lines.append("| {:,} | {} | {} | {} |".format(index, field, value, pc))
+
     if warnings:
         lines += ["## Decoder warnings", ""]
         lines.extend(f"- {warning}" for warning in warnings)
