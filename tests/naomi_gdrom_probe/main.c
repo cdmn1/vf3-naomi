@@ -1,0 +1,188 @@
+/*
+ * Naomi GD-ROM service probe for the VF3 NetDIMM asset-provider path.
+ *
+ * Reads one sector at the known MTJACLAU.BIN FAD using the BIOS GD-ROM
+ * DMAREAD syscall. The sector address comes from GDFS_ASSET_INDEX.csv:
+ * GD LBA 475142 + 150-sector FAD offset = 475292.
+ *
+ * No commercial asset is embedded in this ROM.
+ */
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <kos.h>
+#include <dc/minifont.h>
+#include <dc/pvr.h>
+#include <dc/cdrom.h>
+#include <dc/syscalls.h>
+#include <dc/memory.h>
+#include <kos/cache.h>
+
+KOS_INIT_FLAGS(INIT_DEFAULT);
+
+#define FONT_W 12
+#define FONT_H 24
+#define VF3_MTJACLAU_FAD 475292u
+#define SECTOR_SIZE 2048u
+
+static pvr_ptr_t font_texture;
+static int drive_rc = -99;
+static int toc_rc = -99;
+static int read_rc = -99;
+static int drive_status = -1;
+static int disc_type = -1;
+static uint32_t data_track_fad;
+static uint8_t *sector_buf;
+static cd_toc_t toc;
+
+static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
+    cd_read_params_t params;
+    cd_cmd_chk_status_t status;
+    gdc_cmd_hnd_t handle = 0;
+
+    if (!buffer || (((uintptr_t)buffer & 31u) != 0))
+        return -10;
+
+    memset(buffer, 0, SECTOR_SIZE);
+    dcache_wback_inval_range((uintptr_t)buffer, SECTOR_SIZE);
+
+    params.start_sec = fad;
+    params.num_sec = 1;
+    params.buffer = (void *)((uintptr_t)buffer & MEM_AREA_CACHE_MASK);
+    params.is_test = 0;
+
+    /* Queue the same BIOS DMAREAD command used by the VF3 GDFS loader. */
+    for (int retry = 0; retry < 500; ++retry) {
+        handle = syscall_gdrom_send_command(CD_CMD_DMAREAD, &params);
+        if (handle > 0)
+            break;
+        syscall_gdrom_exec_server();
+        thd_sleep(1);
+    }
+    if (handle <= 0)
+        return -11;
+
+    for (int retry = 0; retry < 5000; ++retry) {
+        syscall_gdrom_exec_server();
+        const cd_cmd_chk_t result = syscall_gdrom_check_command(handle, &status);
+        if (result == CD_CMD_COMPLETED) {
+            dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
+            return 0;
+        }
+        if (result == CD_CMD_FAILED || result == CD_CMD_NOT_FOUND)
+            return -12 - (int)status.err1;
+        thd_sleep(1);
+    }
+    syscall_gdrom_abort_command(handle);
+    return -13;
+}
+
+static void font_init(void) {
+    uint16_t *vram = (uint16_t *)font_texture;
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 16; ++x) {
+            minifont_draw(vram, 256, (uint32_t)(y * 16 + x));
+            vram += 16;
+        }
+        vram += 23 * 256;
+    }
+}
+
+static void draw_char(float x, float y, unsigned char c) {
+    pvr_vertex_t v;
+    const int ix = (c % 16) * 16;
+    const int iy = (c / 16) * 24;
+    const float u1 = ix / 256.0f, v1 = iy / 256.0f;
+    const float u2 = (ix + FONT_W) / 256.0f;
+    const float v2 = (iy + FONT_H) / 256.0f;
+    if (c <= ' ' || c >= 127) return;
+
+    v.flags = PVR_CMD_VERTEX;
+    v.x = x; v.y = y + FONT_H; v.z = 1.0f;
+    v.u = u1; v.v = v2;
+    v.argb = PVR_PACK_COLOR(1, 1, 1, 1); v.oargb = 0;
+    pvr_prim(&v, sizeof(v));
+    v.x = x; v.y = y; v.u = u1; v.v = v1;
+    pvr_prim(&v, sizeof(v));
+    v.x = x + FONT_W; v.y = y + FONT_H; v.u = u2; v.v = v2;
+    pvr_prim(&v, sizeof(v));
+    v.flags = PVR_CMD_VERTEX_EOL;
+    v.x = x + FONT_W; v.y = y; v.u = u2; v.v = v1;
+    pvr_prim(&v, sizeof(v));
+}
+
+static void draw_text(float x, float y, const char *s) {
+    pvr_poly_cxt_t cxt;
+    pvr_poly_hdr_t poly;
+    if (!s || !s[0]) return;
+    pvr_poly_cxt_txr(&cxt, PVR_LIST_TR_POLY,
+                     PVR_TXRFMT_ARGB1555 | PVR_TXRFMT_NONTWIDDLED,
+                     256, 256, font_texture, PVR_FILTER_NONE);
+    pvr_poly_compile(&poly, &cxt);
+    pvr_prim(&poly, sizeof(poly));
+    for (size_t i = 0; s[i]; ++i) {
+        draw_char(x, y, (unsigned char)s[i]);
+        x += FONT_W;
+    }
+}
+
+static void draw_screen(void) {
+    char line[96], bytes[96];
+    pvr_wait_ready();
+    pvr_scene_begin();
+    pvr_list_begin(PVR_LIST_TR_POLY);
+
+    draw_text(40, 40, "VF3 NAOMI GD-ROM PROBE");
+    snprintf(line, sizeof(line), "DRIVE STATUS CALL: %s", drive_rc == 0 ? "PASS" : "FAIL");
+    draw_text(40, 88, line);
+    snprintf(line, sizeof(line), "STATUS %d  DISC TYPE %02X", drive_status, disc_type & 0xff);
+    draw_text(40, 120, line);
+    snprintf(line, sizeof(line), "HIGH DENSITY TOC: %s", toc_rc == 0 ? "PASS" : "FAIL");
+    draw_text(40, 160, line);
+    snprintf(line, sizeof(line), "DATA TRACK FAD: %06X", (unsigned)data_track_fad);
+    draw_text(40, 192, line);
+    snprintf(line, sizeof(line), "MTJACLAU FAD: %06X", (unsigned)VF3_MTJACLAU_FAD);
+    draw_text(40, 232, line);
+    snprintf(line, sizeof(line), "BIOS DMAREAD: %s (%d)", read_rc == 0 ? "PASS" : "FAIL", read_rc);
+    draw_text(40, 272, line);
+
+    if (read_rc == 0 && sector_buf) {
+        snprintf(bytes, sizeof(bytes), "FIRST 8 BYTES: %02X %02X %02X %02X %02X %02X %02X %02X",
+                 sector_buf[0], sector_buf[1], sector_buf[2], sector_buf[3],
+                 sector_buf[4], sector_buf[5], sector_buf[6], sector_buf[7]);
+        draw_text(40, 312, bytes);
+    } else {
+        draw_text(40, 312, "MOUNT THE VF3TB GD-ROM IMAGE");
+    }
+    draw_text(40, 368, "READ-ONLY TEST - NO GAME DATA INCLUDED");
+
+    pvr_list_finish();
+    pvr_scene_finish();
+}
+
+int main(void) {
+    cdrom_init();
+    drive_rc = cdrom_get_status(&drive_status, &disc_type);
+    toc_rc = cdrom_read_toc(&toc, true);
+    if (toc_rc == ERR_OK)
+        data_track_fad = cdrom_locate_data_track(&toc);
+
+    sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
+    if (sector_buf)
+        read_rc = read_fad_dma(VF3_MTJACLAU_FAD, sector_buf);
+
+    pvr_init_defaults();
+    pvr_set_bg_color(0.02f, 0.06f, 0.12f);
+    font_texture = pvr_mem_malloc(256 * 256 * 2);
+    if (!font_texture) {
+        printf("VF3 GD-ROM probe: font allocation failed\n");
+        for (;;) thd_sleep(1000);
+    }
+    font_init();
+    for (;;) {
+        draw_screen();
+        thd_sleep(16);
+    }
+    return 0;
+}
