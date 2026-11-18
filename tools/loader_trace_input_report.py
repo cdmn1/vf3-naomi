@@ -13,6 +13,8 @@ FIELDS = {
     0x0C2CF83C: "port 0 controller/button word (+8)",
     0x0C2CF848: "port 1 status (+0)",
     0x0C2CF850: "port 1 controller/button word (+8)",
+    0x0C29BA50: "merged controller word (+0x1EC)",
+    0x0C29BCCC: "controller merge selector (+8)",
 }
 PC_LABELS = {
     "0x8C09AF6C": "controller merge",
