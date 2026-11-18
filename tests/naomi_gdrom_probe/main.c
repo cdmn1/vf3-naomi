@@ -81,9 +81,6 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
 
     if (!buffer || (((uintptr_t)buffer & 31u) != 0))
         return -10;
-    if (g1_ata_mutex_lock() != 0)
-        return -14;
-
     memset(buffer, 0, SECTOR_SIZE);
     dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
 
@@ -96,7 +93,6 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
     const int result = exec_bios_command(CD_CMD_DMAREAD, &params, &status);
     if (result == 0)
         dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
-    g1_ata_mutex_unlock();
     return result;
 }
 
@@ -183,9 +179,16 @@ static void draw_screen(void) {
     pvr_scene_finish();
 }
 
+static void unlock_gd_dma(void) {
+    volatile uint32_t *protection =
+        (volatile uint32_t *)(G1_ATA_DMA_PROTECTION | MEM_AREA_P2_BASE);
+    *protection = G1_ATA_DMA_UNLOCK_ALLMEM;
+}
+
 int main(void) {
-    if (g1_ata_mutex_lock() == 0) {
-        syscall_gdrom_init();
+    /* KOS's Dreamcast cdrom_init() performs this DMA-protection unlock. */
+    unlock_gd_dma();
+    syscall_gdrom_init();
 
         cd_check_drive_status_t drive_info;
         memset(&drive_info, 0, sizeof(drive_info));
@@ -199,13 +202,8 @@ int main(void) {
         toc_params.area = CD_AREA_HIGH;
         toc_params.buffer = &toc;
         toc_rc = exec_bios_command(CD_CMD_GETTOC2, &toc_params, NULL);
-        if (toc_rc == 0)
-            data_track_fad = locate_data_track(&toc);
-        g1_ata_mutex_unlock();
-    } else {
-        drive_rc = -14;
-        toc_rc = -14;
-    }
+    if (toc_rc == 0)
+        data_track_fad = locate_data_track(&toc);
 
     sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
     if (sector_buf)
