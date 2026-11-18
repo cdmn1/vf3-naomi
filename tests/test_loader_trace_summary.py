@@ -39,6 +39,32 @@ class LoaderTraceSummaryTests(unittest.TestCase):
         self.assertIn("R4 0x8C1069BC = 0x8C5F4100", report)
         self.assertIn("W4 0x8C5F4100 = 0x12345678", report)
 
+    def test_reports_new_object_loader_probes_and_indirect_call_registers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            pc = Path(tmp) / "trace.pc.csv"
+            mem = Path(tmp) / "trace.memory.csv"
+            fields = ["word_index", "pc", "pr"] + [f"r{i}" for i in range(16)]
+            with pc.open("w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields)
+                w.writeheader()
+                row = {key: "0" for key in fields}
+                row.update(word_index="0", pc="0x0C0A2FDE", pr="0x8C0A3100",
+                           r1="0x8C0360C8", r4="0x8C1069BC", r5="0x00000014")
+                w.writerow(row)
+                row2 = {key: "0" for key in fields}
+                row2.update(word_index="19", pc="0xAC0A7F84", pr="0x8C0A8000",
+                            r1="0x8C1069BC", r4="0x00000014", r5="0x8C0D65D4")
+                w.writerow(row2)
+            with mem.open("w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=["word_index", "pc", "access", "width", "address", "value"])
+                w.writeheader()
+            report = summarize(pc, mem)
+        self.assertIn("obj_load_indirect_call 0x8C0A2FDE: 1", report)
+        self.assertIn("table_entry_load       0x8C0A7F84: 1", report)
+        self.assertIn("r1=0x8C0360C8", report)
+        self.assertIn("r4=0x8C1069BC", report)
+        self.assertIn("r5=0x00000014", report)
+
     def test_normalizes_interpreter_and_p2_aliases(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             pc = Path(tmp) / "trace.pc.csv"
