@@ -16,11 +16,13 @@ A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), 
 
 No playable Naomi port or hardware compatibility is claimed yet.
 
-## Immediate next task: first Naomi executable
+## Immediate next task: execute actual VF3 code on Naomi
 
-A standalone Naomi bootstrap target now lives in `tests/naomi_bootstrap/`. It is deliberately independent of MIE/JVS and commercial game assets: it initializes KallistiOS/PowerVR2 and renders a visible status screen. The new `.github/workflows/naomi-bootstrap.yml` builds and packages it with KOS `naomibintool`.
+The first standalone Naomi executable is now built and confirmed booting in Flycast. The known-good baseline is in `tests/naomi_bootstrap/`; it proves KallistiOS startup and visible PowerVR2 output.
 
-The build workflow restores the SH-4 toolchain, compiled Naomi KOS tree and bootstrap object files independently, saving completed stages before later work. The final ROM is freshly packaged and validated on every run. A successful build is only the first gate; it must still boot in Flycast before we move on to linking actual VF3 code.
+The next target, `tests/naomi_vf3core_smoke/`, cross-compiles the real `mt_parse()` and `mt_each()` motion-table parser from the pinned `celsowm/vf3-decomp` revision. It runs those functions on a synthetic in-memory MT fixture and checks both a valid record and a short-input rejection. This deliberately avoids bundling commercial game data. The workflow uploads the already-working bootstrap separately before attempting the new VF3-code build, so a parser build failure cannot take away the known-good ROM.
+
+After the parser executes on Naomi, the next step is to put the same parser behind a Naomi ROMFS/NetDIMM asset provider and test it with a locally supplied game asset. ROM-derived asset checkpoints will be encrypted and content-addressed; plaintext commercial data will not be placed in public caches or artifacts.
 
 Input-path findings are documented and frozen for now. Do not launch more input-trace builds unless the running game later gives us a concrete reason to revisit them.
 
