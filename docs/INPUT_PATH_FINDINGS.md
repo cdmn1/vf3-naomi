@@ -85,7 +85,7 @@ probe; its recorded Flycast scans did not establish player control.
    reader and controller-merge path.
 4. Do not reuse the native harness's `VF3_PRESS` result as proof of a
    successful Flycast menu route.
-5. The maintained Flycast watch list now probes the selected-port reader
+5. The maintained Flycast watch list now probes the packet lookup at `0x8C0A1282` as well as the selected-port reader
    (`0x8C09B006`), controller merge (`0x8C09AF6C`) and player action update
    (`0x8C0AD1B8`) on every interpreter execution. The first capture should
    determine which of these routines are reached during normal navigation.
@@ -102,3 +102,10 @@ probe; its recorded Flycast scans did not establish player control.
 - [Selected-port reader reconstruction](https://github.com/celsowm/vf3-decomp/blob/main/src/fight/controller_port.c)
 - [Controller merge reconstruction](https://github.com/celsowm/vf3-decomp/blob/main/src/fight/controller_merge.c)
 - [Maple HLE implementation](https://github.com/celsowm/vf3-decomp/blob/main/src/sys/maple_hle.c)
+
+
+## Follow-up trace instrumentation (2026-11-18)
+
+The first capture reached the controller merge and player action update, but did not hit the reconstructed selected-port reader entry. The related source shows that the merge calls the packet lookup at `0x0C0A1282`; the selected-port reader also calls that lookup and resumes at `alias+0x09b00e`. The next capture therefore watches `0x8C0A1282` in addition to the three existing addresses.
+
+Watched-PC records now include the SH-4 procedure return register (`PR`) and all general registers (`R0`-`R15`; `R15` is the stack pointer). This will allow the caller path and live packet values to be examined without enabling a high-volume instruction trace. The decoder accepts both the previous compact record and the new expanded record.
