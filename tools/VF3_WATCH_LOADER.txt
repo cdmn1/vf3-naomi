@@ -11,10 +11,11 @@ pc 0x8C0CBC40
 mem 0x8C1069BC 0x210
 mem 0x8C5F0000 0x270000
 
-# v32 follow-up probes: capture register context for the runtime table reads
-# and the observed object-loader buffer initialization path.
+# v32 follow-up probes: capture the table base/index, object-loader entry,
+# indirect helper target and the observed buffer-initialization writes.
 pc 0x8C0A7F84
 pc 0x8C0A2F90
+pc 0x8C0A2FDE
 pc 0x8C0A2EC8
 pc 0x8C0A304E
 
