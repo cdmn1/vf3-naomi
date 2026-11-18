@@ -20,6 +20,7 @@ pc 0x8C09B07C
 # Fixed globals: packet-record base pointer, merge selector and merged word.
 mem 0x8C0A1300 0x4
 mem 0x8C29BCC4 0x4
+mem 0x0C29BCCC 0x4
 mem 0x8C29BA50 0x4
 
 # Latest capture resolved the lookup return pointers:
