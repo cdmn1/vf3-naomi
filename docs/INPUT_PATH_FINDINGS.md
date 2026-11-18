@@ -382,3 +382,20 @@ or table-driven accesses) in the fight/action update path and correlate those
 reads with individually controlled cabinet-button samples. Source reference:
 `celsowm/vf3-decomp/src/fight/audio_input.c` and
 `src/fight/audio_fight.c`.
+
+
+A second menu-side consumer is present in the reconstruction's
+`vf3_advance_scene_selector` helper in `src/fight/advance_scene_commands.c`.
+It reads the same scene word at `0x0C29B864 + 0x13C`; with its selector
+counter at 32 or above, it tests `0x1000` to advance and `0x2000` to move
+back, then updates the selector byte at scene offset +11. This is further
+evidence that the converted direction flags are used by scene navigation.
+It is still not evidence about the in-match fighter-action consumer.
+
+So far, the statically identified consumers of this exact word are both
+selection/navigation paths (`audio_input.c` and
+`advance_scene_commands.c`). The fight-action consumer remains unidentified;
+the next useful step is to inspect the fight-frame update's data flow around
+the indexed mask table and follow any copied/shifted versions of the word,
+rather than treating every reference to a nearby +0x13C structure offset as
+the same global.
