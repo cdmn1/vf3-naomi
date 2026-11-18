@@ -3,7 +3,8 @@
 
 The patched Flycast trace is a little-endian stream of u64 words. Recognized
 record groups are:
-  PC probe:  (pc<<16)|0xFA10, r13, r14, r4, r5, r6, r7, (pc<<16)|0xFA11
+  Legacy PC probe: (pc<<16)|0xFA10, r13, r14, r4, r5, r6, r7, (pc<<16)|0xFA11
+  expanded PC:     (pc<<16)|0xFA12, PR, R0..R15, (pc<<16)|0xFA13
   memory:    (pc<<16)|0xFA20, (size<<48)|(isWrite<<47), address, value
 
 Unknown trace words are skipped. This is deliberately a decoder for the
@@ -23,6 +24,8 @@ import sys
 
 PC_OPEN = 0xFA10
 PC_CLOSE = 0xFA11
+PC_EXPANDED_OPEN = 0xFA12
+PC_EXPANDED_CLOSE = 0xFA13
 MEMORY = 0xFA20
 
 
@@ -63,6 +66,25 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
                 "r7": f"0x{regs[5]:016X}",
             })
             i += 8
+            continue
+        if marker == PC_EXPANDED_OPEN:
+            if i + 18 >= len(words):
+                warnings.append(f"truncated expanded PC probe at u64 word {i}")
+                break
+            close = words[i + 18]
+            if (close & 0xFFFF) != PC_EXPANDED_CLOSE or (close >> 16) != pc:
+                warnings.append(f"invalid expanded PC probe close marker at u64 word {i}")
+                i += 1
+                continue
+            regs = words[i + 2:i + 18]
+            row = {
+                "word_index": str(i),
+                "pc": f"0x{pc:08X}",
+                "pr": f"0x{words[i + 1]:08X}",
+            }
+            row.update({f"r{n}": f"0x{value:08X}" for n, value in enumerate(regs)})
+            probes.append(row)
+            i += 19
             continue
         if marker == MEMORY:
             if i + 3 >= len(words):
@@ -105,8 +127,9 @@ def main(argv: list[str] | None = None) -> int:
         prefix.parent.mkdir(parents=True, exist_ok=True)
         pc_path = Path(str(prefix) + ".pc.csv")
         mem_path = Path(str(prefix) + ".memory.csv")
-        write_csv(pc_path, probes,
-                  ["word_index", "pc", "r13", "r14", "r4", "r5", "r6", "r7"])
+        pc_fields = ["word_index", "pc", "pr"] + [f"r{n}" for n in range(16)]
+        # Legacy probe rows leave expanded-only columns blank.
+        write_csv(pc_path, probes, pc_fields)
         write_csv(mem_path, memory,
                   ["word_index", "pc", "access", "width", "address", "value"])
     except (RuntimeError, OSError) as exc:
