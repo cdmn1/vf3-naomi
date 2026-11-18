@@ -158,17 +158,16 @@ jobs:
             tests/naomi_bootstrap/vf3_naomi_bootstrap.elf
           key: vf3-bootstrap-objects-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_bootstrap/**') }}-sh4-naomi-v1
 
-      - name: Compile and package Naomi bootstrap
+      - name: Compile Naomi bootstrap ELF
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
-          make -C tests/naomi_bootstrap rom
+          make -C tests/naomi_bootstrap all
           test -s tests/naomi_bootstrap/vf3_naomi_bootstrap.elf
-          test -s tests/naomi_bootstrap/vf3_naomi_bootstrap.bin
 
       - name: Save bootstrap object cache immediately
         if: steps.object-cache.outputs.cache-hit != 'true'
@@ -178,6 +177,17 @@ jobs:
             tests/naomi_bootstrap/main.o
             tests/naomi_bootstrap/vf3_naomi_bootstrap.elf
           key: vf3-bootstrap-objects-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_bootstrap/**') }}-sh4-naomi-v1
+
+      - name: Package Naomi ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_bootstrap rom
+          test -s tests/naomi_bootstrap/vf3_naomi_bootstrap.bin
 
       - name: Validate and describe Naomi ROM
         run: |
