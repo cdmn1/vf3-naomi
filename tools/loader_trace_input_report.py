@@ -110,6 +110,52 @@ def main() -> int:
                     lines.append("| {} | {:,} |".format(pc, count))
         lines.append("")
 
+    # The indexed node-flag routine is the current candidate consumer of
+    # the digital controller word. Capture its calling convention so the
+    # next pass can resolve the three dynamic output addresses from R9.
+    candidate_pcs = {
+        0x0C096258: "indexed node-flag routine entry",
+        0x0C096280: "node status read",
+        0x0C0962A0: "digital controller-word read",
+        0x0C0962C8: "third node-field read",
+        0x0C09648C: "later node-field read",
+    }
+    lines += ["", "## Indexed node-flag input routine snapshots", "",
+              "The reconstruction uses R4 as the signed node index, R6 as the mask-table pointer, and R9 as the base for output words at R9+0x138, +0x13C and +0x140.", "",
+              "| Guest PC | Site | Hits |", "|---|---|---:|"]
+    candidate_counts = Counter(
+        int(row["pc"], 16) & 0x1FFFFFFF for row in probes
+        if (int(row["pc"], 16) & 0x1FFFFFFF) in candidate_pcs
+    )
+    for pc, label in candidate_pcs.items():
+        lines.append(f"| 0x{pc:08X} | {label} | {candidate_counts[pc]:,} |")
+    entry_rows = [row for row in probes
+                  if (int(row["pc"], 16) & 0x1FFFFFFF) == 0x0C096258]
+    tuples = Counter((row.get("r4", ""), row.get("r6", ""), row.get("r9", ""))
+                     for row in entry_rows)
+    lines += ["", "### Entry register combinations", "",
+              "| R4 (node index) | R6 (mask table) | R9 (output base) | Hits |",
+              "|---:|---:|---:|---:|"]
+    for (r4, r6, r9), count in tuples.most_common(30):
+        lines.append(f"| {r4} | {r6} | {r9} | {count:,} |")
+    if len(tuples) > 30:
+        lines.append(f"| … | … | … | {len(tuples) - 30:,} additional combinations omitted |")
+    output_bases = Counter()
+    for row in entry_rows:
+        try:
+            base = int(row["r9"], 16) & 0xFFFFFFFF
+            output_bases[base] += 1
+        except (KeyError, ValueError):
+            continue
+    lines += ["", "### Candidate output addresses", ""]
+    if output_bases:
+        for base, count in output_bases.most_common(20):
+            lines.append(f"- R9 `{base:#010x}` ({count:,} entry snapshots): "
+                         f"`{base + 0x138:#010x}`, `{base + 0x13C:#010x}`, "
+                         f"`{base + 0x140:#010x}`")
+    else:
+        lines.append("No usable R9 values were present in the entry snapshots.")
+    lines.append("")
     # Align transitions in the raw P1 guest record with the merged word.
     timeline_addresses = {
         0x0C2CF83C: "P1 record +8",
