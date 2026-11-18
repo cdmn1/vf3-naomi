@@ -131,8 +131,6 @@ jobs:
               guard_at = s.find(guard, start + len(function))
               if guard_at >= 0:
                   s = s[:guard_at] + s[guard_at + len(guard):]
-              else:
-                  s = s[:start + len(function)] + "\n" + guard + s[start + len(function):]
           p.write_text(s)
           PY
           make -C "$KOS_BASE" -j2
