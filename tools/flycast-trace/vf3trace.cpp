@@ -245,14 +245,13 @@ void vf3TraceInstruction(Sh4Context *ctx)
     if (!watchedPc(pc))
         return;
 
-    writeWord((static_cast<u64>(pc) << 16) | 0xFA10);
-    writeWord(ctx->r[13]);
-    writeWord(ctx->r[14]);
-    writeWord(ctx->r[4]);
-    writeWord(ctx->r[5]);
-    writeWord(ctx->r[6]);
-    writeWord(ctx->r[7]);
-    writeWord((static_cast<u64>(pc) << 16) | 0xFA11);
+    // Expanded probe: marker, PR, R0..R15 (including SP in R15), close marker.
+    // This preserves the caller return address and the complete guest register context.
+    writeWord((static_cast<u64>(pc) << 16) | 0xFA12);
+    writeWord(ctx->pr);
+    for (u32 i = 0; i < 16; ++i)
+        writeWord(ctx->r[i]);
+    writeWord((static_cast<u64>(pc) << 16) | 0xFA13);
 }
 
 void vf3TraceMemory(u32 pc, u32 address, u32 width, bool isWrite, u64 value)
