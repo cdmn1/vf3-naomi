@@ -47,9 +47,15 @@ mem 0x0C29B99C 0x4
 mem 0x0C29B9A0 0x4
 mem 0x0C29B9A4 0x4
 
-# Direct readers of the digital-derived +0x13C word found in the 18:44
-# capture. 0x8C0C3C52 is in the first per-frame scene-step region called by
-# the frame sequencer; 0x8C0C8D2C is a second reader not yet identified.
+# Direct readers of the digital-derived +0x13C word. The 19:53 controlled
+# capture identifies 0x8C0C8D2C as the strongest fight-context consumer lead.
+# Probe the following instructions to capture the loaded value and branch use.
 pc 0x8C0C3C30
 pc 0x8C0C3C52
 pc 0x8C0C8D2C
+pc 0x8C0C8D2E
+pc 0x8C0C8D30
+pc 0x8C0C8D32
+pc 0x8C0C8D34
+pc 0x8C0C8D36
+pc 0x8C0C8D38
