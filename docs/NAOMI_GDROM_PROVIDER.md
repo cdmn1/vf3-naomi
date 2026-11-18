@@ -10,6 +10,8 @@ The earlier vf3_naomi_gdrom_probe-v19.bin is withdrawn. It called the Dreamcast 
 
 The related Dreamcast VF3 source models the Dreamcast BIOS service vector at 0x8C0000BC. The GDFS loader queues command 0x11 (DMAREAD), advances the request through EXEC_SERVER, and polls GET_CMD_STAT. This is useful for understanding the original VF3 resource semantics (FAD, sector count, destination address and completion), but it is not evidence that Naomi provides the same BIOS vector or service ABI.
 
+The Dreamcast GDFS service is retained only as the reference for the Dreamcast executable's resource semantics. The Naomi transport must use the Naomi cartridge/DIMM and Holly GD-DMA interfaces, not that BIOS syscall vector.
+
 KallistiOS labels dc/syscalls.h as the Dreamcast ROM system-call API. Its Dreamcast hardware makefile also excludes the ordinary Dreamcast cdrom.c and g1ata.c drivers when KOS_SUBARCH=naomi. Compiling a translation unit that references syscall_gdrom_* under the Naomi target only proves those C symbols linked; it does not prove the Naomi BIOS implements the referenced Dreamcast vector.
 
 ### Naomi GD-ROM / DIMM model
@@ -43,3 +45,51 @@ Do not use Dreamcast-only BIOS syscall probes as proof of Naomi storage support.
 - KallistiOS kernel/arch/dreamcast/hardware/Makefile: excludes cdrom.o and g1ata.o for the Naomi subarchitecture.
 - Flycast core/hw/naomi/naomi.cpp: Naomi System Bus GD DMA path.
 - Flycast core/hw/naomi/gdcartridge.cpp: Naomi GD cartridge and DIMM memory model.
+
+
+## Verified Naomi cartridge data path (2026-11-18)
+
+The Flycast Naomi implementation gives a concrete hardware-facing model that is
+separate from the Dreamcast BIOS service queue:
+
+- Naomi cartridge PIO registers are at 0x5f7000 (offset high),
+  0x5f7004 (offset low), and 0x5f7008 (data).
+- Naomi cartridge DMA source offset registers are at 0x5f700c and 0x5f7010.
+- Holly System Bus GD-DMA registers are SB_GDSTAR 0x5f7404,
+  SB_GDLEN 0x5f7408, SB_GDDIR 0x5f740c, SB_GDEN 0x5f7414 and
+  SB_GDST 0x5f7418.
+- The emulator's Naomi DMA start handler requires GDEN, starts from the
+  configured GDSTAR destination, and obtains source bytes from the current
+  cartridge's GetDmaPtr() implementation. It advances that cartridge pointer
+  as DMA chunks are transferred.
+- For a GD cartridge, GetDmaPtr() uses the DMA offset and returns bytes from
+  DIMM-backed storage. Segment loading/decryption is internal to the emulator's
+  GD cartridge model.
+
+This confirms the correct class of transport for the next probe: configure the
+Naomi cartridge DMA source offset, then request a transfer through Holly's
+System Bus GD-DMA engine. It is not a Dreamcast BIOS GD-ROM syscall.
+
+### Probe vN
+
+`tests/naomi_dma_probe/` compares a 32-byte PIO read and a 32-byte System Bus
+GD-DMA read from image offset zero, then compares the returned words. It does
+not call Dreamcast syscall vectors and contains no commercial assets.
+
+Interpretation:
+- PIO PASS: cartridge PIO returned nonblank data.
+- DMA PASS: the Holly GD-DMA engine completed before timeout.
+- PIO/DMA MATCH: both Naomi access paths returned the same image bytes.
+
+A successful result proves raw cartridge/NetDIMM image-offset access only. It
+does not yet implement GDFS, translate filenames/FADs, or reproduce the VF3
+loader's scatter/re-site behavior. Run through a NetDIMM-loaded Naomi title on
+real hardware for NetDIMM validation; a regular ROM-board or emulator cartridge
+test is useful but is not by itself a physical NetDIMM test.
+
+### References used
+
+- Flycast `core/hw/naomi/naomi.cpp`: Naomi GD-DMA start and transfer scheduler.
+- Flycast `core/hw/naomi/naomi_cart.cpp`: cartridge PIO and DMA-offset registers.
+- Flycast `core/hw/naomi/gdcartridge.cpp`: DIMM-backed `GetDmaPtr()`.
+- Flycast `core/hw/naomi/naomi_regs.h` and `core/hw/holly/sb.h`: register addresses.
