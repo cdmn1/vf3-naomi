@@ -319,3 +319,38 @@ before implementing the Naomi JVS-to-guest input adapter.
 
 The 17:37 analysis report is available as the
 [vf3-input-field-report-202611181737 workflow artifact](https://github.com/cdmn1/vf3-naomi/actions/runs/44364557681).
+
+
+## Analysis of the 2026-11-18 18:44 indexed-input capture
+
+The 18:44 capture decoded cleanly: 22,031,712 bytes, 59,996 PC probe groups and 403,510 memory records, with no decoder warnings. Port 0 was connected (0x000F06FE); port 1 remained disconnected (0xFFFFFFFE). The controller merge ran 319 times and the 0x8C0AD1B8 player-action candidate ran 34 times.
+
+The indexed node-flag routine at 0x8C096258 was observed 7,598 times. Its three internal read sites at 0x8C096280, 0x8C0962A0 and 0x8C0962C8 each had 7,598 PC hits. The actual digital controller word at 0x0C2CF83C was read 3,799 times at 0x0C0962A0. Entry snapshots again show the routine processing node indices R4=0 and R4=1, 3,799 times each, with R9 fixed at 0x0C29B864.
+
+### Direct digital-word conversion
+
+This capture finally records writes to the routine's indexed output words. The reconstruction identifies the three source fields as node offsets +16, +8 and +12, respectively. Therefore:
+- R9+0x138 (0x0C29B99C) is derived from node field +16.
+- R9+0x13C (0x0C29B9A0) is the output derived from the digital controller word at node field +8.
+- R9+0x140 (0x0C29B9A4) is derived from node field +12 (the analog-related field, which remains out of scope for the Naomi mapping).
+
+The following values are directly correlated in trace order between the port-0 digital word and writes to the **digital-derived output** 0x0C29B9A0. The KOS names describe the standard Dreamcast bit positions; they are not claims about the physical cabinet button labels.
+
+| Raw word at 0x0C2CF83C | KOS bit | Output at 0x0C29B9A0 |
+|---:|---|---:|
+| 0x0008 | START | 0x0010 |
+| 0x0004 | A | 0x0400 |
+| 0x0002 | B | 0x0800 |
+| 0x0200 | Y | 0x0200 |
+| 0x0400 | X | 0x0100 |
+| 0x0010 | UP | 0x2000 |
+| 0x0020 | DOWN | 0x1000 |
+| 0x0040 | LEFT | 0x8000 |
+| 0x0080 | RIGHT | 0x4000 |
+| 0x0404 | A + X | 0x0500 |
+
+The A+X sample is a useful cross-check: the resulting 0x0500 is the combination of the independently observed A-derived 0x0400 and X-derived 0x0100 flags. B's digital-derived output is 0x0800; other indexed words can contain additional bits from their own source fields, so do not use +0x138 or +0x140 as the direct button mapping.
+
+This is the first capture that demonstrates the complete runtime conversion from the guest's standard digital controller bits to the game's indexed digital-input flags. It substantially narrows the remaining work: identify where the 0x0C29B9A0 flags are consumed and what each internal flag means to VF3's action logic. The capture does **not** by itself prove that the 0x8C0AD1B8 routine is that consumer, and it does not justify assigning Punch/Kick/Defend/Escape names to the raw bits without correlating those labels to controlled samples.
+
+The analysis report is available as the [vf3-input-field-report-202611181844 workflow artifact](https://github.com/cdmn1/vf3-naomi/actions/runs/44373205735).
