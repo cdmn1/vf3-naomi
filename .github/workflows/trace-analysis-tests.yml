@@ -47,14 +47,14 @@ jobs:
       - name: Decode latest repository capture
         run: |
           python tools/loader_trace_input_report.py \
-            "VF3-Flycast-Trace 202611181737/vf3-loader-trace.bin" \
+            "VF3-Flycast-Trace 202611181844/vf3-loader-trace.bin" \
             --output input-field-report.md
           cat input-field-report.md >> "$GITHUB_STEP_SUMMARY"
           cat input-field-report.md
       - name: Upload input-field report
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-input-field-report-202611181737
+          name: vf3-input-field-report-202611181844
           path: input-field-report.md
           if-no-files-found: error
           retention-days: 30
