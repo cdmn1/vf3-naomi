@@ -19,10 +19,10 @@ The default input watch profile prioritizes three original guest input routines:
 - `0x8C0AD1B8` — player action update.
 - `0x8C0A1282` — packet lookup called by the controller routines.
 
-The input profile is intentionally PC-only and compact. The separate `VF3_WATCH_LOADER.txt` retains the GDFS/MT resource and memory watches for a later loader-focused capture. The first objective is to establish whether the original executable reaches its controller path during normal menu/gameplay navigation; the capture does not assume that it does.
+The input profile is intentionally PC-only and compact. The separate `VF3_WATCH_LOADER.txt` retains the GDFS/MT resource and memory watches. Use `run-trace.cmd` for the controller-path capture; use `run-trace-loader.cmd` for the loader-focused capture needed to resolve the runtime resource table, GDFS sector-read contract and MT resident scatter path.
 
 It deliberately does not claim to implement the separate `VF3_FULL` oracle snapshots, frame-clock `vf3script` commands, or savestate staging from the private research build. Those features are not required for this first controller-path capture and are not silently emulated here.
 
-The Windows package includes `run-trace.cmd`, `VF3_WATCH_INPUT.txt` (the default), and `VF3_WATCH_LOADER.txt` (for later loader work). Run the command file, load the **Dreamcast** VF3 image in Flycast, use the controls to navigate as far as possible (ideally into a player-controlled match), then close Flycast normally. The trace is written beside the executable as `vf3-loader-trace.bin`.
+The Windows package includes both launchers and both watch profiles. For the next storage investigation, run `run-trace-loader.cmd`, load the **Dreamcast** VF3 image (not the Naomi probe ROM), navigate through character selection and confirm into Round 1, then close Flycast normally. The loader trace is written beside the executable as `vf3-loader-trace-loader.bin`; its `.diag.txt` companion records watched-PC hit counts. This profile includes broad memory watches, so a large trace file is expected. The separate `run-trace.cmd` remains available for the compact controller-path capture.
 
 The binary is not ready for user use until the GitHub Actions build succeeds, the ZIP has been inspected, and a short launch/trace smoke test passes.
