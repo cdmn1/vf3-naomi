@@ -99,6 +99,26 @@ The decode produced 2 PC-probe groups and 74,949 memory records.
   entries 0, 20, 25, 92, 93, 118, 119, 122 and 123. The read instruction PC
   was '0x8C0A7F84'; this is now an additional register-probe target so the
   next capture can record the table base, scaled index and loaded pointer.
+
+The pointer values were checked against the user's original Dreamcast
+1ST_READ.BIN (load base 0x8C010000). They resolve to filenames embedded in
+the executable:
+
+| Table index | String pointer | Resolved filename |
+|---:|---:|---|
+| 0 | 0x8C0D6498 | MOTHEAD.BIN |
+| 20 | 0x8C0D65D4 | MTAKIPAI.BIN |
+| 25 | 0x8C0D6624 | MTAKIWOL.BIN |
+| 92 | 0x8C0D6A54 | ROB_AKI.POL |
+| 93 | 0x8C0D6A60 | ROB_AKI.TEX |
+| 118 | 0x8C0D6B8C | ROB_PA2.POL |
+| 119 | 0x8C0D6B98 | ROB_PA2.TEX |
+| 122 | 0x8C0D6BBC | ROB_WO2.POL |
+| 123 | 0x8C0D6BC8 | ROB_WO2.TEX |
+
+This establishes that the observed table reads are filename-pointer lookups.
+It does not yet establish which lookup causes a file transfer, how the
+resource index is selected, or which loader consumes the returned filename.
 - The resident MT window had 74,937 accesses: 74,910 reads and 27 writes.
   All 27 writes stored zero at nine buffer-start addresses, from
   '0x8C0A2EC8' and '0x8C0A304E'. No nonzero resident-MT writes were captured,
