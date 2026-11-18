@@ -32,6 +32,7 @@ static int toc_rc = -99;
 static int read_rc = -99;
 static int drive_status = -1;
 static int disc_type = -1;
+static uint32_t gdrom_service_ptr;
 static uint32_t data_track_fad;
 static uint8_t *sector_buf;
 static cd_toc_t toc;
@@ -152,28 +153,30 @@ static void draw_screen(void) {
     pvr_list_begin(PVR_LIST_TR_POLY);
 
     draw_text(40, 40, "VF3 NAOMI GD-ROM PROBE");
+    snprintf(line, sizeof(line), "BIOS GDROM VECTOR: %08X", (unsigned)gdrom_service_ptr);
+    draw_text(40, 72, line);
     snprintf(line, sizeof(line), "DRIVE STATUS CALL: %s", drive_rc == 0 ? "PASS" : "FAIL");
-    draw_text(40, 88, line);
+    draw_text(40, 104, line);
     snprintf(line, sizeof(line), "STATUS %d  DISC TYPE %02X", drive_status, disc_type & 0xff);
-    draw_text(40, 120, line);
+    draw_text(40, 136, line);
     snprintf(line, sizeof(line), "HIGH DENSITY TOC: %s", toc_rc == 0 ? "PASS" : "FAIL");
-    draw_text(40, 160, line);
+    draw_text(40, 176, line);
     snprintf(line, sizeof(line), "DATA TRACK FAD: %06X", (unsigned)data_track_fad);
-    draw_text(40, 192, line);
+    draw_text(40, 208, line);
     snprintf(line, sizeof(line), "MTJACLAU FAD: %06X", (unsigned)VF3_MTJACLAU_FAD);
-    draw_text(40, 232, line);
+    draw_text(40, 248, line);
     snprintf(line, sizeof(line), "BIOS DMAREAD: %s (%d)", read_rc == 0 ? "PASS" : "FAIL", read_rc);
-    draw_text(40, 272, line);
+    draw_text(40, 288, line);
 
     if (read_rc == 0 && sector_buf) {
         snprintf(bytes, sizeof(bytes), "FIRST 8 BYTES: %02X %02X %02X %02X %02X %02X %02X %02X",
                  sector_buf[0], sector_buf[1], sector_buf[2], sector_buf[3],
                  sector_buf[4], sector_buf[5], sector_buf[6], sector_buf[7]);
-        draw_text(40, 312, bytes);
+        draw_text(40, 328, bytes);
     } else {
-        draw_text(40, 312, "MOUNT THE VF3TB GD-ROM IMAGE");
+        draw_text(40, 328, "MOUNT THE VF3TB GD-ROM IMAGE");
     }
-    draw_text(40, 368, "READ-ONLY TEST - NO GAME DATA INCLUDED");
+    draw_text(40, 384, "READ-ONLY TEST - NO GAME DATA INCLUDED");
 
     pvr_list_finish();
     pvr_scene_finish();
@@ -185,10 +188,18 @@ static void unlock_gd_dma(void) {
     *protection = G1_ATA_DMA_UNLOCK_ALLMEM;
 }
 
+static int valid_service_pointer(uint32_t ptr) {
+    return (ptr >= 0x8C000000u && ptr < 0x8D000000u) ||
+           (ptr >= 0xA0000000u && ptr < 0xA1000000u) ||
+           (ptr >= 0x0C000000u && ptr < 0x0D000000u);
+}
+
 int main(void) {
-    /* KOS's Dreamcast cdrom_init() performs this DMA-protection unlock. */
-    unlock_gd_dma();
-    syscall_gdrom_init();
+    gdrom_service_ptr = *(volatile uint32_t *)0x8C0000BCu;
+    if (valid_service_pointer(gdrom_service_ptr)) {
+        /* KOS's Dreamcast cdrom_init() performs this DMA-protection unlock. */
+        unlock_gd_dma();
+        syscall_gdrom_init();
 
         cd_check_drive_status_t drive_info;
         memset(&drive_info, 0, sizeof(drive_info));
@@ -202,8 +213,12 @@ int main(void) {
         toc_params.area = CD_AREA_HIGH;
         toc_params.buffer = &toc;
         toc_rc = exec_bios_command(CD_CMD_GETTOC2, &toc_params, NULL);
-    if (toc_rc == 0)
-        data_track_fad = locate_data_track(&toc);
+        if (toc_rc == 0)
+            data_track_fad = locate_data_track(&toc);
+    } else {
+        drive_rc = -30;
+        toc_rc = -30;
+    }
 
     sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
     if (sector_buf)
