@@ -50,6 +50,7 @@ jobs:
             "VF3-Flycast-Trace 202611181504/vf3-loader-trace.bin" \
             --output input-field-report.md
           cat input-field-report.md >> "$GITHUB_STEP_SUMMARY"
+          cat input-field-report.md
       - name: Upload input-field report
         uses: actions/upload-artifact@v4
         with:
