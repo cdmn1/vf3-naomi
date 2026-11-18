@@ -399,3 +399,23 @@ the next useful step is to inspect the fight-frame update's data flow around
 the indexed mask table and follow any copied/shifted versions of the word,
 rather than treating every reference to a nearby +0x13C structure offset as
 the same global.
+
+
+## Correction: 0x8C0AD1B8 is not established as an action-handler entry
+
+The earlier trace tooling called `0x8C0AD1B8` "player action update". That
+label was too strong. In the Dreamcast reconstruction's
+`src/fight/advance_leaf_ranked_more_adapters.c`, this address is an
+instruction inside a larger translated adapter block: it saves the return
+address and continues at `0x8C0AD1BA`, where the code loads a pointer from
+`0x0C0AD250`. The inspected sequence does not read the indexed digital flags
+at `0x0C29B9A0`. Therefore hits at `0x8C0AD1B8` alone do not identify the
+input consumer or justify calling it the player-action update entry.
+
+The trace report now labels this PC as an unclassified fight-frame
+instruction and reports read instruction sites for all three indexed output
+words, not only the raw controller and merged words. The next analysis should
+start with the actual read-site histogram for `0x0C29B9A0`, then follow the
+relevant readers in the reconstructed fight path. The two statically
+identified consumers documented above remain scene-navigation paths, not
+fighter-action handlers.
