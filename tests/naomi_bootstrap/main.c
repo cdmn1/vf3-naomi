@@ -10,6 +10,8 @@
 #include <dc/minifont.h>
 #include <dc/pvr.h>
 
+KOS_INIT_FLAGS(INIT_DEFAULT);
+
 #define FONT_W 12
 #define FONT_H 24
 
