@@ -128,6 +128,16 @@ def main() -> int:
     for index, field, value, pc in sorted(timeline):
         lines.append("| {:,} | {} | {} | {} |".format(index, field, value, pc))
 
+    action_rows = [row for row in probes
+                   if (int(row["pc"], 16) & 0x1FFFFFFF) == 0x0C0AD1B8]
+    lines += ["", "## Player-action update register snapshots", "",
+              "Selected registers at each watched execution of 0x8C0AD1B8.", "",
+              "| Trace word index | PR | R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R13 | R14 | R15 |",
+              "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    for row in action_rows:
+        regs = [row.get("r" + str(n), "") for n in [0,1,2,3,4,5,6,7,13,14,15]]
+        lines.append("| " + " | ".join([row["word_index"], row.get("pr", "")] + regs) + " |")
+
     if warnings:
         lines += ["## Decoder warnings", ""]
         lines.extend(f"- {warning}" for warning in warnings)
