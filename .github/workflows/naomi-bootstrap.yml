@@ -121,8 +121,8 @@ jobs:
           p = Path(os.environ["KOS_BASE"]) / "kernel/arch/dreamcast/hardware/maple/mie/mie.c"
           s = p.read_text()
           replacements = (
-              ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\\n        return false;\\n    }\\n\\n"),
-              ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\\n        return;\\n    }\\n\\n"),
+              ("bool mie_init_fw(const char *fw_path) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return false;\n    }\n\n"),
+              ("void mie_init(void) {", "    if(hardware_sys_mode(NULL) == HW_TYPE_RETAIL) {\n        return;\n    }\n\n"),
           )
           for function, guard in replacements:
               start = s.find(function)
@@ -132,7 +132,7 @@ jobs:
               if guard_at >= 0:
                   s = s[:guard_at] + s[guard_at + len(guard):]
               else:
-                  s = s[:start + len(function)] + "\\n" + guard + s[start + len(function):]
+                  s = s[:start + len(function)] + "\n" + guard + s[start + len(function):]
           p.write_text(s)
           PY
           make -C "$KOS_BASE" -j2
