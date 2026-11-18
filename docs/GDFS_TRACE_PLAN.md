@@ -149,6 +149,12 @@ resource index is selected, or which loader consumes the returned filename.
   All 27 writes stored zero at nine buffer-start addresses, from
   '0x8C0A2EC8' and '0x8C0A304E'. No nonzero resident-MT writes were captured,
   so this is not evidence of the per-record scatter/re-site loader.
+  The nine distinct zeroed starts were '0x8C62D000', '0x8C67C800',
+  '0x8C6C1000', '0x8C6C3000', '0x8C70B800', '0x8C757000', '0x8C7A7800',
+  '0x8C7EF000' and '0x8C844000'. The first PC wrote through a P2 alias and
+  the second through a P0 alias; after SH-4 alias normalization, they are the
+  same nine destinations. Their relationship to individual asset files is
+  not established yet.
 - Most reads came from '0x8C09D6C8', '0x8C09D6F4', '0x8C09D70A',
   '0x8C09D778', '0x8C09D77E', '0x8C09D782' and '0x8C09D794'.
   The related MT evaluator analysis identifies these as motion-frame
