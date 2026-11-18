@@ -103,3 +103,24 @@ Do not rely on rerunning a failed job to preserve its filesystem: GitHub-hosted 
 | Separate full-image build stages | Not implemented; no full VF3 image workflow yet |
 | Build manifest and stage selector | Required for full image workflow; not implemented yet |
 
+
+
+## Bootstrap build implementation (2026-11-18)
+
+The first independent Naomi executable target is now implemented in
+`tests/naomi_bootstrap/`, with a dedicated
+`.github/workflows/naomi-bootstrap.yml` workflow.
+
+The workflow reuses the SH-4 toolchain cache and restores the existing
+Naomi KOS source/build checkpoint when its KOS commit matches. It also has a
+separate object/ELF cache keyed by the KOS revision, Naomi target and complete
+bootstrap source/Makefile content. The toolchain, KOS tree and object cache
+are persisted independently; the final `.bin` is always packaged afresh
+through `naomibintool` and receives a build manifest containing its size and
+SHA-256. This prevents a failed later stage from throwing away earlier
+expensive work.
+
+The asset stage is not yet implemented because this repository does not yet
+have a Naomi asset-conversion pipeline. When it is added, ROM-derived
+checkpoints must follow the encrypted-cache policy above. Do not cache or
+publish plaintext commercial assets in this public repository.
