@@ -17,6 +17,7 @@
 #include <dc/cdrom.h>
 #include <dc/syscalls.h>
 #include <dc/memory.h>
+#include <dc/g1ata.h>
 #include <kos/cache.h>
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
@@ -43,6 +44,8 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
 
     if (!buffer || (((uintptr_t)buffer & 31u) != 0))
         return -10;
+    if (g1_ata_mutex_lock() != 0)
+        return -14;
 
     memset(buffer, 0, SECTOR_SIZE);
     dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
@@ -60,21 +63,27 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
         syscall_gdrom_exec_server();
         thd_sleep(1);
     }
-    if (handle <= 0)
+    if (handle <= 0) {
+        g1_ata_mutex_unlock();
         return -11;
+    }
 
     for (int retry = 0; retry < 5000; ++retry) {
         syscall_gdrom_exec_server();
         const cd_cmd_chk_t result = syscall_gdrom_check_command(handle, &status);
         if (result == CD_CMD_COMPLETED) {
             dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
+            g1_ata_mutex_unlock();
             return 0;
         }
-        if (result == CD_CMD_FAILED || result == CD_CMD_NOT_FOUND)
+        if (result == CD_CMD_FAILED || result == CD_CMD_NOT_FOUND) {
+            g1_ata_mutex_unlock();
             return -12 - (int)status.err1;
+        }
         thd_sleep(1);
     }
     syscall_gdrom_abort_command(handle);
+    g1_ata_mutex_unlock();
     return -13;
 }
 
