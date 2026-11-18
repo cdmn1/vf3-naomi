@@ -11,8 +11,9 @@ ifeq ($(VF3_DECOMP_DIR),)
 $(error VF3_DECOMP_DIR must point to the pinned vf3-decomp checkout)
 endif
 
+BUILD_VERSION ?= dev
 TARGET = vf3_naomi_mt_parser.elf
-ROM = vf3_naomi_mt_parser.bin
+ROM = vf3_naomi_mt_parser-$(BUILD_VERSION).bin
 OBJS = main.o mt.o
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
 
@@ -32,7 +33,7 @@ $(TARGET): $(OBJS)
 	kos-cc -o $(TARGET) $(OBJS)
 
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
-	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 MT Parser Smoke" -e $(TARGET)
+	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 MT Parser $(BUILD_VERSION)" -e $(TARGET)
 
 include $(KOS_BASE)/Makefile.rules
 
