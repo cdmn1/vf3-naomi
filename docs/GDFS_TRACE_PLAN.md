@@ -168,7 +168,9 @@ aliases before counting probes and classifying the two watched memory ranges.
 
 The loader watch profile now adds register probes at '0x8C0A7F84'
 (table-entry load), '0x8C0A2F90' (candidate obj_load.c prologue),
-'0x8C0A2EC8' and '0x8C0A304E' (observed zeroing writes). The next capture
+'0x8C0A2FDE' (indirect helper target in that code region), and '0x8C0A2EC8'
+and '0x8C0A304E' (observed zeroing writes). The '0x8C0A2FDE' snapshot is
+intended to expose the target held in r1 and the associated argument registers. The next capture
 should still span the actual character-select confirmation into Round 1.
 These added probes are deliberately limited; the high-frequency MT evaluator
 PCs are left as memory-event-only watches to avoid a large PC-probe trace.
