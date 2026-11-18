@@ -419,3 +419,29 @@ start with the actual read-site histogram for `0x0C29B9A0`, then follow the
 relevant readers in the reconstructed fight path. The two statically
 identified consumers documented above remain scene-navigation paths, not
 fighter-action handlers.
+
+
+## 18:44 read-site histogram for the digital-derived word
+
+The refreshed report now includes instruction PCs for reads of all three
+indexed output words. For `0x0C29B9A0` (+0x13C), the 21,980 reads split as:
+
+- `0x0C0962EA`: 7,598 reads, inside the indexed conversion routine.
+- `0x0C096338`: 7,598 reads, also inside the indexed conversion routine.
+- `0x0C0C3C52`: 3,798 reads.
+- `0x0C0C8D2C`: 2,986 reads.
+
+The first external site is in the `0x8C0C3C3E` region, identified by the
+reconstruction's `frameseq.h` as scene step 1 in the per-frame scene
+sequencer rooted at `0x8C0C2B80`. This makes it a stronger fight-frame
+candidate than the earlier `0x8C0AD1B8` watch, but the precise semantics of
+the instruction and its caller-owned registers still need confirmation.
+The second external site `0x8C0C8D2C` is not yet mapped to a readable source
+routine.
+
+The next Flycast trace profile now watches `0x8C0C3C30` (the scene-step call
+site), `0x8C0C3C52` (the observed flag read), and `0x8C0C8D2C` (the other
+observed flag read). Capturing their register snapshots should reveal whether
+the reads are direct scene-global access or use a pointer copied into a
+register, and should provide the next address range to reconstruct. These
+sites are leads, not yet proof of Punch/Kick/Defend/Escape action dispatch.
