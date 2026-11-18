@@ -57,7 +57,7 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 
 - [x] Obtain and inspect Dreamcast VF3tb `1ST_READ.BIN`.
 - [x] Build the standalone Naomi bootstrap and verify its visible screen in Flycast.
-- [ ] Cross-compile and execute the real VF3 MT motion-table parser on Naomi using a synthetic fixture.
+- [x] Cross-compile and execute the real VF3 MT motion-table parser on Naomi using a synthetic fixture (user confirmed PASS in Flycast).
 - [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap and parser smoke test are not VF3 gameplay.
 - [ ] Determine which portions of the Dreamcast runtime or native reconstruction can be compiled/adapted without importing SDL/host-only dependencies.
 - [ ] Define the Naomi ROMFS/NetDIMM asset-provider boundary and add encrypted, content-addressed asset checkpoints before any large conversion stage.
@@ -78,10 +78,14 @@ The original VF3 input path is now documented in `docs/INPUT_PATH_FINDINGS.md` a
   game runtime.
 - [x] Boot the Naomi bootstrap in Flycast; KallistiOS startup and PowerVR2
   output are confirmed.
-- [ ] Boot the VF3 MT parser smoke test in Flycast and confirm its PASS result.
+- [x] Boot the VF3 MT parser smoke test in Flycast and confirm its PASS result (user confirmed).
 - [ ] Establish the first actual game-runtime executable target.
 - [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in
   isolated probes before attempting full game integration.
+
+## Build artifact policy
+
+All future Naomi ROM builds, including short-lived probes and parser tests, must have unique `vN` build versions. Include the version in the ROM filename, Naomi title string, GitHub Actions artifact name and `BUILD_INFO.txt`. Keep previous artifacts available. Reuse cached compiler/toolchain/object outputs where safe, but package a fresh versioned ROM for every run.
 
 ## Risks
 
