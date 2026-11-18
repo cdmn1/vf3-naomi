@@ -79,6 +79,10 @@ The target is a fighting-game layout, not Daytona's racing controls. The intende
 
 The Dreamcast VF3tb `1ST_READ.BIN` has already been inventoried. Do not commit copyrighted game binaries, ROMs or extracted commercial assets to this repository. Keep such files local and use them only for analysis/builds as appropriate.
 
+## Build versioning
+
+Every Naomi build artifact, including diagnostic probes and parser smoke tests, is versioned with the GitHub Actions run number (`vN`). The version is included in the ROM filename, Naomi disc title, artifact name and `BUILD_INFO.txt`. Previous run artifacts are retained independently; no new build overwrites an earlier ROM. Object files and toolchain outputs may still be cached, but ROM packaging is performed for each version.
+
 ## Working rules
 
 - Keep this project separate from the Daytona repository.
