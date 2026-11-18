@@ -1,9 +1,10 @@
 # VF3 original guest controller-path trace
-# Minimal PC-only profile to keep the first input capture compact.
-# PC values are guest SH-4 addresses; the trace hook normalizes P1/P2 aliases.
-# Selected controller-port reader.
+# PC values are guest SH-4 addresses; P1/P2 aliases are normalized.
+# Selected controller-port reader (reconstructed entry).
 pc 0x8C09B006
 # Controller input merge.
 pc 0x8C09AF6C
 # Player action update.
 pc 0x8C0AD1B8
+# Packet lookup called by both controller-port reader and merge routine.
+pc 0x8C0A1282
