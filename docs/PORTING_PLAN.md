@@ -60,7 +60,8 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 - [x] Cross-compile and execute the real VF3 MT motion-table parser on Naomi using a synthetic fixture (user confirmed PASS in Flycast).
 - [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap and parser smoke test are not VF3 gameplay.
 - [ ] Determine which portions of the Dreamcast runtime or native reconstruction can be compiled/adapted without importing SDL/host-only dependencies.
-- [ ] Validate the Naomi BIOS GD-ROM `DMAREAD` path against a real VF3 high-density asset through the NetDIMM; the dedicated probe currently builds the TOC/FAD/one-sector test but has not yet been runtime-confirmed.
+- [x] Build and package the versioned Naomi BIOS GD-ROM probe (`v19`); the ROM checks the service vector, high-density TOC and one `MTJACLAU.BIN` sector read.
+- [ ] Validate the Naomi BIOS GD-ROM `DMAREAD` path against a real VF3 high-density asset through the NetDIMM; runtime confirmation is pending.
 - [ ] Verify Naomi PVR2 video, AICA audio and BIOS GD-ROM-backed asset reads in isolated probes before attempting full game integration.
 
 The original VF3 input path is now documented in `docs/INPUT_PATH_FINDINGS.md` and is not the current build priority.
