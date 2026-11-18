@@ -56,8 +56,9 @@ Reuse the proven Daytona NetDIMM packaging/encryption/upload workflow where appl
 ## Current blockers and next work
 
 - [x] Obtain and inspect Dreamcast VF3tb `1ST_READ.BIN`.
-- [ ] Build the new standalone Naomi bootstrap and verify its visible screen in Flycast.
-- [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap is not VF3 gameplay.
+- [x] Build the standalone Naomi bootstrap and verify its visible screen in Flycast.
+- [ ] Cross-compile and execute the real VF3 MT motion-table parser on Naomi using a synthetic fixture.
+- [ ] Establish the first reproducible VF3 game-runtime target on Naomi; the bootstrap and parser smoke test are not VF3 gameplay.
 - [ ] Determine which portions of the Dreamcast runtime or native reconstruction can be compiled/adapted without importing SDL/host-only dependencies.
 - [ ] Define the Naomi ROMFS/NetDIMM asset-provider boundary and add encrypted, content-addressed asset checkpoints before any large conversion stage.
 - [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in isolated probes before attempting full game integration.
@@ -75,8 +76,10 @@ The original VF3 input path is now documented in `docs/INPUT_PATH_FINDINGS.md` a
 - [x] Original VF3 digital input conversion has been traced in Flycast; the
   current findings are documented but are not yet integrated into a Naomi
   game runtime.
-- [ ] Boot the new Naomi bootstrap in Flycast and establish the first actual
-  game-runtime executable target.
+- [x] Boot the Naomi bootstrap in Flycast; KallistiOS startup and PowerVR2
+  output are confirmed.
+- [ ] Boot the VF3 MT parser smoke test in Flycast and confirm its PASS result.
+- [ ] Establish the first actual game-runtime executable target.
 - [ ] Verify Naomi PVR2 video, AICA audio and ROMFS-backed asset reads in
   isolated probes before attempting full game integration.
 
