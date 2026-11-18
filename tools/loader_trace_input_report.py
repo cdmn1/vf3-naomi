@@ -11,10 +11,8 @@ from loader_trace_decode import decode
 FIELDS = {
     0x0C2CF834: "port 0 status (+0)",
     0x0C2CF83C: "port 0 controller/button word (+8)",
-    0x0C2CF840: "port 0 analog axes (+12)",
     0x0C2CF848: "port 1 status (+0)",
     0x0C2CF850: "port 1 controller/button word (+8)",
-    0x0C2CF854: "port 1 analog axes (+12)",
 }
 PC_LABELS = {
     "0x8C09AF6C": "controller merge",
@@ -25,6 +23,11 @@ PC_LABELS = {
     "0x8C09B070": "port 1 lookup return",
     "0x8C09B074": "port 0 wrapper check",
     "0x8C09B07C": "port 1 wrapper check",
+}
+DIGITAL_BITS = {
+    0x0001: "C", 0x0002: "B", 0x0004: "A", 0x0008: "START",
+    0x0010: "UP", 0x0020: "DOWN", 0x0040: "LEFT", 0x0080: "RIGHT",
+    0x0100: "Z", 0x0200: "Y", 0x0400: "X",
 }
 
 
@@ -54,7 +57,16 @@ def main() -> int:
         normalized_pc = f"0x{int(pc, 16) & 0x1FFFFFFF:08X}"
         lines.append(f"| `{pc}` | {label} | {pc_counts[normalized_pc]:,} |")
 
-    lines += ["", "## Per-port record fields", ""]
+    lines += ["", "## Digital button-word interpretation", "",
+              "KOS/Dreamcast controller bit positions are a reference only; they do not prove the physical button assignment in this capture.", "",
+              "| Value | KOS button bit |", "|---:|---|"]
+    observed = sorted({int(row["value"], 16) for row in memory
+                       if int(row["address"], 16) == 0x0C2CF83C
+                       and int(row["value"], 16) != 0})
+    for value in observed:
+        names = [name for bit, name in DIGITAL_BITS.items() if value & bit]
+        lines.append(f"| 0x{value:04X} | {", ".join(names) if names else "none"} |")
+    lines += ["", "## Per-port digital record fields", ""]
     for address, label in FIELDS.items():
         rows = [row for row in memory if int(row["address"], 16) == address]
         counts = Counter((row["access"], row["value"]) for row in rows)
