@@ -53,10 +53,10 @@ The first maintained tracer is a minimum PC/memory-watch build. It does not yet 
 
 After the Windows package has been built and smoke-tested:
 
-1. Run `run-trace.cmd` from the extracted package. It sets `VF3_INTERPRETER=1`, `VF3_WATCH`, and `VF3_TRACE` automatically.
+1. Run `run-trace-loader.cmd` from the extracted package. It selects `VF3_WATCH_LOADER.txt`, forces the interpreter, and writes a separate `vf3-loader-trace-loader.bin` plus diagnostics so it cannot overwrite the compact controller-path capture.
 2. In the Flycast GUI, load the **Dreamcast** VF3 game image used by the decomp research (not the Naomi ROM image).
 3. Manually navigate to the actual character-select confirmation and continue into Round 1. A savestate at that boundary is not required for this first pass.
-4. Close Flycast normally. The output `vf3-loader-trace.bin` will be beside `flycast.exe` in the extracted package.
+4. Close Flycast normally. The output `vf3-loader-trace-loader.bin` and its `.diag.txt` companion will be beside `flycast.exe` in the extracted package.
 5. Retain the trace and emulator log. Record the exact game image, emulator revision and whether the capture reached Round 1.
 
 Important: if the run reaches only an autonomous attract/demo fight, the one-time loaders may already have finished. That capture will not answer this plan's question. The existing `vf3_play_frontend_ladder.txt` is not a verified route to the boundary; continue solving the input/navigation path rather than assuming it works.
@@ -66,7 +66,7 @@ Important: if the run reaches only an autonomous attract/demo fight, the one-tim
 The combined `VF3_TRACE` stream contains the PC-probe marker groups (`0xFA10`/`0xFA11`) and memory-access records (`0xFA20`) described by the related project's trace notes. After a capture, decode those records with:
 
 ```text
-python tools/loader_trace_decode.py path/to/vf3-loader-trace.bin --prefix extract/analysis/loader_trace
+python tools/loader_trace_decode.py path/to/vf3-loader-trace-loader.bin --prefix extract/analysis/loader_trace
 ```
 
 This writes `loader_trace.pc.csv` (PC plus `r13`, `r14`, `r4`–`r7`) and `loader_trace.memory.csv` (PC, access type, width, address and value). Eight-byte memory values are retained at their full 64-bit width. Unknown trace words are skipped; malformed or truncated recognized groups are reported as warnings. The decoder is for these documented probe/memory records, not a general trace disassembler.
