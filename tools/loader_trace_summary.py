@@ -25,8 +25,15 @@ WATCH_PCS = {
     normalize(0x8C08232E): ("load_mt_aki_jef", 0x8C08232E),
     normalize(0x8C0360C8): ("_gdFsDaPlaySct", 0x8C0360C8),
     normalize(0x8C0CBC40): ("bjload_run", 0x8C0CBC40),
+    normalize(0x8C0A7F84): ("table_entry_load", 0x8C0A7F84),
+    normalize(0x8C0A2F90): ("obj_load_prologue", 0x8C0A2F90),
+    normalize(0x8C0A2FDE): ("obj_load_indirect_call", 0x8C0A2FDE),
+    normalize(0x8C0A2EC8): ("obj_buffer_zero_A", 0x8C0A2EC8),
+    normalize(0x8C0A304E): ("obj_buffer_zero_B", 0x8C0A304E),
 }
-REGISTER_FIELDS = ("r13", "r14", "r4", "r5", "r6", "r7")
+# Expanded FA12/FA13 records carry PR and R0-R15. Include the call target
+# register (r1) and likely argument/manager registers in the compact report.
+REGISTER_FIELDS = ("pr", "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r13", "r14")
 
 def read_rows(path: Path) -> list[dict[str, str]]:
     try:
