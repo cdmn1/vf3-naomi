@@ -79,6 +79,59 @@ python tools/loader_trace_summary.py extract/analysis/loader_trace.pc.csv extrac
 
 The report includes the first register snapshot for each watched function, pointer-table read/write values, and the first resident-MT writes. These samples help narrow the pointer chain and scatter routine; they are not by themselves proof that a resource load completed.
 
+## v32 capture findings (2026-11-18)
+
+The first maintained loader capture is now decoded from
+[VF3-Flycast-Trace-v32](https://github.com/cdmn1/vf3-naomi/tree/main/VF3-Flycast-Trace-v32).
+The binary is 2,398,672 bytes (299,834 little-endian u64 words), SHA-256
+'b2fd9f1352e28f7e1c4e73ef6e5cfb4c19868ebe91bfadc5580400909fc07b07'.
+The decode produced 2 PC-probe groups and 74,949 memory records.
+
+### What the capture did show
+
+- The only watched PC probes hit were the two obj_load.c source-path
+  literal-load instructions: '0x8C0A2FD2' and '0x8C0A2FF6', once each.
+- The five primary loader targets all had zero hits:
+  mt_loader ('0x8C02DCEC'), load_mt_to_u_pai ('0x8C04BDA2'),
+  load_mt_aki_jef ('0x8C08232E'), _gdFsDaPlaySct ('0x8C0360C8'),
+  and bjload_run ('0x8C0CBC40').
+- The runtime pointer table range had 12 reads and no writes. The reads touched
+  entries 0, 20, 25, 92, 93, 118, 119, 122 and 123. The read instruction PC
+  was '0x8C0A7F84'; this is now an additional register-probe target so the
+  next capture can record the table base, scaled index and loaded pointer.
+- The resident MT window had 74,937 accesses: 74,910 reads and 27 writes.
+  All 27 writes stored zero at nine buffer-start addresses, from
+  '0x8C0A2EC8' and '0x8C0A304E'. No nonzero resident-MT writes were captured,
+  so this is not evidence of the per-record scatter/re-site loader.
+- Most reads came from '0x8C09D6C8', '0x8C09D6F4', '0x8C09D70A',
+  '0x8C09D778', '0x8C09D77E', '0x8C09D782' and '0x8C09D794'.
+  The related MT evaluator analysis identifies these as motion-frame
+  evaluation reads: count bytes, key-time bytes and tuple words. This confirms
+  that the capture reached code consuming resident motion data; it does not
+  identify how that data was originally loaded.
+
+### Interpretation and next capture
+
+The capture is useful: it proves the memory hooks work, shows the runtime table
+being read, and shows active motion data being consumed. It does **not** show
+the one-shot MT pack loader or the GDFS sector-read endpoint. Therefore the
+pointer chain and scatter/rewrite algorithm remain unresolved. This does not
+by itself prove whether the capture missed the character-select transition or
+whether the game reached a path that reused already-resident motion data.
+
+The v32 decoder output exposed an address-alias issue in the first-pass
+summarizer: interpreter records use normalized 0x0C... PCs/addresses and
+some memory accesses use the 0xAC... alias, while the report compared only
+against 0x8C... . 'tools/loader_trace_summary.py' now normalizes P0/P1/P2
+aliases before counting probes and classifying the two watched memory ranges.
+
+The loader watch profile now adds register probes at '0x8C0A7F84'
+(table-entry load), '0x8C0A2F90' (candidate obj_load.c prologue),
+'0x8C0A2EC8' and '0x8C0A304E' (observed zeroing writes). The next capture
+should still span the actual character-select confirmation into Round 1.
+These added probes are deliberately limited; the high-frequency MT evaluator
+PCs are left as memory-event-only watches to avoid a large PC-probe trace.
+
 ## Naomi source-path reference probes
 
 The checked-in `VF3_WATCH_LOADER.txt` now also watches the exact SH-4 PCs that load pointers to the embedded Naomi source-path strings for `nlrom.c`, `obj_load.c`, `rob_load.c`, `sound.c` and `stage.c`. These are literal-reference instructions, not confirmed function entries.
