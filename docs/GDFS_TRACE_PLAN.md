@@ -138,9 +138,13 @@ The reads occurred in two six-entry bursts at the same instruction PC:
 The second burst follows the observed object-loader source-path hits and the
 zeroing writes to nine destination-buffer starts. This is consistent with
 two different character-pair asset selections (Akira/Wolf and Akira/Pai),
-but the trace alone does not prove that either filename batch completed a
-disc read or identify which side of the match was selected. Treat the pairing
-interpretation as a lead, not a confirmed gameplay-state identification.
+The user confirmed both gameplay contexts against the actual run:
+the first batch is the attract-mode characters shown after the SEGA logo
+(Akira and Wolf); the second is the first match after selecting Akira,
+against Pai. This independently validates the asset-selection interpretation
+and ties the later batch to the character-select → Round 1 transition.
+It still does not prove that the filename batches completed their disc reads
+or reveal the read destination/scatter routine.
 
 This establishes that the observed table reads are filename-pointer lookups.
 It does not yet establish which lookup causes a file transfer, how the
