@@ -221,8 +221,12 @@ int main(void) {
     }
 
     sector_buf = (uint8_t *)memalign(32, SECTOR_SIZE);
-    if (sector_buf)
+    if (!sector_buf)
+        read_rc = -15;
+    else if (valid_service_pointer(gdrom_service_ptr))
         read_rc = read_fad_dma(VF3_MTJACLAU_FAD, sector_buf);
+    else
+        read_rc = -30;
 
     pvr_init_defaults();
     pvr_set_bg_color(0.02f, 0.06f, 0.12f);
