@@ -49,9 +49,10 @@ def main() -> int:
         "| Guest PC | Routine | Hits |",
         "|---|---|---:|",
     ]
-    pc_counts = Counter(row["pc"] for row in probes)
+    pc_counts = Counter(f"0x{int(row['pc'], 16) & 0x1FFFFFFF:08X}" for row in probes)
     for pc, label in PC_LABELS.items():
-        lines.append(f"| `{pc}` | {label} | {pc_counts[pc]:,} |")
+        normalized_pc = f"0x{int(pc, 16) & 0x1FFFFFFF:08X}"
+        lines.append(f"| `{pc}` | {label} | {pc_counts[normalized_pc]:,} |")
 
     lines += ["", "## Per-port record fields", ""]
     for address, label in FIELDS.items():
@@ -76,10 +77,15 @@ def main() -> int:
             lines += ["| Access | Value | Count |", "|---|---:|---:|"]
             for (access, value), count in sorted(counts.items()):
                 lines.append(f"| {access} | `{value}` | {count:,} |")
-            lines += ["", "Value sequence (consecutive duplicates collapsed; trace order):", ""]
-            lines.append(" ` → ` ".join(f"`{v}`" for v in values[:160]))
-            if len(values) > 160:
-                lines.append(f"… {len(values) - 160:,} additional transitions omitted.")
+            writes = [row for row in rows if row["access"] == "W"]
+            write_values = []
+            for row in writes:
+                if not write_values or write_values[-1] != row["value"]:
+                    write_values.append(row["value"])
+            lines += ["", "Write-value sequence (consecutive duplicates collapsed; trace order):", ""]
+            lines.append(" ` → ` ".join(f"`{v}`" for v in write_values[:160]))
+            if len(write_values) > 160:
+                lines.append(f"… {len(write_values) - 160:,} additional write transitions omitted.")
         lines.append("")
 
     if warnings:
