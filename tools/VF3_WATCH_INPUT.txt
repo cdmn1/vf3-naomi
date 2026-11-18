@@ -17,8 +17,18 @@ pc 0x8C09B070
 pc 0x8C09B074
 pc 0x8C09B07C
 
-# Relevant fixed globals: packet-record base pointer, merge selector,
-# and the merged controller word (0x0C29B864 + 0x1EC).
+# Fixed globals: packet-record base pointer, merge selector and merged word.
 mem 0x8C0A1300 0x4
 mem 0x8C29BCC4 0x4
 mem 0x8C29BA50 0x4
+
+# Latest capture resolved the lookup return pointers:
+# port 0 = 0x0C2CF834; port 1 = 0x0C2CF848 (20-byte stride).
+# controller_port.c reads status at +0 and button/condition word at +8.
+# +12 is the analog axis byte pack. Watch all three fields for both ports.
+mem 0x0C2CF834 0x4
+mem 0x0C2CF83C 0x4
+mem 0x0C2CF840 0x4
+mem 0x0C2CF848 0x4
+mem 0x0C2CF850 0x4
+mem 0x0C2CF854 0x4
