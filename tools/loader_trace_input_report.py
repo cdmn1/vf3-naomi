@@ -117,8 +117,14 @@ def main() -> int:
         if last_value.get(address) != value:
             timeline.append((int(row["word_index"]), timeline_addresses[address], row["value"], row["pc"]))
             last_value[address] = value
-    lines += ["", "## P1 digital input / merged-word transition timeline", "",
-              "| Trace word index | Field | Value | Writer PC |", "|---:|---|---:|---|"]
+    for row in probes:
+        pc = int(row["pc"], 16) & 0x1FFFFFFF
+        if pc == 0x0C09AF6C:
+            timeline.append((int(row["word_index"]), "PC controller merge", "", row["pc"]))
+        elif pc == 0x0C0AD1B8:
+            timeline.append((int(row["word_index"]), "PC player-action update", "", row["pc"]))
+    lines += ["", "## P1 digital input / merge / action timeline", "",
+              "| Trace word index | Event | Value | PC |", "|---:|---|---:|---|"]
     for index, field, value, pc in sorted(timeline):
         lines.append("| {:,} | {} | {} | {} |".format(index, field, value, pc))
 
