@@ -16,17 +16,13 @@ A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), 
 
 No playable Naomi port or hardware compatibility is claimed yet.
 
-## Immediate next task: original VF3 controller path
+## Immediate next task: first Naomi executable
 
-The Naomi cabinet → JVS → MIE → KOS input path is confirmed on the user's real hardware, but the original Dreamcast VF3 executable's game-level controller path has not yet been observed.
+A standalone Naomi bootstrap target now lives in `tests/naomi_bootstrap/`. It is deliberately independent of MIE/JVS and commercial game assets: it initializes KallistiOS/PowerVR2 and renders a visible status screen. The new `.github/workflows/naomi-bootstrap.yml` builds and packages it with KOS `naomibintool`.
 
-The focused Flycast trace profile now watches:
+The build workflow restores the SH-4 toolchain, compiled Naomi KOS tree and bootstrap object files independently, saving completed stages before later work. The final ROM is freshly packaged and validated on every run. A successful build is only the first gate; it must still boot in Flycast before we move on to linking actual VF3 code.
 
-- `0x8C09B006` — selected controller-port reader;
-- `0x8C09AF6C` — controller input merge;
-- `0x8C0AD1B8` — player action update.
-
-The default Windows launcher uses the compact PC-only profile `tools/VF3_WATCH_INPUT.txt`. The separate `tools/VF3_WATCH_LOADER.txt` profile retains GDFS/MT loader and memory watches for the later resource-load investigation. Build status, instructions and verification gates are in [FLYCAST_TRACE_TOOLING.md](docs/FLYCAST_TRACE_TOOLING.md). Do not ask the user to run a package until its GitHub Actions artifact is built, inspected and smoke-tested.
+Input-path findings are documented and frozen for now. Do not launch more input-trace builds unless the running game later gives us a concrete reason to revisit them.
 
 ## Resource-loader investigation
 
