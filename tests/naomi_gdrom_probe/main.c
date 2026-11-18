@@ -45,7 +45,7 @@ static int read_fad_dma(uint32_t fad, uint8_t *buffer) {
         return -10;
 
     memset(buffer, 0, SECTOR_SIZE);
-    dcache_wback_inval_range((uintptr_t)buffer, SECTOR_SIZE);
+    dcache_inval_range((uintptr_t)buffer, SECTOR_SIZE);
 
     params.start_sec = fad;
     params.num_sec = 1;
