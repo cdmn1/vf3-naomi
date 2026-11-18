@@ -264,3 +264,58 @@ flag. Continue to ignore the analog field at +12 for the Naomi target.
 Reference reconstruction: `celsowm/vf3-decomp/src/fight/f096258.c` and
 `docs/re/f096258.md`. This is supporting Dreamcast reconstruction evidence;
 the Naomi target still needs its own runtime confirmation.
+
+
+## Analysis of the 2026-11-18 17:37 digital-input capture
+
+The 17:37 capture decoded successfully: 20,672,096 bytes, 64,876 PC
+probe groups and 337,842 memory records, with no decoder warnings. The
+controller wrapper ran 287 times, the packet lookup 27,686 times, and the
+player-action update candidate 34 times. The selected-port reader entry
+at `0x8C09B006` remained unobserved.
+
+The port-0 record status was `0x000F06FE` during the connected portion of
+the capture; port 1 remained disconnected with status `0xFFFFFFFE`. The
+port-0 digital word at `0x0C2CF83C` contained these non-zero values:
+
+- `0x0002`, `0x0004`, `0x0008`
+- `0x0010`, `0x0020`, `0x0040`, `0x0050`, `0x0080`
+- `0x0200`, `0x0202`, `0x0400`, `0x0404`, `0x0406`
+
+These correspond to standard KOS/Dreamcast digital bit positions, including
+B (`0x0002`), which was not observed in the 15:04 capture. Composite values
+such as `0x0050`, `0x0202`, `0x0404` and `0x0406` show that more than
+one bit was set in some samples. The trace establishes the guest-facing bit
+values, but it does not establish which physical cabinet button or VF3
+action produced each value. Do not mark the physical button mapping as
+validated from this capture alone.
+
+The indexed node-flag routine at `0x8C096258` was watched 8,192 times
+(the trace diagnostic counter reports this value; treat it as a lower bound
+rather than an exact total). Its key sites at `0x8C096280`,
+`0x8C0962A0` and `0x8C0962C8` were also watched 8,192 times, while
+`0x8C09648C` was watched 3,318 times. The digital-word read site
+`0x0C0962A0` generated 4,096 memory reads from the P1 button word.
+
+Entry snapshots show two node indices, each occurring 4,096 times:
+
+- R4 = 0: R6 = `0x0C11F50C`
+- R4 = 1: R6 = `0x0C11F530`
+
+Both use R9 = `0x0C29B864`. The related Dreamcast reconstruction of
+`0x8C096258` identifies R4 as the signed node index, R6 as the mask-table
+pointer, and three OR-accumulated output words at R9 + `0x138`,
+R9 + `0x13C` and R9 + `0x140`. This resolves the candidate output
+addresses for the next capture:
+
+- `0x0C29B99C`
+- `0x0C29B9A0`
+- `0x0C29B9A4`
+
+The maintained watch profile now includes these three output words. The
+next capture should reveal how the raw digital controller bits are converted
+into the indexed node flags. This is the next useful boundary to inspect
+before implementing the Naomi JVS-to-guest input adapter.
+
+The 17:37 analysis report is available as the
+[vf3-input-field-report-202611181737 workflow artifact](https://github.com/cdmn1/vf3-naomi/actions/runs/44364557681).
