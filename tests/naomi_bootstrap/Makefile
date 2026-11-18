@@ -8,8 +8,9 @@ ifeq ($(KOS_BASE),)
 $(error KOS_BASE is unset. Source the Naomi KOS environ.sh first)
 endif
 
+BUILD_VERSION ?= dev
 TARGET = vf3_naomi_bootstrap.elf
-ROM = vf3_naomi_bootstrap.bin
+ROM = vf3_naomi_bootstrap-$(BUILD_VERSION).bin
 OBJS = main.o
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
 
@@ -24,7 +25,7 @@ $(TARGET): $(OBJS)
 	kos-cc -o $(TARGET) $(OBJS)
 
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
-	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 Naomi Bootstrap" -e $(TARGET)
+	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 Naomi Boot $(BUILD_VERSION)" -e $(TARGET)
 
 include $(KOS_BASE)/Makefile.rules
 
