@@ -220,3 +220,47 @@ merged word at shared-state offset `+0x1EC` and how the player-action update
 uses it. Keep the mapping between physical controls and VF3 actions provisional
 until those consumers and a clean, individually controlled button sample
 agree.
+
+## Finding the active digital-input consumer in the 15:04 capture
+
+A second pass over the memory trace identifies a more relevant path than the
+controller merge alone. Reads of the port-0 controller word at
+`0x0C2CF83C` came from these guest instruction sites:
+
+- `0x0C096280`: 1,434 reads
+- `0x0C0962A0`: 1,434 reads
+- `0x0C0962C8`: 1,434 reads
+- `0x0C09648C`: 637 reads
+- `0x0C09AF84`: 82 reads
+
+The related reconstruction identifies `0x8C096258` as an indexed node-flag
+merge routine. Its implementation reads a 20-byte-stride node record rooted
+at `0x0C2CF834`, tests the record's fields against a mask table, and ORs
+derived flags into three output words at `R9+0x138`, `R9+0x13C` and
+`R9+0x140`. Within its loop, the record fields are read at offsets +16,
++8 and +12; the +8 field is the digital controller word. This makes the
+`0x0C0962A0` read site a strong candidate for the actual digital-input
+translation path.
+
+This also explains why the earlier merge result was incomplete. The merge
+routine ran 82 times early in the capture and its output at
+`0x0C29BA50` only changed to `0x20` and `0x08` (with neutral writes
+between them). Later digital values continued arriving in the port record,
+while the merge routine was no longer observed. Meanwhile the indexed
+node-flag routine continued reading the input record. Therefore the merge
+output at +0x1EC is not a sufficient proxy for the game's active input path.
+
+The routine at `0x8C0AD1B8` also executes during this period, but its
+register snapshots do not establish that it consumes the raw button word.
+Keep its "player action update" label provisional.
+
+The next trace should watch entry `0x8C096258` and its key read sites
+`0x8C096280`, `0x8C0962A0`, `0x8C0962C8` and `0x8C09648C`.
+Capture the entry registers (especially R4, R6 and R9) and the routine's
+writes to the three output words. That should reveal which node index and
+mask table are active and how each digital input bit becomes a gameplay
+flag. Continue to ignore the analog field at +12 for the Naomi target.
+
+Reference reconstruction: `celsowm/vf3-decomp/src/fight/f096258.c` and
+`docs/re/f096258.md`. This is supporting Dreamcast reconstruction evidence;
+the Naomi target still needs its own runtime confirmation.
