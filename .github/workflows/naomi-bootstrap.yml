@@ -6,6 +6,7 @@ on:
     paths:
       - "tests/naomi_bootstrap/**"
       - "tests/naomi_vf3core_smoke/**"
+      - "tests/naomi_dma_probe/**"
       - ".github/workflows/naomi-bootstrap.yml"
   workflow_dispatch:
 
@@ -326,4 +327,82 @@ jobs:
         with:
           name: vf3-naomi-mt-parser-v${{ github.run_number }}
           path: vf3-mt-artifact/*
+          if-no-files-found: error
+
+      - name: Restore Naomi DMA probe object cache
+        id: naomi-dma-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            tests/naomi_dma_probe/main.o
+            tests/naomi_dma_probe/vf3_naomi_dma_probe.elf
+          key: vf3-naomi-dma-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_dma_probe/main.c', 'tests/naomi_dma_probe/Makefile') }}-sh4-naomi-v1
+
+      - name: Compile Naomi cartridge DMA probe
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_dma_probe all
+          test -s tests/naomi_dma_probe/vf3_naomi_dma_probe.elf
+
+      - name: Save Naomi DMA probe object cache immediately
+        if: steps.naomi-dma-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tests/naomi_dma_probe/main.o
+            tests/naomi_dma_probe/vf3_naomi_dma_probe.elf
+          key: vf3-naomi-dma-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_dma_probe/main.c', 'tests/naomi_dma_probe/Makefile') }}-sh4-naomi-v1
+
+      - name: Package Naomi cartridge DMA probe ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_dma_probe rom
+          test -s "tests/naomi_dma_probe/vf3_naomi_dma_probe-v${GITHUB_RUN_NUMBER}.bin"
+
+      - name: Validate and upload Naomi cartridge DMA probe
+        run: |
+          set -euo pipefail
+          mkdir -p naomi-dma-artifact
+          ROM="vf3_naomi_dma_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_dma_probe/${ROM}" "naomi-dma-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "naomi-dma-artifact/${ROM}")"
+          SHA="$(sha256sum "naomi-dma-artifact/${ROM}" | awk '{print $1}')"
+          test "$SIZE" -gt 0
+          cat > naomi-dma-artifact/BUILD_INFO.txt <<EOF
+          Target: Naomi cartridge PIO versus System Bus GD-DMA probe
+          KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
+          Workflow run: ${GITHUB_RUN_ID}
+          Build version: v${GITHUB_RUN_NUMBER}
+          ROM: ${ROM}
+          Size: ${SIZE}
+          SHA-256: ${SHA}
+          Storage path: Naomi cartridge / NetDIMM image offset zero
+          Dreamcast BIOS GD-ROM syscalls: not used
+          Commercial game data: not included
+          EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Naomi cartridge / NetDIMM DMA probe
+          - Build version: v${GITHUB_RUN_NUMBER}
+          - ROM: ${ROM}
+          - Size: ${SIZE} bytes
+          - SHA-256: ${SHA}
+          - Object cache hit: ${{ steps.naomi-dma-cache.outputs.cache-hit }}
+          EOF
+        shell: bash
+
+      - name: Upload Naomi cartridge DMA probe ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-dma-probe-v${{ github.run_number }}
+          path: naomi-dma-artifact/*
           if-no-files-found: error
