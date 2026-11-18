@@ -15,6 +15,9 @@ FIELDS = {
     0x0C2CF850: "port 1 controller/button word (+8)",
     0x0C29BA50: "merged controller word (+0x1EC)",
     0x0C29BCCC: "controller merge selector (+8)",
+    0x0C29B99C: "indexed input flags word 0 (R9+0x138)",
+    0x0C29B9A0: "indexed input flags word 1 (R9+0x13C)",
+    0x0C29B9A4: "indexed input flags word 2 (R9+0x140)",
 }
 PC_LABELS = {
     "0x8C09AF6C": "controller merge",
@@ -160,6 +163,9 @@ def main() -> int:
     timeline_addresses = {
         0x0C2CF83C: "P1 record +8",
         0x0C29BA50: "merged +0x1EC",
+        0x0C29B99C: "indexed flags +0x138",
+        0x0C29B9A0: "indexed flags +0x13C",
+        0x0C29B9A4: "indexed flags +0x140",
     }
     last_value = {}
     timeline = []
