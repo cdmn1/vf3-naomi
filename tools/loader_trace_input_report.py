@@ -65,7 +65,7 @@ def main() -> int:
                        and int(row["value"], 16) != 0})
     for value in observed:
         names = [name for bit, name in DIGITAL_BITS.items() if value & bit]
-        lines.append(f"| 0x{value:04X} | {", ".join(names) if names else "none"} |")
+        lines.append("| 0x{:04X} | {} |".format(value, ", ".join(names) if names else "none"))
     lines += ["", "## Per-port digital record fields", ""]
     for address, label in FIELDS.items():
         rows = [row for row in memory if int(row["address"], 16) == address]
