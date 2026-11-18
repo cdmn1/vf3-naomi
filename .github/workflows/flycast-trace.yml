@@ -78,10 +78,12 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $package = Join-Path $env:GITHUB_WORKSPACE "VF3-Flycast-Trace"
+          $version = "v$env:GITHUB_RUN_NUMBER"
+          $package = Join-Path $env:GITHUB_WORKSPACE "VF3-Flycast-Trace-$version"
           New-Item -ItemType Directory -Force -Path $package | Out-Null
           Copy-Item -Path "flycast-install/bin/*" -Destination $package -Recurse -Force
           Copy-Item "tools/flycast-trace/run-trace.cmd" $package
+          Copy-Item "tools/flycast-trace/run-trace-loader.cmd" $package
           Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
           Copy-Item "tools/VF3_WATCH_INPUT.txt" $package
           $buildInfo = @"
@@ -89,25 +91,28 @@ jobs:
           Upstream repository: https://github.com/flyinghead/flycast
           Upstream commit: 3a5267a5e32438026e1c5b97d5de6cd77236f72c
           VF3 tooling commit: $env:GITHUB_SHA
+          Build version: $version
           Built by GitHub Actions run: $env:GITHUB_RUN_ID
           Instrumentation: expanded PC probe groups (FA12/FA13: PR and R0-R15), guest memory access records (FA20)
           Default watch profile: VF3_WATCH_INPUT.txt (four controller-path PCs)
+          Loader capture launcher: run-trace-loader.cmd (GDFS/MT PCs plus watched memory ranges)
           Controller probes: selected-port reader, controller merge, player action update, packet lookup
           "@
           $buildInfo | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
           Get-ChildItem $package -File | Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash)  $($_.Path | Split-Path -Leaf)" } |
             Set-Content -Encoding ascii (Join-Path $package "SHA256SUMS.txt")
-          Compress-Archive -Path "$package/*" -DestinationPath "VF3-Flycast-Trace.zip" -Force
-          Get-FileHash "VF3-Flycast-Trace.zip" -Algorithm SHA256 |
-            Format-List | Out-String | Set-Content -Encoding ascii "VF3-Flycast-Trace.zip.sha256"
+          $zip = "VF3-Flycast-Trace-$version.zip"
+          Compress-Archive -Path "$package/*" -DestinationPath $zip -Force
+          Get-FileHash $zip -Algorithm SHA256 |
+            Format-List | Out-String | Set-Content -Encoding ascii "$zip.sha256"
 
       - name: Upload verified build package
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-flycast-trace-windows
+          name: vf3-flycast-trace-windows-v${{ github.run_number }}
           path: |
-            VF3-Flycast-Trace.zip
-            VF3-Flycast-Trace.zip.sha256
+            VF3-Flycast-Trace-v*.zip
+            VF3-Flycast-Trace-v*.zip.sha256
           if-no-files-found: error
           retention-days: 30
