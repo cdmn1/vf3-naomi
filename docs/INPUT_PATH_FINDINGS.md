@@ -146,3 +146,40 @@ The input watch profile has been expanded to capture the return continuations
 pointer (`0x0C0A1300`), merge selector (`0x0C29BCC4`) and merged output
 (`0x0C29BA50`). The next capture should reveal the computed per-port record
 addresses, connection status values and merged controller word.
+
+
+## Analysis of the 2026-11-18 02:19 fight capture
+
+The user clarified that this capture ended during an actual fight, with Punch,
+Kick, Defend and D-pad directions used in the final seconds. Re-decoding the
+uploaded `vf3-loader-trace.bin` confirms 8,570 PC snapshots and 13,564
+memory records, with no malformed or truncated records.
+
+The controller lookup return snapshots resolve the two per-port record
+pointers consistently across all 104 wrapper passes:
+
+- Port 0: `0x0C2CF834` (104/104 returns)
+- Port 1: `0x0C2CF848` (104/104 returns)
+
+These addresses are 20 bytes apart, matching the reconstructed lookup's
+per-port record stride. The related `controller_port.c` reads the record
+status at offset `+0` and the controller condition/button word at offset
+`+8`; the adjacent word at `+12` carries the packed analog axes in the
+Maple HLE layout.
+
+Important limitation: the previous watch profile did **not** watch those
+resolved per-port record fields. It watched the guessed fixed merged-output
+address `0x0C29BA50`, which produced 103 zero writes, one `0x20` write and
+one `0x08` write. Those two non-zero values cannot safely be labelled as
+Down and Start merely by mapping bit positions: the actual packet words,
+polarity and transformation at the record boundary were not captured. In
+particular, this trace does not yet show whether Punch, Kick, Defend or
+directions were present in the guest's raw per-port records.
+
+The updated `tools/VF3_WATCH_INPUT.txt` now watches the status, controller
+word and analog word for both resolved records:
+`0x0C2CF834`, `0x0C2CF83C`, `0x0C2CF840`, `0x0C2CF848`,
+`0x0C2CF850` and `0x0C2CF854`. This should capture the actual data returned
+by the two Maple port lookups on the next run. No new capture is required to
+establish the record addresses; a new one is needed only to collect these
+newly added memory fields and correlate their values with gameplay inputs.
