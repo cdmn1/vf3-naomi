@@ -183,3 +183,40 @@ word and analog word for both resolved records:
 by the two Maple port lookups on the next run. No new capture is required to
 establish the record addresses; a new one is needed only to collect these
 newly added memory fields and correlate their values with gameplay inputs.
+
+## Analysis of the 2026-11-18 15:04 digital-input capture
+
+The latest Flycast capture contains 56,358 decoded memory records and 10,350
+PC probe groups, with no decoder warnings. The controller wrapper ran 82
+times, the packet lookup 9,816 times, and the player-action update candidate
+42 times. The selected-port reader entry at `0x8C09B006` still had zero
+hits; the wrapper's indirect lookup calls and merge are the observed path.
+
+For the digital-controls investigation, ignore the adjacent `+12` field.
+The test used a conventional controller with analog sticks, and the duplicated
+values at `+12` do not provide useful evidence about Naomi's required digital
+controls. They are not used to infer any mapping.
+
+The port-0 controller word at `0x0C2CF83C` contained these non-zero
+one-hot values during the capture:
+
+- `0x0004`, `0x0008`, `0x0010`, `0x0020`
+- `0x0040`, `0x0080`, `0x0200`, `0x0400`
+
+These bit positions match the standard KOS/Dreamcast controller masks:
+A, Start, Up, Down, Left, Right, Y and X respectively. No B (`0x0002`),
+C (`0x0001`) or Z (`0x0100`) value was observed. This is a useful
+identification of the guest record's digital bit positions, not yet a
+reliable mapping from each physical Flycast button to a VF3 action. In
+particular, the observed capture does not contain the expected B/Kick bit,
+so do not mark the provisional Punch/Kick/Guard/Escape mapping as validated.
+
+Port 1's controller word remained zero throughout. The report therefore
+supports concentrating on port 0 and the digital word at `+8`; analog
+channels and port 1 can be left out of the next analysis.
+
+The next useful investigation is to trace where the guest consumes the
+merged word at shared-state offset `+0x1EC` and how the player-action update
+uses it. Keep the mapping between physical controls and VF3 actions provisional
+until those consumers and a clean, individually controlled button sample
+agree.
