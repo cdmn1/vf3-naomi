@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "tests/naomi_bootstrap/**"
+      - "tests/naomi_vf3core_smoke/**"
       - ".github/workflows/naomi-bootstrap.yml"
   workflow_dispatch:
 
@@ -82,7 +83,6 @@ jobs:
           path: .cache/kos-naomi-build.tar
           key: kos-naomi-bootstrap-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-naomi-v2
           restore-keys: |
-            kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-
             kos-naomi-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-
 
       - name: Overlay cached KOS source and build outputs
@@ -224,4 +224,99 @@ jobs:
         with:
           name: vf3-naomi-bootstrap-${{ github.run_number }}
           path: build-artifacts/*
+          if-no-files-found: error
+
+      # Keep the known-good bootstrap artifact independent of the VF3 source
+      # compile below. If the new source fails to compile, the baseline ROM
+      # from this run is still available.
+      - name: Check out pinned VF3 C reconstruction
+        id: vf3-source
+        uses: actions/checkout@v4
+        with:
+          repository: celsowm/vf3-decomp
+          ref: 958937aff8b6ddcd40a5dd01ee5d60350d4140f6
+          path: vf3-decomp
+          fetch-depth: 1
+
+      - name: Record VF3 source revision
+        id: vf3-source-revision
+        run: echo "sha=$(git -C vf3-decomp rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore VF3 MT parser object cache
+        id: vf3-mt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            tests/naomi_vf3core_smoke/main.o
+            tests/naomi_vf3core_smoke/mt.o
+            tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.elf
+          key: vf3-naomi-mt-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3core_smoke/main.c', 'tests/naomi_vf3core_smoke/Makefile') }}-v1
+
+      - name: Compile real VF3 MT parser for Naomi
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_vf3core_smoke all
+          test -s tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.elf
+
+      - name: Save VF3 MT parser object cache immediately
+        if: steps.vf3-mt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tests/naomi_vf3core_smoke/main.o
+            tests/naomi_vf3core_smoke/mt.o
+            tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.elf
+          key: vf3-naomi-mt-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3core_smoke/main.c', 'tests/naomi_vf3core_smoke/Makefile') }}-v1
+
+      - name: Package VF3 MT parser Naomi ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_vf3core_smoke rom
+          test -s tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.bin
+
+      - name: Validate and upload VF3 MT parser ROM
+        run: |
+          set -euo pipefail
+          mkdir -p vf3-mt-artifact
+          cp tests/naomi_vf3core_smoke/vf3_naomi_mt_parser.bin vf3-mt-artifact/
+          SIZE="$(stat -c '%s' vf3-mt-artifact/vf3_naomi_mt_parser.bin)"
+          SHA="$(sha256sum vf3-mt-artifact/vf3_naomi_mt_parser.bin | awk '{print $1}')"
+          test "$SIZE" -gt 0
+          cat > vf3-mt-artifact/BUILD_INFO.txt <<EOF
+          Target: VF3 upstream MT parser smoke test
+          VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
+          KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
+          Workflow run: ${GITHUB_RUN_ID}
+          ROM: vf3_naomi_mt_parser.bin
+          Size: ${SIZE}
+          SHA-256: ${SHA}
+          Packaging: KallistiOS naomibintool
+          Commercial game data: not included
+          EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## VF3 MT parser on Naomi
+          - Upstream source: ${{ steps.vf3-source-revision.outputs.sha }}
+          - ROM size: ${SIZE} bytes
+          - SHA-256: ${SHA}
+          - VF3 MT object cache hit: ${{ steps.vf3-mt-cache.outputs.cache-hit }}
+          EOF
+        shell: bash
+
+      - name: Upload VF3 MT parser Naomi ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-mt-parser-${{ github.run_number }}
+          path: vf3-mt-artifact/*
           if-no-files-found: error
