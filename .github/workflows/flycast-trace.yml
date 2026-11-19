@@ -84,6 +84,7 @@ jobs:
           Copy-Item -Path "flycast-install/bin/*" -Destination $package -Recurse -Force
           Copy-Item "tools/flycast-trace/run-trace.cmd" $package
           Copy-Item "tools/flycast-trace/run-trace-loader.cmd" $package
+          Copy-Item "tools/flycast-trace/LOADER_CAPTURE_README.txt" $package
           Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
           Copy-Item "tools/VF3_WATCH_INPUT.txt" $package
           $buildInfo = @"
