@@ -217,9 +217,59 @@ This should help determine whether the Naomi source-path references are reached 
 - per-record MT scatter algorithm, including any pointer fixups or rewritten headers;
 - test vectors that compare selected runtime records against the extracted MT asset rows.
 
+## v38 object-loader follow-up (2026-11-19)
+
+The v38 capture is now decoded and checked in under
+[VF3-Flycast-Trace-v38](../VF3-Flycast-Trace-v38/). Its analysis workflow
+completed successfully:
+[run #44566831828](https://github.com/cdmn1/vf3-naomi/actions/runs/44566831828).
+
+- Trace size: 10,107,088 bytes; 1,087,188,287 SH-4 instructions executed.
+- 198 decoded PC-probe groups and 314,906 watched memory-access records.
+- All five primary loader probes still had zero hits:
+  `mt_loader` (`0x8C02DCEC`), `load_mt_to_u_pai` (`0x8C04BDA2`),
+  `load_mt_aki_jef` (`0x8C08232E`), `_gdFsDaPlaySct` (`0x8C0360C8`)
+  and `bjload_run` (`0x8C0CBC40`).
+- The runtime-table reader at `0x8C0A7F84` hit 60 times. The
+  `obj_load.c` literal-reference PCs `0x8C0A2FD2` and `0x8C0A2FF6`
+  each hit once; the candidate object-loader prologue `0x8C0A2F90` hit
+  twice.
+- The indirect helper `0x8C0A81EE` ran three times. Its observed calls
+  received `R5=0x0C364000` and `R5=0x0CA2D800`. The first address is
+  within the watched runtime object table; the second watched 4 KiB window
+  (`0x0CA2D800..0x0CA2E800`) recorded no accesses. Neither R5 value is
+  therefore established as a file-read destination.
+- The helper's decompiled implementation performs metadata/index processing
+  and calls the matrix-family code. The trace does not show a GD-ROM/GDFS
+  request or a completed asset transfer. Buffer initialization and pointer
+  relocation must not be mistaken for file-data movement.
+
+### Rejected lead: 0x0C0A2B90 / 0x0C0A2B94
+
+The indirect calls at `0x0C0A2B48` and `0x0C0A2B5E` read callback
+pointers from `0x0C0A2B90` and `0x0C0A2B94`, respectively. These
+instructions belong to the separate generated fight adapter
+`src/fight/vf3_away_batch20_adapter_41.c` in the related decompilation;
+they are not the call at `0x0C0A2FDE` in the observed `obj_load.c)
+path. There is no v38 trace hit at either `0x0C0A2B48` or
+`0x0C0A2B5E`. Do not treat these callback slots as the next asset-I/O
+target.
+
+### Next capture
+
+No new PC or memory watchpoints are required yet: the existing
+`tools/VF3_WATCH_LOADER.txt` already contains the five primary loader
+probes, the runtime pointer table and the resident MT window. The next
+capture must begin before the one-shot load and span the actual
+character-select confirmation into Round 1. A trace taken only after the
+game has entered an already-running fight can miss `mt_loader`,
+`coli_run` and the GDFS transfer entirely. If the five primary probes
+remain at zero in a verified transition capture, revisit the candidate
+entrypoints and their aliases before expanding instrumentation.
+
 ## Limits
 
-This plan is based on the related project's published M33/M66 notes and the previously recorded analysis of the user's executable. It is not a trace result. We have not run this capture in the current working session, and the runtime table's pointer chase and MT scatter routine remain unresolved.
+This plan is based on the related project's published M33/M66 notes and the user's v32/v38 captures. The runtime table's pointer chase, GDFS call contract and MT scatter routine remain unresolved.
 
 ## Sources
 
