@@ -1,0 +1,112 @@
+name: Analyze VF3 Flycast loader capture v37
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/analyze-loader-trace-v37.yml"
+      - "VF3-Flycast-Trace-v37/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decode-loader-capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack v37 trace capture
+        shell: bash
+        run: |
+          unzip -o VF3-Flycast-Trace-v37/vf3-loader-trace-loader.zip -d VF3-Flycast-Trace-v37
+          ls -lah VF3-Flycast-Trace-v37
+      - name: Decode and analyze v37 loader trace
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import collections, csv, hashlib, pathlib, struct
+          trace = pathlib.Path("VF3-Flycast-Trace-v37/vf3-loader-trace-loader.bin")
+          raw = trace.read_bytes()
+          print(f"Trace: {trace}")
+          print(f"Bytes: {len(raw)}")
+          print(f"SHA256: {hashlib.sha256(raw).hexdigest()}")
+          if len(raw) % 8:
+              raise SystemExit(f"Invalid trace size: {len(raw)} is not divisible by 8")
+          words = struct.unpack(f"<{len(raw)//8}Q", raw)
+          probes, memory, warnings = [], [], []
+          i = 0
+          while i < len(words):
+              marker = words[i] & 0xffff
+              pc = words[i] >> 16
+              if marker == 0xfa12:
+                  if i + 18 >= len(words):
+                      warnings.append(f"truncated expanded PC probe at word {i}")
+                      break
+                  close = words[i+18]
+                  if (close & 0xffff) == 0xfa13 and (close >> 16) == pc:
+                      probes.append((i, pc, words[i+1], *words[i+2:i+18]))
+                      i += 19
+                      continue
+              elif marker == 0xfa10:
+                  if i + 7 < len(words) and (words[i+7] & 0xffff) == 0xfa11 and (words[i+7] >> 16) == pc:
+                      probes.append((i, pc, 0, *([0]*16)))
+                      i += 8
+                      continue
+              elif marker == 0xfa20:
+                  if i + 3 >= len(words):
+                      warnings.append(f"truncated memory record at word {i}")
+                      break
+                  meta, address, value = words[i+1:i+4]
+                  width, write = meta >> 48, (meta >> 47) & 1
+                  memory.append((i, pc, "W" if write else "R", width, address & 0xffffffff, value))
+                  i += 4
+                  continue
+              i += 1
+          out = pathlib.Path("trace-v37-analysis")
+          out.mkdir(exist_ok=True)
+          with (out/"memory.csv").open("w", newline="") as f:
+              w=csv.writer(f); w.writerow(["word_index","pc","access","width","address","value"])
+              w.writerows((idx,f"0x{pc:08X}",a,width,f"0x{addr:08X}",f"0x{val:016X}") for idx,pc,a,width,addr,val in memory)
+          with (out/"pc-probes.csv").open("w", newline="") as f:
+              w=csv.writer(f); w.writerow(["word_index","pc","pr"]+[f"r{x}" for x in range(16)])
+              w.writerows((idx,f"0x{pc:08X}",f"0x{pr:08X}",*[f"0x{x:08X}" for x in regs]) for idx,pc,pr,*regs in probes)
+          pc_counts=collections.Counter(x[1] for x in probes)
+          mem_pc=collections.Counter(x[1] for x in memory)
+          addr_counts=collections.Counter(x[4] for x in memory)
+          access_counts=collections.Counter((x[2],x[3]) for x in memory)
+          lines = [
+            "# VF3 Flycast loader trace v36 analysis", "",
+            f"- Trace size: **{len(raw):,} bytes** ({len(words):,} 64-bit words)",
+            f"- SHA-256: `{hashlib.sha256(raw).hexdigest()}`",
+            f"- Decoded PC probe groups: **{len(probes):,}**",
+            f"- Decoded memory accesses: **{len(memory):,}**",
+            f"- Unknown/skipped words: **{sum(1 for _ in [])}** (decoder scans unrecognized words)",
+            "", "## Memory access types", "",
+            "| Access | Width | Count |", "|---|---:|---:|"
+          ]
+          for (a,width),n in sorted(access_counts.items()):
+              lines.append(f"| {a} | {width} bytes | {n:,} |")
+          lines += ["", "## Memory access PCs", "", "| PC | Accesses |", "|---|---:|"]
+          lines += [f"| `0x{pc:08X}` | {n:,} |" for pc,n in mem_pc.most_common(80)]
+          lines += ["", "## Most frequently accessed addresses", "", "| Address | Accesses |", "|---|---:|"]
+          lines += [f"| `0x{addr:08X}` | {n:,} |" for addr,n in addr_counts.most_common(100)]
+          lines += ["", "## PC probe hits", "", "| PC | Hits |", "|---|---:|"]
+          lines += [f"| `0x{pc:08X}` | {n:,} |" for pc,n in pc_counts.most_common()]
+          lines += ["", "## First 100 memory events", "", "| # | PC | R/W | Width | Address | Value |", "|---:|---|:---:|---:|---|---|"]
+          lines += [f"| {idx} | `0x{pc:08X}` | {a} | {width} | `0x{addr:08X}` | `0x{val:016X}` |" for idx,pc,a,width,addr,val in memory[:100]]
+          if warnings:
+              lines += ["", "## Warnings", ""] + [f"- {x}" for x in warnings]
+          report="\n".join(lines)+"\n"
+          (out/"REPORT.md").write_text(report)
+          pathlib.Path("trace-v37-analysis.md").write_text(report)
+          print(report)
+          PY
+          cat trace-v37-analysis.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload decoded trace analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-loader-trace-v37-analysis
+          path: trace-v37-analysis/
+          if-no-files-found: error
+          retention-days: 30
