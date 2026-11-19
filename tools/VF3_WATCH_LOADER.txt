@@ -11,13 +11,18 @@ pc 0x8C0CBC40
 mem 0x8C1069BC 0x210
 mem 0x8C5F0000 0x270000
 
-# v32 follow-up probes: capture the table base/index, object-loader entry,
+# v32/v36 follow-up probes: capture the table base/index, object-loader entry,
 # indirect helper target and the observed buffer-initialization writes.
 pc 0x8C0A7F84
 pc 0x8C0A2F90
 pc 0x8C0A2FDE
+pc 0x8C0A2FE2
 pc 0x8C0A2EC8
 pc 0x8C0A304E
+
+# v37: v36 recorded R1=0x0C0A81EE at the indirect call at 0x0C0A2FDE.
+# Probe the resolved helper entry and the caller's return site.
+pc 0x8C0A81EE
 
 # Naomi source-path literal-load sites found in the Dreamcast executable.
 # These are exact MOV.L reference PCs, not confirmed function entries.
