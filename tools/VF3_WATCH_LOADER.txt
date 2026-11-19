@@ -51,3 +51,32 @@ pc 0x8C0C6528
 pc 0x8C0C794A
 pc 0x8C0C7966
 pc 0x8C0C7AA0
+
+# v38: follow the two observed obj_load.c helper destinations from v37.
+# The helper receives R5=0x0C364000 and R5=0x0CA2D800; watch nearby
+# accesses to distinguish actual data writes from the earlier zeroing.
+mem 0x8C364000 0x1000
+mem 0x8CA2D800 0x1000
+
+# Capture the helper's first 32 bytes of execution (SH-4 instructions are 2 bytes).
+pc 0x8C0A81F0
+pc 0x8C0A81F2
+pc 0x8C0A81F4
+pc 0x8C0A81F6
+pc 0x8C0A81F8
+pc 0x8C0A81FA
+pc 0x8C0A81FC
+pc 0x8C0A81FE
+pc 0x8C0A8200
+pc 0x8C0A8202
+pc 0x8C0A8204
+pc 0x8C0A8206
+pc 0x8C0A8208
+pc 0x8C0A820A
+pc 0x8C0A820C
+pc 0x8C0A820E
+
+# Second helper-call return site and immediate continuation.
+pc 0x8C0A3010
+pc 0x8C0A3012
+pc 0x8C0A3014
