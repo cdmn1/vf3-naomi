@@ -71,7 +71,7 @@ jobs:
           addr_counts=collections.Counter(x[4] for x in memory)
           access_counts=collections.Counter((x[2],x[3]) for x in memory)
           lines = [
-            "# VF3 Flycast loader trace v36 analysis", "",
+            "# VF3 Flycast loader trace v38 analysis", "",
             f"- Trace size: **{len(raw):,} bytes** ({len(words):,} 64-bit words)",
             f"- SHA-256: `{hashlib.sha256(raw).hexdigest()}`",
             f"- Decoded PC probe groups: **{len(probes):,}**",
