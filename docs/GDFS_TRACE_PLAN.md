@@ -451,6 +451,23 @@ The full lookup list is generated as `mt_slot_lookups.csv` by
 `memory_pc_summary.csv`. The corresponding workflow completed successfully:
 [run #44799078608](https://github.com/cdmn1/vf3-naomi/actions/runs/44799078608).
 
+### Next capture: register-level motion ID and runtime pointer mapping
+
+The v68 trace profile adds expanded FA12/FA13 register snapshots at
+`0x8C09D5AE` / `0x8C09D5B0` (motion-ID row selection), the three slot
+lookup instructions, evaluator entry `0x8C09D690`, linked-record helper
+`0x8C09D69A`, and the count/time/tuple cursor sites. The aim is to capture:
+
+- the actor pointer and its `+0x3C` one-based motion ID;
+- the selected 12-byte three-offset row and the registers used to fetch it;
+- the evaluator task/header pointer;
+- the actual count, time and tuple cursor registers at runtime.
+
+This should tell us which motion IDs belong to which actor and whether the
+guest loader rewrites/scatters the source offsets before evaluation. It
+requires one fresh capture from a cold game start; v66 remains sufficient
+for the disc-to-RAM and slot-row findings above.
+
 ### MOTHEAD.BIN is loaded immediately before each motion pack
 
 The trace also contains two separate, identical `MOTHEAD.BIN` read
