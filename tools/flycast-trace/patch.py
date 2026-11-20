@@ -51,6 +51,24 @@ def main() -> None:
         "void Sh4Interpreter::ExecuteOpcode(u16 op)\n{\n\tvf3TraceInstruction(ctx);\n",
     )
     replace_once(
+        root / "core/hw/gdrom/gdromv3.cpp",
+        '#include "hw/sh4/sh4_mem.h"\\n',
+        '#include "hw/sh4/sh4_mem.h"\\n#include "hw/sh4/interpr/vf3trace.h"\\n',
+    )
+    replace_once(
+        root / "core/hw/gdrom/gdromv3.cpp",
+        "\\t\\t\\tdma_buff.fill(read_params);\\n\\t\\t\\t// transfer up to len bytes",
+        "\\t\\t\\tconst u32 transferFad = read_params.start_sector;\\n"
+        "\\t\\t\\tconst u32 transferRemaining = read_params.remaining_sectors;\\n"
+        "\\t\\t\\tdma_buff.fill(read_params);\\n\\t\\t\\t// transfer up to len bytes",
+    )
+    replace_once(
+        root / "core/hw/gdrom/gdromv3.cpp",
+        "\\t\\t\\tWriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);",
+        "\\t\\t\\tWriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);\\n"
+        "\\t\\t\\tvf3TraceGdromTransfer(src, buff_size, transferFad, read_params.sector_type, transferRemaining);",
+    )
+    replace_once(
         root / "core/hw/sh4/sh4_mem.cpp",
         '#include "sh4_mem.h"\n',
         '#include "sh4_mem.h"\n#include "interpr/vf3trace.h"\n',
