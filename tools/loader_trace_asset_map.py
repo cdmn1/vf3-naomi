@@ -159,44 +159,28 @@ def correlate_motion_memory(
 
 
 
-# Fixed record-relative byte streams used by the SH-4 motion evaluator.
-PRIMARY_RECORD_READS = {
-    0x8C09D6F4: ("counts", 0x736),
-    0x8C09D70A: ("times", 0x75B),
-    0x8C09D778: ("tuple0", 0x7A4),
-    0x8C09D77E: ("tuple1", 0x7A8),
-    0x8C09D782: ("tuple2", 0x7AC),
-    0x8C09D794: ("tuple3", 0x7B0),
-}
-
-
-def infer_primary_records(rows, motion_memory):
-    """Infer primary MT record bases from fixed evaluator cursor offsets."""
-    pack_starts = {}
-    for name in {str(r["asset"]) for r in rows
-                 if str(r["asset"]).startswith("MT") and str(r["asset"]).endswith(".BIN")}:
-        group = [r for r in rows if str(r["asset"]) == name]
-        pack_starts[name] = min(int(r["destination"]) for r in group)
-
-    counts = defaultdict(Counter)
+def summarize_memory_pcs(motion_memory):
+    """Summarize watched addresses and read values by pack and guest PC."""
+    groups = defaultdict(list)
     for event in motion_memory:
-        spec = PRIMARY_RECORD_READS.get(canonical(int(event["pc"])))
-        if not spec or event["access"] != "R":
-            continue
-        stream, delta = spec
-        pack = str(event["pack"])
-        base = normalize(int(event["address"])) - delta
-        counts[(pack, base)][stream] += 1
-
+        groups[(str(event["pack"]), canonical(int(event["pc"])))].append(event)
     output = []
-    for (pack, base), streams in sorted(counts.items()):
-        start = pack_starts.get(pack, 0)
+    for (pack, pc), events in sorted(groups.items()):
+        reads = [e for e in events if e["access"] == "R"]
+        writes = [e for e in events if e["access"] == "W"]
+        addresses = [normalize(int(e["address"])) for e in events]
+        values = Counter(int(e["value"]) for e in reads if int(e["value"]) != 0)
+        addr_counts = Counter(addresses)
         output.append({
-            "pack": pack, "record_base": base,
-            "canonical_record_base": canonical(base),
-            "pack_relative_offset": base - start,
-            "counts_reads": streams["counts"], "times_reads": streams["times"],
-            "both_streams_seen": int(streams["counts"] > 0 and streams["times"] > 0),
+            "pack": pack, "pc": pc, "reads": len(reads), "writes": len(writes),
+            "unique_addresses": len(set(addresses)),
+            "min_address": min(addresses), "max_address": max(addresses),
+            "top_addresses": ";".join(
+                f"0x{addr:08X}:{count}" for addr, count in addr_counts.most_common(3)
+            ),
+            "top_nonzero_values": ";".join(
+                f"0x{value:X}:{count}" for value, count in values.most_common(3)
+            ),
         })
     return output
 
@@ -204,7 +188,6 @@ def infer_primary_records(rows, motion_memory):
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
-    record_candidates: list[dict[str, int | str]] | None = None,
 ) -> str:
     by_asset: dict[str, list[dict[str, int | str]]] = defaultdict(list)
     for row in rows:
@@ -272,23 +255,22 @@ def make_report(
     else:
         lines.append("No watched CPU accesses overlapped the loaded motion-pack payloads after each load.")
 
-    record_candidates = record_candidates or []
-    lines.extend(["", "## Primary record-base candidates from evaluator cursors", ""])
-    if record_candidates:
+    pc_summary = summarize_memory_pcs(motion_memory)
+    lines.extend(["", "## Memory-access summary by PC", ""])
+    if pc_summary:
         lines.extend([
-            "| Pack | Inferred record base | Pack-relative offset | Counts reads | Time reads |",
-            "|---|---:|---:|---:|---:|",
+            "| Pack | PC | Reads | Writes | Unique addresses | Address span | Common non-zero read values |",
+            "|---|---:|---:|---:|---:|---|---|",
         ])
-        for row in record_candidates:
+        for row in pc_summary:
             lines.append(
-                f"| {row['pack']} | 0x{int(row['canonical_record_base']):08X} | "
-                f"0x{int(row['pack_relative_offset']):X} | "
-                f"{row['counts_reads']} | {row['times_reads']} |"
+                f"| {row['pack']} | 0x{int(row['pc']):08X} | {row['reads']} | "
+                f"{row['writes']} | {row['unique_addresses']} | "
+                f"0x{int(row['min_address']):08X}–0x{int(row['max_address']):08X} | "
+                f"{row['top_nonzero_values'] or '—'} |"
             )
-        lines.append("")
-        lines.append("Bases are inferred from fixed evaluator PCs and documented offsets: counts +0x736, key times +0x75B, and tuple lanes +0x7A4/+0x7A8/+0x7AC/+0x7B0. Tuple lanes can also be reached through linked records, so these are candidate bases, not yet proven slot IDs.")
     else:
-        lines.append("No fixed count/time cursor reads mapped to a motion-pack range.")
+        lines.append("No memory events were available for per-PC analysis.")
 
     lines.extend([
         "",
@@ -330,16 +312,14 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(motion_memory)
 
-    record_candidates = infer_primary_records(rows, motion_memory)
-    with (output_dir / "record_candidates.csv").open("w", newline="", encoding="utf-8") as handle:
-        fields = ["pack", "record_base", "canonical_record_base", "pack_relative_offset",
-                  "counts_reads", "times_reads", "both_streams_seen"]
+    pc_summary = summarize_memory_pcs(motion_memory)
+    with (output_dir / "memory_pc_summary.csv").open("w", newline="", encoding="utf-8") as handle:
+        fields = ["pack", "pc", "reads", "writes", "unique_addresses",
+                  "min_address", "max_address", "top_addresses", "top_nonzero_values"]
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
-        writer.writerows(record_candidates)
-    (output_dir / "report.md").write_text(
-        make_report(rows, motion_memory, record_candidates), encoding="utf-8"
-    )
+        writer.writerows(pc_summary)
+    (output_dir / "report.md").write_text(make_report(rows, motion_memory), encoding="utf-8")
 
 
 def main() -> int:
@@ -358,9 +338,8 @@ def main() -> int:
     except (OSError, ValueError, csv.Error, struct.error) as exc:
         parser.exit(1, f"loader_trace_asset_map: {exc}\n")
 
-    record_candidates = infer_primary_records(rows, motion_memory)
-    print(make_report(rows, motion_memory, record_candidates))
-    print(f"\nWrote {len(rows)} transfer records, {len(motion_memory)} motion-memory events and {len(record_candidates)} record-base candidates to {args.output_dir}")
+    print(make_report(rows, motion_memory))
+    print(f"\nWrote {len(rows)} transfer records and {len(motion_memory)} motion-memory events to {args.output_dir}")
     return 0
 
 
