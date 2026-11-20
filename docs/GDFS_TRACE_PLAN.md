@@ -354,6 +354,70 @@ tagged to the pack lifetime, guest PC, width, access type and guest address.
 The successful workflow run completed the Python tests, v66 asset/memory
 correlation and the existing input-capture report jobs.
 
+### v66 slot-table reads identify the selected MT stream triplets
+
+The setup path also reads the pair pack's 8,880-entry slot table directly.
+The v66 FA20 records at PCs `0x8C09D5D2`, `0x8C09D5CE` and
+`0x8C09D5DA` are 32-bit reads from the first `0x8AC0` bytes of the
+currently loaded MT pack. For each read:
+
+`slot_id = (guest_read_address - 0x0C5F4000) / 4`
+
+The returned dword is the file-relative record offset. The three setup PCs
+read three consecutive slot IDs per selected group. This is independently
+cross-checked against the corresponding slot-table entries in the extracted
+pair-pack files. (The text extractor replaces offsets above Unicode's maximum;
+the FA20 values preserve those high offsets.)
+
+**MTAKIPAI.BIN — 10 observed triplets**
+
+| Slot IDs | File offsets |
+|---|---|
+| 111–113 | `0x1A028, 0x1A040, 0x1A048` |
+| 324–326 | `0x23D68, 0x23D80, 0x23D88` |
+| 402–404 | `0x26C1C, 0x26C34, 0x26C3C` |
+| 414–416 | `0x2725C, 0x27274, 0x2727C` |
+| 1293–1295 | `0x542CC, 0x542FC, 0x54358` |
+| 1581–1583 | `0x5B154, 0x5B16C, 0x5B174` |
+| 1596–1598 | `0x5B924, 0x5B93C, 0x5B944` |
+| 1623–1625 | `0x5D59C, 0x5D5CC, 0x5D5E0` |
+| 3147–3149 | `0x98DD8, 0x98DF4, 0x98E04` |
+| 7155–7157 | `0x14BC30, 0x14BC4C, 0x14BC5C` |
+
+**MTAKIWOL.BIN — 6 observed triplets**
+
+| Slot IDs | File offsets |
+|---|---|
+| 111–113 | `0x1A028, 0x1A040, 0x1A048` |
+| 324–326 | `0x25D78, 0x25D90, 0x25D98` |
+| 402–404 | `0x2A4D0, 0x2A4E8, 0x2A4F0` |
+| 414–416 | `0x2AB10, 0x2AB28, 0x2AB30` |
+| 3147–3149 | `0x9D724, 0x9D740, 0x9D750` |
+| 4437–4439 | `0xDADD0, 0xDADF2, 0xDAE0C` |
+
+The first triplet gives us a direct bridge from setup to evaluator streams.
+Relative to the pack destination, the evaluator's first observed reads are:
+
+- `0x8C09D6F4` (count cursor): `0x1A03A`, inside slot 111's
+  `0x1A028` block;
+- `0x8C09D70A` (key-time cursor): `0x1A040`, exactly slot 112's
+  start;
+- `0x8C09D794` (tuple cursor): `0x1A048`, exactly slot 113's
+  start, followed by tuple-lane reads at `0x1A04C`, `0x1A050` and
+  `0x1A054`.
+
+This strongly supports the interpretation that each consecutive triplet
+supplies the evaluator's count, key-time and tuple streams for a motion
+record group. The setup PCs and the first evaluator accesses line up exactly
+for slots 111–113 in both packs. The remaining triplets are confirmed table
+lookups during setup; mapping each to a named move or proving its exact
+linkage within the active chain is still open.
+
+The full lookup list is generated as `mt_slot_lookups.csv` by
+`tools/loader_trace_asset_map.py`; the per-PC address/value summary is
+`memory_pc_summary.csv`. The corresponding workflow completed successfully:
+[run #44799078608](https://github.com/cdmn1/vf3-naomi/actions/runs/44799078608).
+
 ### MOTHEAD.BIN is loaded immediately before each motion pack
 
 The trace also contains two separate, identical `MOTHEAD.BIN` read
