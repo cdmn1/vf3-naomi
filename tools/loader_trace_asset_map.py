@@ -118,6 +118,8 @@ def correlate(transfers: list[dict[str, int]],
         row["start_lba"] = start_lba
         row["end_lba_exclusive"] = end_lba
         row["asset"] = names[0] if len(names) == 1 else (";".join(names) if names else "UNMAPPED")
+        if len(exact) == 1:
+            row["asset_size_bytes"] = int(exact[0]["size_bytes"])
         row["extent_match"] = "exact" if len(exact) == 1 else ("overlap" if matches else "unmapped")
         result.append(row)
     return result
@@ -358,7 +360,7 @@ def write_outputs(
     transfer_fields = [
         "word_index", "asset", "extent_match", "fad", "start_lba", "end_lba_exclusive",
         "sectors", "destination", "flags", "result", "nonzero_bytes", "fnv1a",
-        "first_word", "last_word",
+        "first_word", "last_word", "asset_size_bytes",
     ]
     with (output_dir / "transfers.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=transfer_fields)
