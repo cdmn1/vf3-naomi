@@ -77,6 +77,12 @@ void writeDiagnostics()
     output << "Initialization: " << initializationStatus << "\n";
     output << "Executed SH-4 instructions: " << instructionCount << "\n";
     output << "GD-ROM DMA hook calls: " << gdromTransferCalls << "\n";
+    output << "GD-ROM sector read calls (all transfer modes): " << gdromSectorReadCalls << "\n";
+    output << "GD-ROM sectors requested: " << gdromSectorsRead << "\n";
+    output << "GD-ROM PIO data words consumed: " << gdromPioDataWords << "\n";
+    output << "GD-ROM sector read samples (first " << gdromSectorReadSamples.size() << "):\n";
+    for (const std::string &sample : gdromSectorReadSamples)
+        output << "  " << sample << "\n";
     output << "GD-ROM DMA calls overlapping watched memory: " << gdromTransferWatchOverlaps << "\n";
     output << "GD-ROM DMA samples (first " << gdromTransferSamples.size() << "):\n";
     for (const std::string &sample : gdromTransferSamples)
@@ -330,7 +336,7 @@ void vf3TraceGdromSectorRead(const u8 *buffer, u32 startFad, u32 sectorCount, u3
         sample << "FAD=" << startFad << " sectors=" << sectorCount
                << " sector_size=" << sectorSize
                << " stop_on_miss=" << (stopOnMiss ? 1 : 0)
-               << " host_buffer=0x" << std::hex << reinterpret_cast<uintptr_t>(buffer);
+               << " host_buffer=" << static_cast<const void *>(buffer);
         gdromSectorReadSamples.push_back(sample.str());
     }
 }
