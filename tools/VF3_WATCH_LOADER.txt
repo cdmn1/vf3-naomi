@@ -80,3 +80,19 @@ pc 0x8C0A820E
 pc 0x8C0A3010
 pc 0x8C0A3012
 pc 0x8C0A3014
+
+# v67: identify motion IDs, selected MT rows and runtime evaluator pointers.
+# FA12/FA13 snapshots include PR and R0-R15 at each instruction.
+pc 0x8C09D5AE
+pc 0x8C09D5B0
+pc 0x8C09D5CE
+pc 0x8C09D5D2
+pc 0x8C09D5DA
+pc 0x8C09D690
+pc 0x8C09D69A
+pc 0x8C09D6F4
+pc 0x8C09D70A
+pc 0x8C09D778
+pc 0x8C09D77E
+pc 0x8C09D782
+pc 0x8C09D794
