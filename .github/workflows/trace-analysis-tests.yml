@@ -47,7 +47,7 @@ jobs:
       - name: Base64-export and decode latest repository capture
         shell: bash
         run: |
-          TRACE="VF3-Flycast-Trace 202611181953/vf3-loader-trace.bin"
+          TRACE="VF3-Flycast-Trace/VF3-Flycast-Trace 202611181953/vf3-loader-trace.bin"
           base64 -w 0 "$TRACE" > vf3-loader-trace.bin.b64
           base64 -d vf3-loader-trace.bin.b64 > vf3-loader-trace.roundtrip.bin
           cmp "$TRACE" vf3-loader-trace.roundtrip.bin
