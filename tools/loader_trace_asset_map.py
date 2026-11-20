@@ -305,13 +305,14 @@ def summarize_motion_stream_use(rows, motion_memory, motion_rows):
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
+    version: str = "capture",
 ) -> str:
     by_asset: dict[str, list[dict[str, int | str]]] = defaultdict(list)
     for row in rows:
         by_asset[str(row["asset"])].append(row)
 
     lines = [
-        "# VF3 v66 REIOS HLE asset correlation",
+        "# VF3 {version} REIOS HLE asset correlation",
         "",
         f"- FA22 transfer records: **{len(rows):,}**",
         f"- Sectors reported: **{sum(int(r['sectors']) for r in rows):,}**",
@@ -456,6 +457,7 @@ def write_outputs(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]],
     output_dir: Path,
+    version: str = "capture",
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     transfer_fields = [
@@ -504,7 +506,7 @@ def write_outputs(
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(pc_summary)
-    (output_dir / "report.md").write_text(make_report(rows, motion_memory), encoding="utf-8")
+    (output_dir / "report.md").write_text(make_report(rows, motion_memory, version), encoding="utf-8")
 
 
 def main() -> int:
@@ -512,6 +514,7 @@ def main() -> int:
     parser.add_argument("trace", type=Path, help="combined vf3-loader-trace-loader.bin file")
     parser.add_argument("--asset-index", type=Path, default=Path("docs/GDFS_ASSET_INDEX.csv"))
     parser.add_argument("--output-dir", type=Path, default=Path("loader-trace-asset-map"))
+    parser.add_argument("--version", default="capture", help="capture label used in the report heading")
     args = parser.parse_args()
 
     try:
@@ -519,11 +522,11 @@ def main() -> int:
         assets = load_assets(args.asset_index)
         rows = correlate(transfers, assets)
         motion_memory = correlate_motion_memory(rows, memory, trace_word_count)
-        write_outputs(rows, motion_memory, args.output_dir)
+        write_outputs(rows, motion_memory, args.output_dir, args.version)
     except (OSError, ValueError, csv.Error, struct.error) as exc:
         parser.exit(1, f"loader_trace_asset_map: {exc}\n")
 
-    print(make_report(rows, motion_memory))
+    print(make_report(rows, motion_memory, args.version))
     print(f"\nWrote {len(rows)} transfer records and {len(motion_memory)} motion-memory events to {args.output_dir}")
     return 0
 
