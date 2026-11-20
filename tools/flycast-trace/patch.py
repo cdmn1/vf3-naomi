@@ -52,21 +52,29 @@ def main() -> None:
     )
     replace_once(
         root / "core/hw/gdrom/gdromv3.cpp",
-        '#include "hw/sh4/sh4_mem.h"\\n',
-        '#include "hw/sh4/sh4_mem.h"\\n#include "hw/sh4/interpr/vf3trace.h"\\n',
+        '#include "hw/sh4/sh4_mem.h"
+',
+        '#include "hw/sh4/sh4_mem.h"
+#include "hw/sh4/interpr/vf3trace.h"
+',
     )
     replace_once(
         root / "core/hw/gdrom/gdromv3.cpp",
-        "\\t\\t\\tdma_buff.fill(read_params);\\n\\t\\t\\t// transfer up to len bytes",
-        "\\t\\t\\tconst u32 transferFad = read_params.start_sector;\\n"
-        "\\t\\t\\tconst u32 transferRemaining = read_params.remaining_sectors;\\n"
-        "\\t\\t\\tdma_buff.fill(read_params);\\n\\t\\t\\t// transfer up to len bytes",
+        "			dma_buff.fill(read_params);
+			// transfer up to len bytes",
+        "			const u32 transferFad = read_params.start_sector;
+"
+        "			const u32 transferRemaining = read_params.remaining_sectors;
+"
+        "			dma_buff.fill(read_params);
+			// transfer up to len bytes",
     )
     replace_once(
         root / "core/hw/gdrom/gdromv3.cpp",
-        "\\t\\t\\tWriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);",
-        "\\t\\t\\tWriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);\\n"
-        "\\t\\t\\tvf3TraceGdromTransfer(src, buff_size, transferFad, read_params.sector_type, transferRemaining);",
+        "			WriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);",
+        "			WriteMemBlock_nommu_ptr(src, (const u32 *)dma_buff.read(buff_size), buff_size);
+"
+        "			vf3TraceGdromTransfer(src, buff_size, transferFad, read_params.sector_type, transferRemaining);",
     )
     replace_once(
         root / "core/hw/sh4/sh4_mem.cpp",
