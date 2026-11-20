@@ -228,6 +228,28 @@ def summarize_mt_slot_lookups(rows, motion_memory):
     return output
 
 
+def group_mt_motion_rows(slot_lookups):
+    """Group the three consecutive MT source slots into one-based motion IDs."""
+    groups = defaultdict(dict)
+    for row in slot_lookups:
+        slot = int(row["slot"])
+        motion_id = slot // 3 + 1
+        part = slot % 3
+        groups[(str(row["pack"]), motion_id)][part] = row
+    output = []
+    for (pack, motion_id), parts in sorted(groups.items()):
+        offsets = [int(parts[i]["file_offset"]) if i in parts else 0 for i in range(3)]
+        reads = [int(parts[i]["reads"]) if i in parts else 0 for i in range(3)]
+        output.append({
+            "pack": pack, "motion_id": motion_id,
+            "slot_start": (motion_id - 1) * 3,
+            "offset0": offsets[0], "offset1": offsets[1], "offset2": offsets[2],
+            "reads0": reads[0], "reads1": reads[1], "reads2": reads[2],
+            "complete": int(all(offsets)),
+        })
+    return output
+
+
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
@@ -299,25 +321,30 @@ def make_report(
         lines.append("No watched CPU accesses overlapped the loaded motion-pack payloads after each load.")
 
     slot_lookups = summarize_mt_slot_lookups(rows, motion_memory)
-    lines.extend(["", "## MT slot-table lookups observed during motion setup", ""])
-    if slot_lookups:
+    motion_rows = group_mt_motion_rows(slot_lookups)
+    lines.extend(["", "## Motion IDs selected during MT setup", ""])
+    if motion_rows:
         lines.extend([
-            "| Pack | Slot ID | File record offset | Reads | PCs |",
-            "|---|---:|---:|---:|---|",
+            "| Pack | Motion ID | Slots | Descriptor/count offset | Key-time offset | Tuple offset | Table reads |",
+            "|---|---:|---|---:|---:|---:|---:|",
         ])
-        for row in slot_lookups:
+        for row in motion_rows:
+            offsets = [int(row[f"offset{i}"]) for i in range(3)]
+            rendered = [f"0x{x:X}" if x else "—" for x in offsets]
             lines.append(
-                f"| {row['pack']} | {row['slot']} | 0x{int(row['file_offset']):X} | "
-                f"{row['reads']} | {row['pcs']} |"
+                f"| {row['pack']} | {row['motion_id']} (0x{int(row['motion_id']):X}) | "
+                f"{row['slot_start']}–{row['slot_start'] + 2} | {rendered[0]} | "
+                f"{rendered[1]} | {rendered[2]} | "
+                f"{row['reads0']}/{row['reads1']}/{row['reads2']} |"
             )
         lines.append("")
         lines.append(
-            "Slot IDs are computed from each 32-bit table-read address relative "
-            "to the pack transfer destination (4-byte entries). The returned "
-            "value is the file-relative record offset."
+            "Each one-based motion ID selects three consecutive 32-bit offsets: "
+            "first_slot = (motion_id - 1) * 3. The setup reads them at PCs "
+            "0x8C09D5D2, 0x8C09D5CE and 0x8C09D5DA respectively."
         )
     else:
-        lines.append("No valid 32-bit reads from the MT slot-table range were identified at the setup PCs.")
+        lines.append("No complete motion-ID rows were identified from the setup slot-table reads.")
 
     pc_summary = summarize_memory_pcs(motion_memory)
     lines.extend(["", "## Memory-access summary by PC", ""])
@@ -382,6 +409,13 @@ def write_outputs(
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(slot_lookups)
+    motion_rows = group_mt_motion_rows(slot_lookups)
+    with (output_dir / "mt_motion_rows.csv").open("w", newline="", encoding="utf-8") as handle:
+        fields = ["pack", "motion_id", "slot_start", "offset0", "offset1", "offset2",
+                  "reads0", "reads1", "reads2", "complete"]
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(motion_rows)
     pc_summary = summarize_memory_pcs(motion_memory)
     with (output_dir / "memory_pc_summary.csv").open("w", newline="", encoding="utf-8") as handle:
         fields = ["pack", "pc", "reads", "writes", "unique_addresses",
