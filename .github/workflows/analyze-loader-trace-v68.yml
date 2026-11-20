@@ -41,7 +41,7 @@ jobs:
           python tools/loader_trace_summary.py \
             "$OUT/vf3-loader-trace.pc.csv" \
             "$OUT/vf3-loader-trace.memory.csv" > "$OUT/SUMMARY.txt"
-          python tools/loader_trace_asset_map.py "$TRACE" --output-dir "$OUT"
+          python tools/loader_trace_asset_map.py "$TRACE" --output-dir "$OUT" --version v68
           if [[ -s "$TRACE_DIR/vf3-loader-trace-loader.bin.diag.txt" ]]; then
             cp "$TRACE_DIR/vf3-loader-trace-loader.bin.diag.txt" "$OUT/"
           fi
