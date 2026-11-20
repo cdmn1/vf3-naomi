@@ -267,6 +267,72 @@ game has entered an already-running fight can miss `mt_loader`,
 remain at zero in a verified transition capture, revisit the candidate
 entrypoints and their aliases before expanding instrumentation.
 
+## v66 REIOS HLE transfer-to-asset correlation (2026-11-20)
+
+The v66 diagnostic's FAD-page histogram can be mapped against
+[the checked-in GDFS asset index](GDFS_ASSET_INDEX.csv). The index uses GDFS
+LBA values; for this Dreamcast data track the matching FAD is LBA + 150.
+Asset extents are calculated in 2048-byte sectors, rounding file size up.
+
+The trace hook increments its FAD histogram using the **starting FAD** of
+each FA22 transfer, divided by 256. This is confirmed by
+`tools/flycast-trace/vf3trace.cpp` at `gdromHleFadPages[startFad / 256]`.
+Consequently, a page wholly inside one indexed asset is unambiguous, while
+boundary pages may include starts from either neighboring asset.
+
+### Confirmed motion-pack sector ranges
+
+| Asset | GDFS LBA | Size | FAD extent (end exclusive) | Fully contained FAD pages | Transfer starts in those pages |
+|---|---:|---:|---:|---|---:|
+| `MTAKIPAI.BIN` | 459459 | 1,572,408 B | 459609–460377 | 1796, 1797 | 102 |
+| `MTAKIWOL.BIN` | 463527 | 1,696,108 B | 463677–464506 | 1812, 1813 | 103 |
+
+The complete v66 histogram reports:
+- FAD pages 1795–1798: 34, 51, 51 and 18 transfer starts. Pages 1796
+  and 1797 are fully inside `MTAKIPAI.BIN`; page 1795 straddles
+  `MTAKILAU.BIN` / `MTAKIPAI.BIN`, and page 1798 straddles
+  `MTAKIPAI.BIN` / `MTAKIRIK.BIN`.
+- FAD pages 1811–1814: 39, 52, 51 and 24 transfer starts. Pages 1812
+  and 1813 are fully inside `MTAKIWOL.BIN`; page 1811 straddles
+  `MTAKITOU.BIN` / `MTAKIWOL.BIN`, and page 1814 straddles
+  `MTAKIWOL.BIN` / `MTDURDUR.BIN`.
+
+This is direct evidence that the v66 run requested sectors from the indexed
+Akira-vs-Pai and Akira-vs-Wolf motion-pack extents. It is stronger than
+inferring motion data from a guest destination address alone.
+
+### Why the first 96 transfer samples were misleading
+
+The diagnostic prints only the first 96 FA22 samples, which are dominated
+by other assets. Mapping representative samples with FAD - 150 gives:
+
+| Sample FAD | GDFS LBA | Indexed asset |
+|---:|---:|---|
+| 428441 | 428291 | `CP_ASC.BIN` |
+| 533101 | 532951 | `COIN.BIN` |
+| 533122 | 532972 | `ANAUNCE.BIN` |
+| 545440 | 545290 | `PLAYER.BIN` |
+| 547602 | 547452 | `SNDDRV.BIN` |
+
+These examples also independently support the +150 FAD/LBA conversion.
+They are not the motion-pack reads.
+
+### Remaining limitation and next step
+
+The diagnostic's FAD-page and destination-page histograms are separate
+aggregates. The destination histogram shows writes in the old resident-MT
+window, but it cannot pair a particular motion-pack FAD with its exact
+guest destination. In fact, one of the sampled non-motion transfers
+(`CP_ASC.BIN`) also writes into that broad window, so address overlap
+alone is not sufficient.
+
+A new offline decoder, `tools/loader_trace_asset_map.py`, now parses every
+FA22 record from the raw v66 trace and maps each transfer's full sector
+interval to the asset index. The trace-analysis workflow runs it against v66
+and uploads a per-transfer CSV plus a report. This should reveal whether the
+MTAKI* reads land in the resident-MT area and which destination ranges they
+use, without requiring another emulator capture.
+
 ## Limits
 
 This plan is based on the related project's published M33/M66 notes and the user's v32/v38 captures. The runtime table's pointer chase, GDFS call contract and MT scatter routine remain unresolved.
