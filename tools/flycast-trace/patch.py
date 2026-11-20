@@ -75,13 +75,13 @@ def main() -> None:
     )
     replace_once(
         root / "core/imgread/common.cpp",
-        '#include "hw/gdrom/gdromv3.h"\\n',
-        '#include "hw/gdrom/gdromv3.h"\\n#include "hw/sh4/interpr/vf3trace.h"\\n',
+        '#include "hw/gdrom/gdromv3.h"\n',
+        '#include "hw/gdrom/gdromv3.h"\n#include "hw/sh4/interpr/vf3trace.h"\n',
     )
     replace_once(
         root / "core/imgread/common.cpp",
-        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\\n{\\n",
-        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\\n{\\n\\tvf3TraceGdromSectorRead(buff, startSector, sectorCount, sectorSize, stopOnMiss);\\n",
+        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\n{\n",
+        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\n{\n\\tvf3TraceGdromSectorRead(buff, startSector, sectorCount, sectorSize, stopOnMiss);\n",
     )
     replace_once(
         root / "core/hw/sh4/sh4_mem.cpp",
