@@ -268,7 +268,16 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(motion_memory)
 
-    (output_dir / "report.md").write_text(make_report(rows, motion_memory), encoding="utf-8")
+    record_candidates = infer_primary_records(rows, motion_memory)
+    with (output_dir / "record_candidates.csv").open("w", newline="", encoding="utf-8") as handle:
+        fields = ["pack", "record_base", "canonical_record_base", "pack_relative_offset",
+                  "counts_reads", "times_reads", "both_streams_seen"]
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(record_candidates)
+    (output_dir / "report.md").write_text(
+        make_report(rows, motion_memory, record_candidates), encoding="utf-8"
+    )
 
 
 def main() -> int:
