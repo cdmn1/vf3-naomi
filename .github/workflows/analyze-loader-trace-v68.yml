@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "VF3-Flycast-Trace/VF3-Flycast-Trace-v68/**"
+      - "tools/loader_trace_asset_map.py"
+      - "tools/loader_trace_summary.py"
+      - ".github/workflows/analyze-loader-trace-v68.yml"
   workflow_dispatch:
 
 permissions:
