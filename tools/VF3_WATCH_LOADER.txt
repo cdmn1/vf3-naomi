@@ -96,3 +96,11 @@ pc 0x8C09D778
 pc 0x8C09D77E
 pc 0x8C09D782
 pc 0x8C09D794
+
+# v69 follow-up: candidate runtime contexts observed in the v68 full-register
+# snapshots. These are opaque context pointers, not yet identified as fighter
+# structures. Watch a small window around each to capture field access patterns.
+mem 0x0C29B864 0x200
+mem 0x0C29BCC4 0x200
+mem 0x0C226864 0x200
+mem 0x0C227064 0x200
