@@ -285,7 +285,7 @@ reads: the raw FA22 stream contains all 2,136 transfer records.
 I added `tools/loader_trace_asset_map.py` to decode every FA22 record and
 correlate its complete sector interval with the GDFS asset extents. The
 analysis ran in GitHub Actions
-[run #44790232300](https://github.com/cdmn1/vf3-naomi/actions/runs/44790232300).
+[successful run #44790469102](https://github.com/cdmn1/vf3-naomi/actions/runs/44790469102).
 It decoded 2,136 records, 10,491 sectors and 17,733,028 non-zero bytes,
 matching the v66 diagnostic totals.
 
