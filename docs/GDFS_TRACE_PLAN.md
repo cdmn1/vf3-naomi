@@ -510,9 +510,19 @@ lookup instructions, evaluator entry `0x8C09D690`, linked-record helper
 - the actual count, time and tuple cursor registers at runtime.
 
 This should tell us which motion IDs belong to which actor and whether the
-guest loader rewrites/scatters the source offsets before evaluation. It
-requires one fresh capture from a cold game start; v66 remains sufficient
-for the disc-to-RAM and slot-row findings above.
+guest loader rewrites/scatters the source offsets before evaluation.
+
+The v68 Windows package built successfully in
+[run #44799736197](https://github.com/cdmn1/vf3-naomi/actions/runs/44799736197).
+Download artifact
+[14659933162](https://github.com/cdmn1/vf3-naomi/actions/runs/44799736197/artifacts/14659933162).
+For the capture, start from a cold boot, let the Akira-vs-Wolf attract/demo
+load, then select Akira and Pai and enter Round 1, matching the v66 sequence.
+Upload the trace ZIP or raw trace files to
+`VF3-Flycast-Trace/VF3-Flycast-Trace-v68/`; workflow
+`analyze-loader-trace-v68.yml` will automatically produce the register
+summary and motion-stream correlation artifact. No serial output or local
+compilation is needed.
 
 ### MOTHEAD.BIN is loaded immediately before each motion pack
 
