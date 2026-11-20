@@ -109,3 +109,11 @@ mem 0x0C227064 0x200
 # evaluator. These should reveal stable character/type fields and pointers.
 mem 0x0C1FEFE4 0x200
 mem 0x0C20138C 0x200
+
+# v72 follow-up: dereference the two actor-specific pointer pairs discovered
+# in the v71 actor structures. These windows should expose the model/rig data
+# behind each player's +0x54 and +0x58 fields.
+mem 0x0C03006C 0x100
+mem 0x0C030D6C 0x100
+mem 0x0C10E548 0x100
+mem 0x0C10EB60 0x100
