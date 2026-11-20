@@ -69,6 +69,21 @@ def main() -> None:
         "\t\t\tvf3TraceGdromTransfer(src, buff_size, transferFad, read_params.sector_type, transferRemaining);",
     )
     replace_once(
+        root / "core/hw/gdrom/gdromv3.cpp",
+        "\t\t\t\tu32 rv = pio_buff.read();\n",
+        "\t\t\t\tu32 rv = pio_buff.read();\n\t\t\t\tvf3TraceGdromPioWord(static_cast<u16>(rv));\n",
+    )
+    replace_once(
+        root / "core/imgread/common.cpp",
+        '#include "hw/gdrom/gdromv3.h"\\n',
+        '#include "hw/gdrom/gdromv3.h"\\n#include "hw/sh4/interpr/vf3trace.h"\\n',
+    )
+    replace_once(
+        root / "core/imgread/common.cpp",
+        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\\n{\\n",
+        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\\n{\\n\\tvf3TraceGdromSectorRead(buff, startSector, sectorCount, sectorSize, stopOnMiss);\\n",
+    )
+    replace_once(
         root / "core/hw/sh4/sh4_mem.cpp",
         '#include "sh4_mem.h"\n',
         '#include "sh4_mem.h"\n#include "interpr/vf3trace.h"\n',
