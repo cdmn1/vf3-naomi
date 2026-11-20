@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/analyze-loader-trace-v45.yml"
-      - "VF3-Flycast-Trace-v45/**"
+      - "VF3-Flycast-Trace/VF3-Flycast-Trace-v45/**"
       - "tools/loader_trace_decode.py"
       - "tools/loader_trace_summary.py"
   workflow_dispatch:
@@ -22,15 +22,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TRACE="VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin"
+          TRACE="VF3-Flycast-Trace/VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin"
           test -s "$TRACE"
           mkdir -p trace-v45-analysis
           python3 tools/loader_trace_decode.py "$TRACE" --prefix trace-v45-analysis/vf3-loader-trace
           python3 tools/loader_trace_summary.py trace-v45-analysis/vf3-loader-trace.pc.csv trace-v45-analysis/vf3-loader-trace.memory.csv > trace-v45-analysis/SUMMARY.txt
-          cp VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin.diag.txt trace-v45-analysis/ 2>/dev/null || true
+          cp VF3-Flycast-Trace/VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin.diag.txt trace-v45-analysis/ 2>/dev/null || true
           python3 - <<'PY'
           import csv, hashlib, pathlib
-          trace = pathlib.Path("VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin")
+          trace = pathlib.Path("VF3-Flycast-Trace/VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin")
           out = pathlib.Path("trace-v45-analysis")
           raw = trace.read_bytes()
           dma_path = out / "vf3-loader-trace.gdrom_dma.csv"
