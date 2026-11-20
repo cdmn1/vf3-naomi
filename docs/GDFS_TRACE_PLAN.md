@@ -395,6 +395,39 @@ the FA20 values preserve those high offsets.)
 | 3147–3149 | `0x9D724, 0x9D740, 0x9D750` |
 | 4437–4439 | `0xDADD0, 0xDADF2, 0xDAE0C` |
 
+### Converting the triplets to runtime motion IDs
+
+The 8,880 entries are not unrelated slots: they are 2,960 consecutive
+three-offset rows. The runtime motion ID is one-based, with
+`first_slot = (motion_id - 1) * 3`. Therefore each observed triplet maps
+directly to a motion ID:
+
+| Motion ID | Hex | MTAKIPAI | MTAKIWOL |
+|---:|---:|---|---|
+| 38 | `0x26` | yes | yes |
+| 109 | `0x6D` | yes | yes |
+| 135 | `0x87` | yes | yes |
+| 139 | `0x8B` | yes | yes |
+| 432 | `0x1B0` | yes | — |
+| 528 | `0x210` | yes | — |
+| 533 | `0x215` | yes | — |
+| 542 | `0x21E` | yes | — |
+| 1050 | `0x41A` | yes | yes |
+| 1480 | `0x5C8` | — | yes |
+| 2386 | `0x952` | yes | — |
+
+So v66 has identified **10 motion IDs selected from the Pai pack and 6 from
+the Wolf pack**, with five IDs common to both. These are source-row IDs,
+not yet semantic action names or fighter ownership labels. The first common
+row, `0x26`, is the one for which the evaluator's count/time/tuple reads
+already line up with the three source offsets. The remaining IDs are proven
+to have their three table entries read during setup; their evaluator
+consumption and any linked-record relationships still need to be mapped.
+
+The analysis report now groups the three table reads into a one-based motion
+ID and emits `mt_motion_rows.csv` in addition to the per-slot
+`mt_slot_lookups.csv`.
+
 The first triplet gives us a direct bridge from setup to evaluator streams.
 Relative to the pack destination, the evaluator's first observed reads are:
 
