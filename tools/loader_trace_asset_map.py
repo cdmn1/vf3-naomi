@@ -402,7 +402,7 @@ def make_report(
     lines.extend(["", "## Evaluator reads at selected motion source streams", ""])
     if stream_use:
         lines.extend([
-            "| Pack | Motion ID | Count reads | Count bytes | Time reads | Time bytes | Tuple-prefix reads | Tuple addresses | Tuple lanes |",
+            "| Pack | Motion ID | Count reads | Count addresses | Time reads | Time addresses | Tuple-prefix reads | Tuple addresses | Tuple lanes |",
             "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
         ])
         for row in stream_use:
