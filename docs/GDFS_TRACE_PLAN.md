@@ -324,7 +324,8 @@ Wolf interval immediately before the same buffer is reused for Pai.
 | `MTAKIPAI.BIN` | 26,717 | 0 | 19 |
 
 The dominant read PCs are the same motion-evaluation sites identified in
-the earlier MT analysis:
+the earlier MT analysis. The FA20 hook records Sh4cntx.pc - 2, so this table
+uses the tracer's logged PC values:
 
 | PC | Wolf reads | Pai reads |
 |---|---:|---:|
@@ -358,9 +359,9 @@ correlation and the existing input-capture report jobs.
 The trace also contains two separate, identical `MOTHEAD.BIN` read
 sequences:
 - 17 calls / 83 sectors at trace word 5,642, immediately followed by the
-  `MTAKIWOL.BIN` sequence;
+  `MTAKIWOL.BIN` sequence beginning at trace word 5,818;
 - 17 calls / 83 sectors at trace word 1,174,133, immediately followed by
-  the `MTAKIPAI.BIN` sequence.
+  the `MTAKIPAI.BIN` sequence beginning at trace word 1,174,309.
 
 Both header reads use the same destination span,
 `0x0C5CA800–0x0C5F4000` (end exclusive). That span ends exactly where each
@@ -394,13 +395,17 @@ The v66 trace now proves all of the following:
 3. the data is copied directly into guest RAM at `0x0C5F4000` onward,
    inside the previously identified resident-MT window;
 4. `MOTHEAD.BIN` is loaded into the contiguous preceding header area before
-   each matchup pack.
+   each matchup pack;
+5. after each load, the motion-evaluation CPU sites read from addresses
+   inside that pack's payload span (32,073 Wolf reads; 26,717 Pai reads).
 
 This does **not yet** identify the internal MT header/offset-table parsing
-routine, prove how individual motion records are scattered or relocated
-after the initial file copy, or show which records the game subsequently
-consumes. Those are now the next reverse-engineering targets. No new capture
-is needed to establish the initial disc-to-RAM transfer path.
+routine, map the evaluator's reads to specific slot IDs / motion records, or
+establish whether the original game performs an additional per-record
+scatter/relocation after the initial file copy (no non-zero CPU writes to
+this watched payload range were recorded). Those are now the next
+reverse-engineering targets. No new capture is needed to establish the
+initial disc-to-RAM transfer and evaluator-read path.
 
 The workflow uploads `report.md` and the full per-transfer `transfers.csv`
 as artifact `vf3-v66-hle-asset-correlation` for repeatable inspection.
