@@ -4,6 +4,7 @@
 #include "vf3trace.h"
 
 #include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <map>
@@ -30,10 +31,7 @@ u64 gdromTransferCalls = 0;
 u64 gdromSectorReadCalls = 0;
 u64 gdromSectorsRead = 0;
 u64 gdromPioDataWords = 0;
-u64 gdromCddaReadCalls = 0;
-u64 gdromPioReadCalls = 0;
-u64 gdromDmaReadCalls = 0;
-std::vector<std::string> gdromPathSamples;
+std::map<uintptr_t, u64> gdromCallerCounts;
 std::vector<std::string> gdromSectorReadSamples;
 u64 gdromTransferWatchOverlaps = 0;
 std::vector<std::string> gdromTransferSamples;
@@ -88,11 +86,10 @@ void writeDiagnostics()
     output << "GD-ROM sector read calls (all transfer modes): " << gdromSectorReadCalls << "\n";
     output << "GD-ROM sectors requested: " << gdromSectorsRead << "\n";
     output << "GD-ROM PIO data words consumed: " << gdromPioDataWords << "\n";
-    output << "GD-ROM path calls: CDDA=" << gdromCddaReadCalls
-           << " PIO=" << gdromPioReadCalls << " DMA=" << gdromDmaReadCalls << "\n";
-    output << "GD-ROM path samples (first " << gdromPathSamples.size() << "):\n";
-    for (const std::string &sample : gdromPathSamples)
-        output << "  " << sample << "\n";
+    output << "GD-ROM host caller return addresses:\n";
+    for (const auto &entry : gdromCallerCounts)
+        output << "  0x" << std::hex << entry.first << std::dec
+               << " calls=" << entry.second << "\n";
     output << "GD-ROM sector read samples (first " << gdromSectorReadSamples.size() << "):\n";
     for (const std::string &sample : gdromSectorReadSamples)
         output << "  " << sample << "\n";
@@ -336,39 +333,23 @@ void vf3TraceGdromTransfer(u32 destination, u32 size, u32 startFad, u32 sectorSi
     writeWord(remainingSectors);
 }
 
-void vf3TraceGdromSectorRead(const u8 *buffer, u32 startFad, u32 sectorCount, u32 sectorSize, bool stopOnMiss)
+void vf3TraceGdromSectorRead(const u8 *buffer, u32 startFad, u32 sectorCount, u32 sectorSize, bool stopOnMiss, uintptr_t caller)
 {
     if (traceFile == nullptr || sectorCount == 0)
         return;
 
     ++gdromSectorReadCalls;
     gdromSectorsRead += sectorCount;
+    ++gdromCallerCounts[caller];
     if (gdromSectorReadSamples.size() < 64)
     {
         std::ostringstream sample;
         sample << "FAD=" << startFad << " sectors=" << sectorCount
                << " sector_size=" << sectorSize
                << " stop_on_miss=" << (stopOnMiss ? 1 : 0)
-               << " host_buffer=" << static_cast<const void *>(buffer);
+               << " host_buffer=" << static_cast<const void *>(buffer)
+               << " caller=0x" << std::hex << caller;
         gdromSectorReadSamples.push_back(sample.str());
-    }
-}
-
-void vf3TraceGdromReadPath(const char *path, u32 startFad, u32 sectorCount, u32 sectorSize)
-{
-    if (traceFile == nullptr)
-        return;
-    const std::string kind(path);
-    if (kind == "CDDA") ++gdromCddaReadCalls;
-    else if (kind == "PIO") ++gdromPioReadCalls;
-    else if (kind == "DMA") ++gdromDmaReadCalls;
-    if (gdromPathSamples.size() < 128)
-    {
-        std::ostringstream sample;
-        sample << kind << " FAD=" << startFad << " sectors=" << sectorCount
-               << " sector_size=" << sectorSize
-               << " guest_PC=0x" << std::hex << (Sh4cntx.pc - 2);
-        gdromPathSamples.push_back(sample.str());
     }
 }
 
