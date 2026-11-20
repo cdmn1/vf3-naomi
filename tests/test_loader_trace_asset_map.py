@@ -68,11 +68,11 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
              "sectors": 5, "word_index": 0},
         ]
         memory = [
-            {"pc": 0x8C09D6F4, "access": "R", "address": 0x0C5F5736,
+            {"pack": "MTAKIPAI.BIN", "pc": 0x8C09D6F4, "access": "R", "address": 0x0C5F5736,
              "width": 1, "word_index": 10},
-            {"pc": 0x8C09D70A, "access": "R", "address": 0x0C5F575B,
+            {"pack": "MTAKIPAI.BIN", "pc": 0x8C09D70A, "access": "R", "address": 0x0C5F575B,
              "width": 1, "word_index": 20},
-            {"pc": 0x8C09D6F4, "access": "R", "address": 0x0C5F6736,
+            {"pack": "MTAKIPAI.BIN", "pc": 0x8C09D6F4, "access": "R", "address": 0x0C5F6736,
              "width": 1, "word_index": 30},
         ]
         candidates = infer_primary_records(rows, memory)
