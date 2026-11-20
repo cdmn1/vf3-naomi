@@ -26,6 +26,9 @@ std::vector<u64> pcWatchHits;
 std::vector<MemoryRange> memoryWatches;
 std::map<u32, u64> executedPcPages;
 u64 instructionCount = 0;
+u64 gdromTransferCalls = 0;
+u64 gdromTransferWatchOverlaps = 0;
+std::vector<std::string> gdromTransferSamples;
 std::string diagnosticsPath;
 std::string initializationStatus = "not initialized";
 
@@ -73,6 +76,11 @@ void writeDiagnostics()
     output << "VF3 Flycast trace diagnostics\n";
     output << "Initialization: " << initializationStatus << "\n";
     output << "Executed SH-4 instructions: " << instructionCount << "\n";
+    output << "GD-ROM DMA hook calls: " << gdromTransferCalls << "\n";
+    output << "GD-ROM DMA calls overlapping watched memory: " << gdromTransferWatchOverlaps << "\n";
+    output << "GD-ROM DMA samples (first " << gdromTransferSamples.size() << "):\n";
+    for (const std::string &sample : gdromTransferSamples)
+        output << "  " << sample << "\n";
     output << "PC watchpoints:\n";
     for (size_t i = 0; i < pcWatches.size(); ++i)
         output << "  0x" << std::hex << pcWatches[i] << std::dec
@@ -270,6 +278,17 @@ void vf3TraceGdromTransfer(u32 destination, u32 size, u32 startFad, u32 sectorSi
     if (traceFile == nullptr || size == 0)
         return;
 
+    ++gdromTransferCalls;
+    if (gdromTransferSamples.size() < 64)
+    {
+        std::ostringstream sample;
+        sample << "dst=0x" << std::hex << destination << std::dec
+               << " bytes=" << size << " FAD=" << startFad
+               << " sector_size=" << sectorSize
+               << " remaining_sectors=" << remainingSectors;
+        gdromTransferSamples.push_back(sample.str());
+    }
+
     const u64 start = normalizeAddress(destination);
     const u64 end = start + size;
     bool overlapsWatch = false;
@@ -285,6 +304,8 @@ void vf3TraceGdromTransfer(u32 destination, u32 size, u32 startFad, u32 sectorSi
     }
     if (!overlapsWatch)
         return;
+
+    ++gdromTransferWatchOverlaps;
 
     // FA21: GD-ROM DMA block: destination, byte count, starting FAD,
     // sector size and remaining sectors before this chunk was fetched.
