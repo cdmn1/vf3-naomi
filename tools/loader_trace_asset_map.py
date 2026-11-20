@@ -18,6 +18,8 @@ FA22_WORDS = 9
 FA20_WORDS = 4
 MT_WINDOW_START = 0x0C5F0000
 MT_WINDOW_END = 0x0C860000
+MT_SLOT_TABLE_BYTES = 0x8AC0
+MT_SLOT_LOOKUP_PCS = {0x8C09D5CE, 0x8C09D5D2, 0x8C09D5DA}
 
 
 def normalize(address: int) -> int:
@@ -91,6 +93,7 @@ def load_assets(path: Path) -> list[dict[str, int | str]]:
             "name": row["asset_name"],
             "start_lba": lba,
             "end_lba": lba + math.ceil(size / SECTOR_BYTES),
+            "size_bytes": size,
         })
     return assets
 
@@ -185,6 +188,44 @@ def summarize_memory_pcs(motion_memory):
     return output
 
 
+def summarize_mt_slot_lookups(rows, motion_memory):
+    """Map observed reads of the MT 8880-entry slot table to slot IDs."""
+    pack_info = {}
+    for name in {str(r["asset"]) for r in rows
+                 if str(r["asset"]).startswith("MT") and str(r["asset"]).endswith(".BIN")}:
+        group = [r for r in rows if str(r["asset"]) == name]
+        pack_info[name] = {
+            "start": min(int(r["destination"]) for r in group),
+            "size": max(int(r.get("asset_size_bytes", 0)) for r in group),
+        }
+    lookups = Counter()
+    pcs = defaultdict(Counter)
+    for event in motion_memory:
+        pc = canonical(int(event["pc"]))
+        if pc not in MT_SLOT_LOOKUP_PCS or event["access"] != "R" or int(event["width"]) != 4:
+            continue
+        pack = str(event["pack"])
+        if pack not in pack_info:
+            continue
+        relative = normalize(int(event["address"])) - pack_info[pack]["start"]
+        if relative < 0 or relative >= MT_SLOT_TABLE_BYTES or relative % 4:
+            continue
+        slot = relative // 4
+        offset = int(event["value"]) & 0xFFFFFFFF
+        if offset <= 0 or offset >= pack_info[pack]["size"]:
+            continue
+        key = (pack, slot, offset)
+        lookups[key] += 1
+        pcs[key][pc] += 1
+    output = []
+    for (pack, slot, offset), count in sorted(lookups.items()):
+        output.append({
+            "pack": pack, "slot": slot, "file_offset": offset, "reads": count,
+            "pcs": ";".join(f"0x{pc:08X}:{n}" for pc, n in sorted(pcs[(pack, slot, offset)].items())),
+        })
+    return output
+
+
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
@@ -255,6 +296,27 @@ def make_report(
     else:
         lines.append("No watched CPU accesses overlapped the loaded motion-pack payloads after each load.")
 
+    slot_lookups = summarize_mt_slot_lookups(rows, motion_memory)
+    lines.extend(["", "## MT slot-table lookups observed during motion setup", ""])
+    if slot_lookups:
+        lines.extend([
+            "| Pack | Slot ID | File record offset | Reads | PCs |",
+            "|---|---:|---:|---:|---|",
+        ])
+        for row in slot_lookups:
+            lines.append(
+                f"| {row['pack']} | {row['slot']} | 0x{int(row['file_offset']):X} | "
+                f"{row['reads']} | {row['pcs']} |"
+            )
+        lines.append("")
+        lines.append(
+            "Slot IDs are computed from each 32-bit table-read address relative "
+            "to the pack transfer destination (4-byte entries). The returned "
+            "value is the file-relative record offset."
+        )
+    else:
+        lines.append("No valid 32-bit reads from the MT slot-table range were identified at the setup PCs.")
+
     pc_summary = summarize_memory_pcs(motion_memory)
     lines.extend(["", "## Memory-access summary by PC", ""])
     if pc_summary:
@@ -312,6 +374,12 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(motion_memory)
 
+    slot_lookups = summarize_mt_slot_lookups(rows, motion_memory)
+    with (output_dir / "mt_slot_lookups.csv").open("w", newline="", encoding="utf-8") as handle:
+        fields = ["pack", "slot", "file_offset", "reads", "pcs"]
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(slot_lookups)
     pc_summary = summarize_memory_pcs(motion_memory)
     with (output_dir / "memory_pc_summary.csv").open("w", newline="", encoding="utf-8") as handle:
         fields = ["pack", "pc", "reads", "writes", "unique_addresses",
