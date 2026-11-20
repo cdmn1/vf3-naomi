@@ -158,6 +158,47 @@ def correlate_motion_memory(
     return output
 
 
+
+# Fixed record-relative byte streams used by the SH-4 motion evaluator.
+PRIMARY_RECORD_READS = {
+    0x8C09D6F4: ("counts", 0x736),
+    0x8C09D70A: ("times", 0x75B),
+}
+
+
+def infer_primary_records(rows, motion_memory):
+    """Infer primary MT record bases from fixed evaluator cursor offsets."""
+    pack_ranges = {}
+    for name in {str(r["asset"]) for r in rows
+                 if str(r["asset"]).startswith("MT") and str(r["asset"]).endswith(".BIN")}:
+        group = [r for r in rows if str(r["asset"]) == name]
+        start = min(int(r["destination"]) for r in group)
+        end = max(int(r["destination"]) + int(r["sectors"]) * SECTOR_BYTES for r in group)
+        pack_ranges[name] = (start, end)
+    counts = defaultdict(Counter)
+    for event in motion_memory:
+        spec = PRIMARY_RECORD_READS.get(int(event["pc"]))
+        if not spec or event["access"] != "R":
+            continue
+        stream, delta = spec
+        address = normalize(int(event["address"]))
+        for pack, (start, end) in pack_ranges.items():
+            base = address - delta
+            if start <= base < end and address < end:
+                counts[(pack, base)][stream] += 1
+    output = []
+    for (pack, base), streams in sorted(counts.items()):
+        start, _ = pack_ranges[pack]
+        output.append({
+            "pack": pack, "record_base": base,
+            "canonical_record_base": canonical(base),
+            "pack_relative_offset": base - start,
+            "counts_reads": streams["counts"], "times_reads": streams["times"],
+            "both_streams_seen": int(streams["counts"] > 0 and streams["times"] > 0),
+        })
+    return output
+
+
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
