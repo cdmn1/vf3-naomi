@@ -132,6 +132,26 @@ def summarize(pc_path: Path, memory_path: Path) -> str:
             regs = " ".join(f"{name}={row.get(name, '?')}" for name in REGISTER_FIELDS)
             lines.append(f"    word {row['word_index']}: {regs}")
 
+    context_pcs = {
+        normalize(0x8C09D5AE): "motion_id_row_lookup",
+        normalize(0x8C09D5CE): "mt_slot_lookup_B",
+        normalize(0x8C09D5D2): "mt_slot_lookup_A",
+        normalize(0x8C09D5DA): "mt_slot_lookup_C",
+        normalize(0x8C09D690): "mt_evaluator_entry",
+        normalize(0x8C09D69A): "mt_linked_record_helper",
+    }
+    lines.extend(["", "R9 context-pointer candidates (not actor identities):"])
+    for pc, label in context_pcs.items():
+        hits = [row for row in probes if normalize(number(row["pc"], "pc", pc_path)) == pc]
+        if not hits:
+            continue
+        by_r9 = Counter(row.get("r9", "?") for row in hits)
+        rendered = ", ".join(f"{pointer} ({count})" for pointer, count in by_r9.most_common())
+        lines.append(f"  {label}: {rendered}")
+    lines.append(
+        "  Note: R9 is reported as an opaque register value; these counts do not establish actor ownership."
+    )
+
     lines.extend(["", "Memory accesses by watched range:"])
     for label, counts in by_range.items():
         lines.append(f"  {label}: R={counts['R']} W={counts['W']}")
