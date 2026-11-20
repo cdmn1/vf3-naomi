@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from tools.loader_trace_asset_map import (
-    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, make_report,
+    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, make_report, summarize_mt_slot_lookups,
 )
 
 
@@ -61,6 +61,25 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
         self.assertIn("MTAKIPAI.BIN", report)
         self.assertIn("0x0C5F0000", report)
 
+
+    def test_maps_mt_slot_table_reads_to_slot_ids(self) -> None:
+        rows = [
+            {"asset": "MTAKIPAI.BIN", "destination": 0x0C5F4000,
+             "sectors": 5, "word_index": 0, "asset_size_bytes": 1_572_408},
+        ]
+        memory = [
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D5D2, "access": "R",
+             "width": 4, "address": 0x0C5F41BC, "value": 0x98DD8},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09DCE0, "access": "R",
+             "width": 4, "address": 0x0C5F41BC, "value": 0x98DD8},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D5CE, "access": "R",
+             "width": 4, "address": 0x0C5F41C0, "value": 0x98DF4},
+        ]
+        lookups = summarize_mt_slot_lookups(rows, memory)
+        self.assertEqual(
+            [(row["slot"], row["file_offset"], row["reads"]) for row in lookups],
+            [(111, 0x98DD8, 1), (112, 0x98DF4, 1)],
+        )
 
     def test_transfer_crossing_asset_boundary_is_marked_overlap(self) -> None:
         assets = [
