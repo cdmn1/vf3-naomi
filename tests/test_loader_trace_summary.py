@@ -65,6 +65,26 @@ class LoaderTraceSummaryTests(unittest.TestCase):
         self.assertIn("r4=0x8C1069BC", report)
         self.assertIn("r5=0x00000014", report)
 
+    def test_reports_r9_context_pointer_candidates_without_actor_claim(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            pc = Path(tmp) / "trace.pc.csv"
+            mem = Path(tmp) / "trace.memory.csv"
+            fields = ["word_index", "pc", "r9"]
+            with pc.open("w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields)
+                w.writeheader()
+                w.writerow(dict(word_index="0", pc="0x8C09D5AE", r9="0x0C29BCC4"))
+                w.writerow(dict(word_index="8", pc="0x8C09D690", r9="0x0C29BCC4"))
+                w.writerow(dict(word_index="16", pc="0x8C09D690", r9="0x0C29B864"))
+            with mem.open("w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=["word_index", "pc", "access", "width", "address", "value"])
+                w.writeheader()
+            report = summarize(pc, mem)
+        self.assertIn("R9 context-pointer candidates (not actor identities)", report)
+        self.assertIn("0x0C29BCC4 (1)", report)
+        self.assertIn("0x0C29BCC4 (1), 0x0C29B864 (1)", report)
+        self.assertIn("do not establish actor ownership", report)
+
     def test_normalizes_interpreter_and_p2_aliases(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             pc = Path(tmp) / "trace.pc.csv"
