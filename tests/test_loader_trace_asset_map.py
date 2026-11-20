@@ -61,6 +61,28 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
         self.assertIn("MTAKIPAI.BIN", report)
         self.assertIn("0x0C5F0000", report)
 
+
+    def test_infers_primary_record_base_from_count_and_time_streams(self) -> None:
+        rows = [
+            {"asset": "MTAKIPAI.BIN", "destination": 0x0C5F4000,
+             "sectors": 5, "word_index": 0},
+        ]
+        memory = [
+            {"pc": 0x8C09D6F4, "access": "R", "address": 0x0C600736,
+             "width": 1, "word_index": 10},
+            {"pc": 0x8C09D70A, "access": "R", "address": 0x0C60075B,
+             "width": 1, "word_index": 20},
+            {"pc": 0x8C09D6F4, "access": "R", "address": 0x0C601736,
+             "width": 1, "word_index": 30},
+        ]
+        candidates = infer_primary_records(rows, memory)
+        by_base = {row["record_base"]: row for row in candidates}
+        self.assertEqual(by_base[0x0C600000]["counts_reads"], 1)
+        self.assertEqual(by_base[0x0C600000]["times_reads"], 1)
+        self.assertEqual(by_base[0x0C600000]["both_streams_seen"], 1)
+        self.assertEqual(by_base[0x0C601000]["counts_reads"], 1)
+        self.assertEqual(by_base[0x0C601000]["times_reads"], 0)
+
     def test_transfer_crossing_asset_boundary_is_marked_overlap(self) -> None:
         assets = [
             {"name": "A.BIN", "start_lba": 100, "end_lba": 102},
