@@ -1,0 +1,1111 @@
+VF3 Flycast trace diagnostics
+Initialization: watch file loaded
+Executed SH-4 instructions: 1517594110
+GD-ROM DMA hook calls: 0
+GD-ROM sector read calls (all transfer modes): 2139
+GD-ROM sectors requested: 10509
+GD-ROM PIO data words consumed: 0
+REIOS HLE sector transfers: 2136
+REIOS HLE sectors transferred: 10491
+REIOS HLE nonzero bytes observed: 17733028
+REIOS HLE destination pages (4 KiB):
+  0xc2a6000 transfers=12
+  0xc320000 transfers=1
+  0xc322000 transfers=1
+  0xc325000 transfers=1
+  0xc327000 transfers=1
+  0xc328000 transfers=1
+  0xc32a000 transfers=1
+  0xc32d000 transfers=1
+  0xc32f000 transfers=1
+  0xc332000 transfers=1
+  0xc334000 transfers=1
+  0xc337000 transfers=1
+  0xc339000 transfers=1
+  0xc33c000 transfers=1
+  0xc350000 transfers=2
+  0xc352000 transfers=2
+  0xc355000 transfers=2
+  0xc357000 transfers=2
+  0xc35a000 transfers=2
+  0xc35c000 transfers=2
+  0xc35f000 transfers=2
+  0xc361000 transfers=2
+  0xc364000 transfers=3
+  0xc366000 transfers=3
+  0xc369000 transfers=3
+  0xc36b000 transfers=3
+  0xc36e000 transfers=3
+  0xc370000 transfers=3
+  0xc373000 transfers=3
+  0xc375000 transfers=3
+  0xc378000 transfers=3
+  0xc37a000 transfers=3
+  0xc37d000 transfers=3
+  0xc37f000 transfers=3
+  0xc382000 transfers=3
+  0xc384000 transfers=3
+  0xc387000 transfers=3
+  0xc389000 transfers=3
+  0xc38c000 transfers=3
+  0xc38e000 transfers=3
+  0xc391000 transfers=3
+  0xc393000 transfers=3
+  0xc396000 transfers=3
+  0xc398000 transfers=3
+  0xc39b000 transfers=3
+  0xc39d000 transfers=3
+  0xc3a0000 transfers=3
+  0xc3a2000 transfers=3
+  0xc3a5000 transfers=3
+  0xc3a7000 transfers=3
+  0xc3aa000 transfers=3
+  0xc3ac000 transfers=3
+  0xc3af000 transfers=3
+  0xc3b1000 transfers=2
+  0xc3b4000 transfers=2
+  0xc3b6000 transfers=2
+  0xc3b9000 transfers=2
+  0xc3bb000 transfers=2
+  0xc3d0000 transfers=2
+  0xc3d3000 transfers=2
+  0xc3d5000 transfers=2
+  0xc3d8000 transfers=2
+  0xc3da000 transfers=2
+  0xc3dd000 transfers=2
+  0xc3df000 transfers=2
+  0xc3e2000 transfers=2
+  0xc3e4000 transfers=2
+  0xc3e7000 transfers=2
+  0xc3e9000 transfers=2
+  0xc3ec000 transfers=2
+  0xc3ee000 transfers=2
+  0xc3f1000 transfers=2
+  0xc3f3000 transfers=2
+  0xc3f5000 transfers=1
+  0xc3f6000 transfers=2
+  0xc3f7000 transfers=1
+  0xc3f9000 transfers=1
+  0xc3fa000 transfers=1
+  0xc3fb000 transfers=1
+  0xc3fc000 transfers=1
+  0xc3fe000 transfers=1
+  0xc3ff000 transfers=1
+  0xc400000 transfers=1
+  0xc401000 transfers=1
+  0xc403000 transfers=1
+  0xc404000 transfers=1
+  0xc405000 transfers=1
+  0xc406000 transfers=1
+  0xc408000 transfers=1
+  0xc409000 transfers=1
+  0xc40a000 transfers=1
+  0xc40b000 transfers=1
+  0xc40d000 transfers=1
+  0xc40e000 transfers=1
+  0xc40f000 transfers=1
+  0xc410000 transfers=1
+  0xc412000 transfers=1
+  0xc413000 transfers=1
+  0xc414000 transfers=1
+  0xc415000 transfers=1
+  0xc417000 transfers=1
+  0xc418000 transfers=1
+  0xc419000 transfers=1
+  0xc41a000 transfers=1
+  0xc41c000 transfers=1
+  0xc41d000 transfers=1
+  0xc41e000 transfers=1
+  0xc41f000 transfers=1
+  0xc421000 transfers=1
+  0xc422000 transfers=1
+  0xc423000 transfers=1
+  0xc424000 transfers=1
+  0xc426000 transfers=1
+  0xc427000 transfers=1
+  0xc428000 transfers=1
+  0xc429000 transfers=1
+  0xc42b000 transfers=1
+  0xc42c000 transfers=1
+  0xc42d000 transfers=1
+  0xc42e000 transfers=1
+  0xc430000 transfers=1
+  0xc431000 transfers=1
+  0xc432000 transfers=1
+  0xc433000 transfers=1
+  0xc435000 transfers=1
+  0xc436000 transfers=1
+  0xc437000 transfers=1
+  0xc43a000 transfers=1
+  0xc43c000 transfers=1
+  0xc43f000 transfers=1
+  0xc441000 transfers=1
+  0xc444000 transfers=1
+  0xc446000 transfers=1
+  0xc451000 transfers=2
+  0xc453000 transfers=2
+  0xc456000 transfers=2
+  0xc458000 transfers=2
+  0xc45b000 transfers=2
+  0xc45d000 transfers=2
+  0xc460000 transfers=2
+  0xc462000 transfers=2
+  0xc465000 transfers=2
+  0xc467000 transfers=2
+  0xc46a000 transfers=2
+  0xc46c000 transfers=2
+  0xc46f000 transfers=2
+  0xc471000 transfers=2
+  0xc474000 transfers=2
+  0xc476000 transfers=2
+  0xc479000 transfers=2
+  0xc47b000 transfers=2
+  0xc47e000 transfers=2
+  0xc480000 transfers=2
+  0xc483000 transfers=2
+  0xc485000 transfers=2
+  0xc488000 transfers=2
+  0xc48a000 transfers=2
+  0xc48d000 transfers=2
+  0xc48f000 transfers=2
+  0xc492000 transfers=2
+  0xc494000 transfers=2
+  0xc497000 transfers=2
+  0xc499000 transfers=2
+  0xc49c000 transfers=2
+  0xc49e000 transfers=2
+  0xc4a1000 transfers=2
+  0xc4a3000 transfers=1
+  0xc5ca000 transfers=2
+  0xc5cd000 transfers=2
+  0xc5cf000 transfers=2
+  0xc5d2000 transfers=2
+  0xc5d4000 transfers=2
+  0xc5d7000 transfers=2
+  0xc5d9000 transfers=2
+  0xc5dc000 transfers=2
+  0xc5de000 transfers=2
+  0xc5e1000 transfers=2
+  0xc5e3000 transfers=2
+  0xc5e6000 transfers=2
+  0xc5e8000 transfers=2
+  0xc5eb000 transfers=2
+  0xc5ed000 transfers=2
+  0xc5f0000 transfers=2
+  0xc5f2000 transfers=2
+  0xc5f4000 transfers=2
+  0xc5f6000 transfers=2
+  0xc5f9000 transfers=2
+  0xc5fb000 transfers=2
+  0xc5fe000 transfers=2
+  0xc600000 transfers=2
+  0xc603000 transfers=2
+  0xc605000 transfers=2
+  0xc608000 transfers=2
+  0xc60a000 transfers=2
+  0xc60d000 transfers=2
+  0xc60f000 transfers=2
+  0xc612000 transfers=2
+  0xc614000 transfers=2
+  0xc617000 transfers=2
+  0xc619000 transfers=2
+  0xc61c000 transfers=2
+  0xc61e000 transfers=2
+  0xc621000 transfers=2
+  0xc623000 transfers=2
+  0xc626000 transfers=2
+  0xc628000 transfers=2
+  0xc62b000 transfers=2
+  0xc62d000 transfers=2
+  0xc630000 transfers=2
+  0xc632000 transfers=2
+  0xc635000 transfers=2
+  0xc637000 transfers=2
+  0xc63a000 transfers=2
+  0xc63c000 transfers=2
+  0xc63f000 transfers=2
+  0xc641000 transfers=2
+  0xc644000 transfers=2
+  0xc646000 transfers=2
+  0xc649000 transfers=2
+  0xc64b000 transfers=2
+  0xc64e000 transfers=2
+  0xc650000 transfers=2
+  0xc653000 transfers=2
+  0xc655000 transfers=2
+  0xc658000 transfers=2
+  0xc65a000 transfers=2
+  0xc65d000 transfers=2
+  0xc65f000 transfers=2
+  0xc662000 transfers=2
+  0xc664000 transfers=2
+  0xc667000 transfers=2
+  0xc669000 transfers=2
+  0xc66c000 transfers=2
+  0xc66e000 transfers=2
+  0xc671000 transfers=2
+  0xc673000 transfers=2
+  0xc676000 transfers=2
+  0xc678000 transfers=2
+  0xc67b000 transfers=2
+  0xc67d000 transfers=2
+  0xc680000 transfers=2
+  0xc682000 transfers=2
+  0xc685000 transfers=2
+  0xc687000 transfers=2
+  0xc68a000 transfers=2
+  0xc68c000 transfers=2
+  0xc68f000 transfers=2
+  0xc691000 transfers=2
+  0xc694000 transfers=2
+  0xc696000 transfers=2
+  0xc699000 transfers=2
+  0xc69b000 transfers=2
+  0xc69e000 transfers=2
+  0xc6a0000 transfers=2
+  0xc6a3000 transfers=2
+  0xc6a5000 transfers=2
+  0xc6a8000 transfers=2
+  0xc6aa000 transfers=2
+  0xc6ad000 transfers=2
+  0xc6af000 transfers=2
+  0xc6b2000 transfers=2
+  0xc6b4000 transfers=2
+  0xc6b7000 transfers=2
+  0xc6b9000 transfers=2
+  0xc6bc000 transfers=2
+  0xc6be000 transfers=2
+  0xc6c1000 transfers=2
+  0xc6c3000 transfers=2
+  0xc6c6000 transfers=2
+  0xc6c8000 transfers=2
+  0xc6cb000 transfers=2
+  0xc6cd000 transfers=2
+  0xc6d0000 transfers=2
+  0xc6d2000 transfers=2
+  0xc6d5000 transfers=2
+  0xc6d7000 transfers=2
+  0xc6da000 transfers=2
+  0xc6dc000 transfers=2
+  0xc6df000 transfers=2
+  0xc6e1000 transfers=2
+  0xc6e4000 transfers=2
+  0xc6e6000 transfers=2
+  0xc6e9000 transfers=2
+  0xc6eb000 transfers=2
+  0xc6ee000 transfers=2
+  0xc6f0000 transfers=2
+  0xc6f3000 transfers=2
+  0xc6f5000 transfers=2
+  0xc6f8000 transfers=2
+  0xc6fa000 transfers=2
+  0xc6fd000 transfers=2
+  0xc6ff000 transfers=2
+  0xc702000 transfers=2
+  0xc704000 transfers=2
+  0xc707000 transfers=2
+  0xc709000 transfers=2
+  0xc70c000 transfers=2
+  0xc70e000 transfers=2
+  0xc711000 transfers=2
+  0xc713000 transfers=2
+  0xc716000 transfers=2
+  0xc718000 transfers=2
+  0xc71b000 transfers=2
+  0xc71d000 transfers=2
+  0xc720000 transfers=2
+  0xc722000 transfers=2
+  0xc725000 transfers=2
+  0xc727000 transfers=2
+  0xc72a000 transfers=2
+  0xc72c000 transfers=2
+  0xc72f000 transfers=2
+  0xc731000 transfers=2
+  0xc734000 transfers=2
+  0xc736000 transfers=2
+  0xc739000 transfers=2
+  0xc73b000 transfers=2
+  0xc73e000 transfers=2
+  0xc740000 transfers=2
+  0xc743000 transfers=2
+  0xc745000 transfers=2
+  0xc748000 transfers=2
+  0xc74a000 transfers=2
+  0xc74d000 transfers=2
+  0xc74f000 transfers=2
+  0xc752000 transfers=2
+  0xc754000 transfers=2
+  0xc757000 transfers=2
+  0xc759000 transfers=2
+  0xc75c000 transfers=2
+  0xc75e000 transfers=2
+  0xc761000 transfers=2
+  0xc763000 transfers=2
+  0xc766000 transfers=2
+  0xc768000 transfers=2
+  0xc76b000 transfers=2
+  0xc76d000 transfers=2
+  0xc770000 transfers=2
+  0xc772000 transfers=2
+  0xc775000 transfers=1
+  0xc777000 transfers=1
+  0xc77a000 transfers=1
+  0xc77c000 transfers=1
+  0xc77f000 transfers=1
+  0xc781000 transfers=1
+  0xc784000 transfers=1
+  0xc786000 transfers=1
+  0xc789000 transfers=1
+  0xc78b000 transfers=1
+  0xc78e000 transfers=1
+  0xc790000 transfers=1
+  0xc828000 transfers=12
+  0xc82b000 transfers=12
+  0xc82d000 transfers=12
+  0xc830000 transfers=12
+  0xc832000 transfers=12
+  0xc835000 transfers=12
+  0xc837000 transfers=12
+  0xc83a000 transfers=12
+  0xc83c000 transfers=12
+  0xc83f000 transfers=12
+  0xc841000 transfers=12
+  0xc844000 transfers=12
+  0xc846000 transfers=12
+  0xc849000 transfers=12
+  0xc84b000 transfers=12
+  0xc84e000 transfers=12
+  0xc850000 transfers=12
+  0xc853000 transfers=12
+  0xc855000 transfers=12
+  0xc858000 transfers=12
+  0xc85a000 transfers=12
+  0xc85d000 transfers=12
+  0xc85f000 transfers=12
+  0xc862000 transfers=12
+  0xc864000 transfers=12
+  0xc867000 transfers=12
+  0xc869000 transfers=9
+  0xc86c000 transfers=9
+  0xc86e000 transfers=9
+  0xc871000 transfers=9
+  0xc873000 transfers=9
+  0xc876000 transfers=9
+  0xc878000 transfers=9
+  0xc87b000 transfers=9
+  0xc87d000 transfers=9
+  0xc880000 transfers=9
+  0xc882000 transfers=9
+  0xc885000 transfers=9
+  0xc887000 transfers=9
+  0xc88a000 transfers=9
+  0xc88c000 transfers=9
+  0xc88f000 transfers=9
+  0xc891000 transfers=9
+  0xc894000 transfers=9
+  0xc896000 transfers=9
+  0xc899000 transfers=9
+  0xc89b000 transfers=9
+  0xc89e000 transfers=9
+  0xc8a0000 transfers=9
+  0xc8a3000 transfers=9
+  0xc8a5000 transfers=9
+  0xc8a8000 transfers=9
+  0xc8aa000 transfers=5
+  0xc8ad000 transfers=5
+  0xc8af000 transfers=5
+  0xc8b2000 transfers=5
+  0xc8b4000 transfers=5
+  0xc8b7000 transfers=5
+  0xc8b9000 transfers=5
+  0xc8bc000 transfers=5
+  0xc8be000 transfers=5
+  0xc8c1000 transfers=4
+  0xc8c3000 transfers=4
+  0xc8c6000 transfers=4
+  0xc8c8000 transfers=4
+  0xc8cb000 transfers=4
+  0xc8cd000 transfers=4
+  0xc8d0000 transfers=4
+  0xc8d2000 transfers=4
+  0xc8d5000 transfers=4
+  0xc8d7000 transfers=4
+  0xc8da000 transfers=4
+  0xc8dc000 transfers=4
+  0xc8df000 transfers=4
+  0xc8e1000 transfers=4
+  0xc8e4000 transfers=4
+  0xc8e6000 transfers=4
+  0xc8e9000 transfers=4
+  0xc8eb000 transfers=4
+  0xc8ee000 transfers=4
+  0xc8f0000 transfers=4
+  0xc8f3000 transfers=4
+  0xc8f5000 transfers=4
+  0xc8f8000 transfers=4
+  0xc8fa000 transfers=4
+  0xc8fd000 transfers=4
+  0xc8ff000 transfers=4
+  0xc902000 transfers=4
+  0xc904000 transfers=4
+  0xc907000 transfers=4
+  0xc909000 transfers=4
+  0xc90c000 transfers=4
+  0xc90e000 transfers=4
+  0xc911000 transfers=4
+  0xc913000 transfers=4
+  0xc916000 transfers=4
+  0xc918000 transfers=4
+  0xc91b000 transfers=4
+  0xc91d000 transfers=4
+  0xc920000 transfers=4
+  0xc922000 transfers=4
+  0xc925000 transfers=4
+  0xc927000 transfers=4
+  0xca2d000 transfers=1
+  0xca30000 transfers=1
+  0xca32000 transfers=1
+  0xca35000 transfers=1
+  0xca37000 transfers=1
+  0xca3a000 transfers=1
+  0xca3c000 transfers=1
+  0xca3f000 transfers=1
+  0xca41000 transfers=1
+  0xca44000 transfers=1
+  0xca46000 transfers=1
+  0xca49000 transfers=1
+  0xca4b000 transfers=1
+  0xca4e000 transfers=1
+  0xca50000 transfers=1
+  0xca53000 transfers=1
+  0xcaae000 transfers=10
+  0xcab1000 transfers=10
+  0xcab3000 transfers=9
+  0xcab6000 transfers=8
+  0xcab8000 transfers=8
+  0xcabb000 transfers=7
+  0xcabd000 transfers=6
+  0xcac0000 transfers=6
+  0xcac2000 transfers=6
+  0xcac5000 transfers=6
+  0xcac7000 transfers=6
+  0xcaca000 transfers=6
+  0xcacc000 transfers=6
+  0xcacf000 transfers=6
+  0xcad1000 transfers=6
+  0xcad4000 transfers=6
+  0xcad6000 transfers=6
+  0xcad9000 transfers=6
+  0xcadb000 transfers=5
+  0xcade000 transfers=5
+  0xcae0000 transfers=5
+  0xcae3000 transfers=5
+  0xcae5000 transfers=5
+  0xcae8000 transfers=5
+  0xcaea000 transfers=5
+  0xcaed000 transfers=5
+  0xcaef000 transfers=5
+  0xcaf2000 transfers=4
+  0xcaf4000 transfers=4
+  0xcaf7000 transfers=4
+  0xcaf9000 transfers=4
+  0xcafc000 transfers=4
+  0xcafe000 transfers=4
+  0xcb01000 transfers=4
+  0xcb03000 transfers=4
+  0xcb06000 transfers=4
+  0xcb08000 transfers=4
+  0xcb0b000 transfers=4
+  0xcb0d000 transfers=4
+  0xcb10000 transfers=4
+  0xcb12000 transfers=4
+  0xcb15000 transfers=4
+  0xcb17000 transfers=4
+  0xcb1a000 transfers=4
+  0xcb1c000 transfers=4
+  0xcb1f000 transfers=4
+  0xcb21000 transfers=4
+  0xcb24000 transfers=4
+  0xcb26000 transfers=4
+  0xcb29000 transfers=4
+  0xcb2b000 transfers=4
+  0xcb2e000 transfers=4
+  0xcb30000 transfers=4
+  0xcb33000 transfers=4
+  0xcb35000 transfers=4
+  0xcb38000 transfers=4
+  0xcb3a000 transfers=4
+  0xcb3d000 transfers=4
+  0xcb3f000 transfers=4
+  0xcb42000 transfers=4
+  0xcb44000 transfers=4
+  0xcb47000 transfers=4
+  0xcb49000 transfers=4
+  0xcb4c000 transfers=4
+  0xcb4e000 transfers=3
+  0xcb51000 transfers=3
+  0xcb53000 transfers=3
+  0xcb56000 transfers=3
+  0xcb58000 transfers=3
+  0xcb5b000 transfers=3
+  0xcb5d000 transfers=3
+  0xcb60000 transfers=3
+  0xcb62000 transfers=3
+  0xcb65000 transfers=3
+  0xcb67000 transfers=3
+  0xcb6a000 transfers=8
+  0xcb6c000 transfers=3
+  0xcb6d000 transfers=5
+  0xcb6f000 transfers=8
+  0xcb71000 transfers=3
+  0xcb72000 transfers=5
+  0xcb74000 transfers=8
+  0xcb76000 transfers=3
+  0xcb77000 transfers=5
+  0xcb79000 transfers=8
+  0xcb7b000 transfers=3
+  0xcb7c000 transfers=5
+  0xcb7e000 transfers=8
+  0xcb80000 transfers=3
+  0xcb81000 transfers=5
+  0xcb83000 transfers=7
+  0xcb84000 transfers=1
+  0xcb85000 transfers=3
+  0xcb86000 transfers=5
+  0xcb88000 transfers=6
+  0xcb89000 transfers=1
+  0xcb8a000 transfers=2
+  0xcb8b000 transfers=4
+  0xcb8d000 transfers=5
+  0xcb8e000 transfers=1
+  0xcb8f000 transfers=2
+  0xcb90000 transfers=2
+  0xcb92000 transfers=3
+  0xcb93000 transfers=1
+  0xcb94000 transfers=3
+  0xcb95000 transfers=1
+  0xcb96000 transfers=2
+  0xcb97000 transfers=3
+  0xcb98000 transfers=1
+  0xcb99000 transfers=5
+  0xcb9a000 transfers=1
+  0xcb9b000 transfers=2
+  0xcb9c000 transfers=2
+  0xcb9d000 transfers=1
+  0xcb9e000 transfers=4
+  0xcb9f000 transfers=1
+  0xcba0000 transfers=2
+  0xcba1000 transfers=2
+  0xcba2000 transfers=2
+  0xcba3000 transfers=4
+  0xcba4000 transfers=2
+  0xcba5000 transfers=2
+  0xcba6000 transfers=2
+  0xcba7000 transfers=5
+  0xcba8000 transfers=4
+  0xcba9000 transfers=3
+  0xcbaa000 transfers=5
+  0xcbab000 transfers=1
+  0xcbac000 transfers=5
+  0xcbad000 transfers=4
+  0xcbae000 transfers=3
+  0xcbaf000 transfers=5
+  0xcbb0000 transfers=1
+  0xcbb1000 transfers=5
+  0xcbb2000 transfers=4
+  0xcbb3000 transfers=4
+  0xcbb4000 transfers=5
+  0xcbb5000 transfers=2
+  0xcbb6000 transfers=5
+  0xcbb7000 transfers=4
+  0xcbb8000 transfers=4
+  0xcbb9000 transfers=5
+  0xcbba000 transfers=2
+  0xcbbb000 transfers=5
+  0xcbbc000 transfers=4
+  0xcbbd000 transfers=4
+  0xcbbe000 transfers=6
+  0xcbbf000 transfers=2
+  0xcbc0000 transfers=6
+  0xcbc1000 transfers=4
+  0xcbc2000 transfers=4
+  0xcbc3000 transfers=6
+  0xcbc4000 transfers=2
+  0xcbc5000 transfers=6
+  0xcbc6000 transfers=4
+  0xcbc7000 transfers=5
+  0xcbc8000 transfers=6
+  0xcbc9000 transfers=4
+  0xcbca000 transfers=6
+  0xcbcb000 transfers=5
+  0xcbcc000 transfers=5
+  0xcbcd000 transfers=4
+  0xcbce000 transfers=2
+  0xcbd1000 transfers=2
+  0xcbd3000 transfers=2
+  0xcbd6000 transfers=2
+  0xcbd8000 transfers=2
+  0xcbdb000 transfers=2
+  0xcbdd000 transfers=2
+  0xcbe0000 transfers=2
+  0xcbe2000 transfers=2
+  0xcbe5000 transfers=2
+  0xcbe7000 transfers=1
+  0xcbea000 transfers=1
+  0xcbec000 transfers=1
+  0xcbef000 transfers=1
+  0xcbf1000 transfers=1
+  0xcbf4000 transfers=1
+REIOS HLE FAD pages (256 sectors):
+  176 transfers=12
+  1673 transfers=21
+  1674 transfers=40
+  1675 transfers=11
+  1676 transfers=63
+  1677 transfers=104
+  1678 transfers=91
+  1679 transfers=41
+  1683 transfers=11
+  1684 transfers=52
+  1685 transfers=40
+  1690 transfers=28
+  1691 transfers=51
+  1692 transfers=52
+  1693 transfers=50
+  1713 transfers=2
+  1714 transfers=50
+  1721 transfers=2
+  1722 transfers=25
+  1723 transfers=25
+  1729 transfers=35
+  1730 transfers=16
+  1795 transfers=34
+  1796 transfers=51
+  1797 transfers=51
+  1798 transfers=18
+  1811 transfers=39
+  1812 transfers=52
+  1813 transfers=51
+  1814 transfers=24
+  2025 transfers=68
+  2026 transfers=2
+  2031 transfers=6
+  2032 transfers=28
+  2033 transfers=26
+  2041 transfers=33
+  2042 transfers=108
+  2049 transfers=17
+  2050 transfers=40
+  2059 transfers=13
+  2060 transfers=36
+  2071 transfers=8
+  2072 transfers=51
+  2074 transfers=28
+  2075 transfers=28
+  2081 transfers=26
+  2082 transfers=23
+  2092 transfers=12
+  2093 transfers=51
+  2094 transfers=1
+  2115 transfers=17
+  2116 transfers=51
+  2117 transfers=27
+  2124 transfers=40
+  2125 transfers=47
+  2127 transfers=32
+  2128 transfers=51
+  2129 transfers=17
+  2130 transfers=20
+  2131 transfers=40
+  2132 transfers=2
+  2133 transfers=10
+  2134 transfers=13
+  2135 transfers=16
+  2139 transfers=6
+REIOS HLE samples (first 96):
+  dst=0xc2a6300 FAD=45166 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=797 fnv1a=0x6bcc3807 first_word=0x30444301 last_word=0x0
+  dst=0xc2a6300 FAD=45170 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1497 fnv1a=0x65ce4960 first_word=0xafdc0022 last_word=0x0
+  dst=0xc2a6300 FAD=45171 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1407 fnv1a=0x9f3f88d7 first_word=0x8b33002e last_word=0x0
+  dst=0xc2a6300 FAD=45172 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1478 fnv1a=0x9b33d051 first_word=0xc0720030 last_word=0x0
+  dst=0xc2a6300 FAD=45173 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1504 fnv1a=0x475a8828 first_word=0xfd850030 last_word=0x0
+  dst=0xc2a6300 FAD=45174 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1552 fnv1a=0x25c53bda first_word=0xd6ea0030 last_word=0x0
+  dst=0xc2a6300 FAD=45175 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1553 fnv1a=0x3676fc94 first_word=0x5e830030 last_word=0x0
+  dst=0xc2a6300 FAD=45176 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1522 fnv1a=0xe6684a9b first_word=0xe6430030 last_word=0x0
+  dst=0xc2a6300 FAD=45177 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1506 fnv1a=0x469b6f09 first_word=0xf4c6002e last_word=0x0
+  dst=0xc2a6300 FAD=45178 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1467 fnv1a=0x1e3afbba first_word=0x14fc002c last_word=0x0
+  dst=0xc2a6300 FAD=45179 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=928 fnv1a=0x8a7eee6c first_word=0x5c28002e last_word=0x0
+  dst=0xc2a6340 FAD=45168 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=4 fnv1a=0x9557f26c first_word=0xafdc0001 last_word=0x0
+  dst=0xcaae800 FAD=547602 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=6889 fnv1a=0xb07f6b19 first_word=0xea000142 last_word=0xe0811002
+  dst=0xcab1000 FAD=547607 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7908 fnv1a=0xa72056ec first_word=0xe8bd8000 last_word=0xe59f41f4
+  dst=0xcab3800 FAD=547612 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7620 fnv1a=0x91896606 first_word=0xe3a03001 last_word=0x320000
+  dst=0xcab6000 FAD=547617 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=8528 fnv1a=0x4301b1c4 first_word=0x0 last_word=0x0
+  dst=0xcab8800 FAD=547622 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=0 fnv1a=0x5dacbdc5 first_word=0x0 last_word=0x0
+  dst=0xcabb000 FAD=547627 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=0 fnv1a=0xd2063dc5 first_word=0x0 last_word=0x0
+  dst=0xcaae800 FAD=533101 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=6752 fnv1a=0xfd41a699 first_word=0x4b505444 last_word=0xbbb581c8
+  dst=0xcab1000 FAD=533106 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10065 fnv1a=0x41e400d2 first_word=0x810d9840 last_word=0x4238bbd0
+  dst=0xcab3800 FAD=533111 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10107 fnv1a=0xf1bfa8b2 first_word=0x80e8b108 last_word=0xabf99526
+  dst=0xcab6000 FAD=533116 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10078 fnv1a=0xf556a110 first_word=0xab81428 last_word=0x4558bb0
+  dst=0xcab8800 FAD=533121 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1443 fnv1a=0x4ad8c1b4 first_word=0x9ca98ba9 last_word=0x0
+  dst=0xcaae800 FAD=533122 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5583 fnv1a=0x16626e35 first_word=0x4b505444 last_word=0x88c80243
+  dst=0xcab1000 FAD=533127 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9938 fnv1a=0xa30efa2e first_word=0x82411a82 last_word=0xf8e28408
+  dst=0xcab3800 FAD=533132 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10029 fnv1a=0x628a9c82 first_word=0x988a793f last_word=0xbaca3071
+  dst=0xcab6000 FAD=533137 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9955 fnv1a=0x17521724 first_word=0x352091b1 last_word=0xa291a3f2
+  dst=0xcab8800 FAD=533142 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9779 fnv1a=0xdca09a29 first_word=0x3c5b1881 last_word=0x18a88091
+  dst=0xcabb000 FAD=533147 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9975 fnv1a=0xc01653db first_word=0x9ffb3251 last_word=0x9fc809ba
+  dst=0xcabd800 FAD=533152 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9885 fnv1a=0x6b116ab4 first_word=0x904b8888 last_word=0x9a09191b
+  dst=0xcac0000 FAD=533157 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9864 fnv1a=0x997b1bdd first_word=0xb0b20203 last_word=0x2742011
+  dst=0xcac2800 FAD=533162 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9955 fnv1a=0x3c9ef257 first_word=0x878bb980 last_word=0x48198a01
+  dst=0xcac5000 FAD=533167 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9840 fnv1a=0xaa750524 first_word=0xcfe81112 last_word=0x12f33280
+  dst=0xcac7800 FAD=533172 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9867 fnv1a=0xaad4e8ff first_word=0x11097181 last_word=0x12253344
+  dst=0xcaca000 FAD=533177 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9936 fnv1a=0x9859adab first_word=0xaabbfba0 last_word=0x8bc0240d
+  dst=0xcacc800 FAD=533182 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10003 fnv1a=0xfee93a9 first_word=0x308cb133 last_word=0x43332783
+  dst=0xcacf000 FAD=533187 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9895 fnv1a=0xad25185a first_word=0x21333152 last_word=0x8112243
+  dst=0xcad1800 FAD=533192 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10052 fnv1a=0xdec806b5 first_word=0xccdabcaa last_word=0x1c23a1a0
+  dst=0xcad4000 FAD=533197 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9980 fnv1a=0x846b8ca4 first_word=0x88319948 last_word=0x4e28b1c4
+  dst=0xcad6800 FAD=533202 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9937 fnv1a=0x3ac9e702 first_word=0xc8949128 last_word=0x31ab9243
+  dst=0xcad9000 FAD=533207 sectors=1 virtual=0 direct=1 result=1 nonzero_bytes=1332 fnv1a=0x887c74ea first_word=0xaa988ef9 last_word=0x0
+  dst=0xcaae800 FAD=545440 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=3572 fnv1a=0xf187ae1 first_word=0x4b505444 last_word=0x1f24
+  dst=0xcab1000 FAD=545445 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=8456 fnv1a=0xc0ea5193 first_word=0x2000 last_word=0x29a9189
+  dst=0xcab3800 FAD=545450 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9970 fnv1a=0xc0fabb9f first_word=0x8000002b last_word=0x25dbabc0
+  dst=0xcab6000 FAD=545455 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10029 fnv1a=0x60128ff8 first_word=0x90ea841 last_word=0x99991677
+  dst=0xcab8800 FAD=545460 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10040 fnv1a=0x4f809f1c first_word=0xa8438ba0 last_word=0x172bb11d
+  dst=0xcabb000 FAD=545465 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10092 fnv1a=0x175cff2c first_word=0x6aa100aa last_word=0x82330c8
+  dst=0xcabd800 FAD=545470 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9958 fnv1a=0xf3f0b600 first_word=0x8dada11d last_word=0xa1e83c00
+  dst=0xcac0000 FAD=545475 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10009 fnv1a=0xbf88f1cc first_word=0x33899e00 last_word=0xa08261b2
+  dst=0xcac2800 FAD=545480 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10048 fnv1a=0xfeff34ab first_word=0x12911f33 last_word=0xcb898251
+  dst=0xcac5000 FAD=545485 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10131 fnv1a=0xc57aec79 first_word=0x21899170 last_word=0x3091017
+  dst=0xcac7800 FAD=545490 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9574 fnv1a=0xcebe75ef first_word=0xf0f1f6fc last_word=0x2aba172a
+  dst=0xcaca000 FAD=545495 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10161 fnv1a=0x6064240b first_word=0x8228c916 last_word=0xfacc036b
+  dst=0xcacc800 FAD=545500 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10002 fnv1a=0x3df6ba9a first_word=0xe229eded last_word=0xa5a2c381
+  dst=0xcacf000 FAD=545505 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10009 fnv1a=0xf270f5c8 first_word=0xb881d210 last_word=0xa8227382
+  dst=0xcad1800 FAD=545510 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=9971 fnv1a=0xeaabe07 first_word=0x2cb28e98 last_word=0x88888802
+  dst=0xcad4000 FAD=545515 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10037 fnv1a=0xb8fcc32c first_word=0x8108891 last_word=0xb14ac25c
+  dst=0xcad6800 FAD=545520 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10144 fnv1a=0x199d7f3e first_word=0x1d008000 last_word=0x9258cb01
+  dst=0xcad9000 FAD=545525 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10025 fnv1a=0x904a435e first_word=0x29fa248b last_word=0x2828fa00
+  dst=0xcadb800 FAD=545530 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10030 fnv1a=0xc0c67b1 first_word=0x2a01bc13 last_word=0xd912738a
+  dst=0xcade000 FAD=545535 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10068 fnv1a=0x1424f7e7 first_word=0x9812108c last_word=0x8b810071
+  dst=0xcae0800 FAD=545540 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10001 fnv1a=0xed92ff3f first_word=0x918f1203 last_word=0xe02bb170
+  dst=0xcae3000 FAD=545545 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10022 fnv1a=0x51693b04 first_word=0x9fb83591 last_word=0xa86b381d
+  dst=0xcae5800 FAD=545550 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10068 fnv1a=0x30a4ba8b first_word=0x9808073b last_word=0x1a908a06
+  dst=0xcae8000 FAD=545555 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10075 fnv1a=0x9aae0146 first_word=0x128e33b3 last_word=0xaccf9111
+  dst=0xcaea800 FAD=545560 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10084 fnv1a=0xc9fd1f78 first_word=0x2243208a last_word=0x3a9059b8
+  dst=0xcaed000 FAD=545565 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=10076 fnv1a=0xcd9cbb3f first_word=0x9b931c91 last_word=0xaf85b80a
+  dst=0xcaef800 FAD=545570 sectors=2 virtual=0 direct=1 result=2 nonzero_bytes=2771 fnv1a=0x99e60ce9 first_word=0x98cb0333 last_word=0x0
+  dst=0xc828800 FAD=428441 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4353 fnv1a=0x8640e520 first_word=0x80008000 last_word=0x0
+  dst=0xc82b000 FAD=428446 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4402 fnv1a=0xdeb1ceb7 first_word=0x0 last_word=0x80008000
+  dst=0xc82d800 FAD=428451 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=3436 fnv1a=0xcf8892fb first_word=0x0 last_word=0x0
+  dst=0xc830000 FAD=428456 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5485 fnv1a=0x6e1c6e31 first_word=0x0 last_word=0x0
+  dst=0xc832800 FAD=428461 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5775 fnv1a=0x75a0451a first_word=0x0 last_word=0x0
+  dst=0xc835000 FAD=428466 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=6843 fnv1a=0xb438743b first_word=0x0 last_word=0x0
+  dst=0xc837800 FAD=428471 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5823 fnv1a=0x92daee8 first_word=0x84018401 last_word=0x0
+  dst=0xc83a000 FAD=428476 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5466 fnv1a=0x8e4320e0 first_word=0x0 last_word=0x0
+  dst=0xc83c800 FAD=428481 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4688 fnv1a=0x145489ea first_word=0x0 last_word=0x0
+  dst=0xc83f000 FAD=428486 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4145 fnv1a=0xd053e64a first_word=0x0 last_word=0x0
+  dst=0xc841800 FAD=428491 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4386 fnv1a=0x270ddaad first_word=0x0 last_word=0xf220f200
+  dst=0xc844000 FAD=428496 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4883 fnv1a=0x8cb2bdf6 first_word=0x0 last_word=0x0
+  dst=0xc846800 FAD=428501 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5890 fnv1a=0xc815363e first_word=0xf2c1f2e5 last_word=0xadabb1ac
+  dst=0xc849000 FAD=428506 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5398 fnv1a=0x6bc95bc first_word=0x84010000 last_word=0x0
+  dst=0xc84b800 FAD=428511 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5096 fnv1a=0xb706528b first_word=0xf2c1f2e5 last_word=0x0
+  dst=0xc84e000 FAD=428516 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=5413 fnv1a=0x936694d5 first_word=0x0 last_word=0x0
+  dst=0xc850800 FAD=428521 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7220 fnv1a=0x8f056e94 first_word=0x0 last_word=0xe7ffe7ff
+  dst=0xc853000 FAD=428526 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7029 fnv1a=0x7fecb3 first_word=0xe7ffe7ff last_word=0x80008000
+  dst=0xc855800 FAD=428531 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7220 fnv1a=0xd4f79c5e first_word=0x0 last_word=0xe7ffe7ff
+  dst=0xc858000 FAD=428536 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=6021 fnv1a=0x6fe7601f first_word=0xe7ffe7ff last_word=0x80008000
+  dst=0xc85a800 FAD=428541 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=4937 fnv1a=0x9b4a8253 first_word=0x0 last_word=0x0
+  dst=0xc85d000 FAD=428546 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=3428 fnv1a=0xfd088f07 first_word=0x0 last_word=0x80008000
+  dst=0xc85f800 FAD=428551 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=2272 fnv1a=0x78bdbbb3 first_word=0x80000000 last_word=0x0
+  dst=0xc862000 FAD=428556 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=1519 fnv1a=0x666bcef9 first_word=0x0 last_word=0x0
+  dst=0xc864800 FAD=428561 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7530 fnv1a=0x70096dfe first_word=0x0 last_word=0x90c68000
+  dst=0xc867000 FAD=428566 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=8734 fnv1a=0x1d33f1e2 first_word=0xe7ffe7ff last_word=0x805ee7ff
+  dst=0xc869800 FAD=428571 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=8143 fnv1a=0xf8ec2406 first_word=0x0 last_word=0xe7ffe7ff
+  dst=0xc86c000 FAD=428576 sectors=5 virtual=0 direct=1 result=5 nonzero_bytes=7898 fnv1a=0x76d58c75 first_word=0x9908e7ff last_word=0x0
+GD-ROM host caller return addresses:
+  0x7ff75b648475 calls=2136
+  0x7ff75b64ba6c calls=1
+  0x7ff75b64c90d calls=2
+GD-ROM sector read samples (first 64):
+  FAD=45150 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0xb3beffec80 caller=0x7ff75b64c90d
+  FAD=45150 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0xb3beffec80 caller=0x7ff75b64c90d
+  FAD=45150 sectors=16 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8008000 caller=0x7ff75b64ba6c
+  FAD=45166 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45170 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45171 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45172 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45173 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45174 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45175 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45176 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45177 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45178 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45179 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6300 caller=0x7ff75b648475
+  FAD=45168 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d82a6340 caller=0x7ff75b648475
+  FAD=547602 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aae800 caller=0x7ff75b648475
+  FAD=547607 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab1000 caller=0x7ff75b648475
+  FAD=547612 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab3800 caller=0x7ff75b648475
+  FAD=547617 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab6000 caller=0x7ff75b648475
+  FAD=547622 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab8800 caller=0x7ff75b648475
+  FAD=547627 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8abb000 caller=0x7ff75b648475
+  FAD=533101 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aae800 caller=0x7ff75b648475
+  FAD=533106 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab1000 caller=0x7ff75b648475
+  FAD=533111 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab3800 caller=0x7ff75b648475
+  FAD=533116 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab6000 caller=0x7ff75b648475
+  FAD=533121 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab8800 caller=0x7ff75b648475
+  FAD=533122 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aae800 caller=0x7ff75b648475
+  FAD=533127 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab1000 caller=0x7ff75b648475
+  FAD=533132 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab3800 caller=0x7ff75b648475
+  FAD=533137 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab6000 caller=0x7ff75b648475
+  FAD=533142 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab8800 caller=0x7ff75b648475
+  FAD=533147 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8abb000 caller=0x7ff75b648475
+  FAD=533152 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8abd800 caller=0x7ff75b648475
+  FAD=533157 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac0000 caller=0x7ff75b648475
+  FAD=533162 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac2800 caller=0x7ff75b648475
+  FAD=533167 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac5000 caller=0x7ff75b648475
+  FAD=533172 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac7800 caller=0x7ff75b648475
+  FAD=533177 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aca000 caller=0x7ff75b648475
+  FAD=533182 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8acc800 caller=0x7ff75b648475
+  FAD=533187 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8acf000 caller=0x7ff75b648475
+  FAD=533192 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad1800 caller=0x7ff75b648475
+  FAD=533197 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad4000 caller=0x7ff75b648475
+  FAD=533202 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad6800 caller=0x7ff75b648475
+  FAD=533207 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad9000 caller=0x7ff75b648475
+  FAD=545440 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aae800 caller=0x7ff75b648475
+  FAD=545445 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab1000 caller=0x7ff75b648475
+  FAD=545450 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab3800 caller=0x7ff75b648475
+  FAD=545455 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab6000 caller=0x7ff75b648475
+  FAD=545460 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ab8800 caller=0x7ff75b648475
+  FAD=545465 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8abb000 caller=0x7ff75b648475
+  FAD=545470 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8abd800 caller=0x7ff75b648475
+  FAD=545475 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac0000 caller=0x7ff75b648475
+  FAD=545480 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac2800 caller=0x7ff75b648475
+  FAD=545485 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac5000 caller=0x7ff75b648475
+  FAD=545490 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ac7800 caller=0x7ff75b648475
+  FAD=545495 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8aca000 caller=0x7ff75b648475
+  FAD=545500 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8acc800 caller=0x7ff75b648475
+  FAD=545505 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8acf000 caller=0x7ff75b648475
+  FAD=545510 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad1800 caller=0x7ff75b648475
+  FAD=545515 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad4000 caller=0x7ff75b648475
+  FAD=545520 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad6800 caller=0x7ff75b648475
+  FAD=545525 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ad9000 caller=0x7ff75b648475
+  FAD=545530 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8adb800 caller=0x7ff75b648475
+  FAD=545535 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4d8ade000 caller=0x7ff75b648475
+GD-ROM DMA calls overlapping watched memory: 0
+GD-ROM DMA samples (first 0):
+PC watchpoints:
+  0x8c02dcec hits=0
+  0x8c04bda2 hits=0
+  0x8c08232e hits=0
+  0x8c0360c8 hits=0
+  0x8c0cbc40 hits=0
+  0x8c0a7f84 hits=60
+  0x8c0a2f90 hits=2
+  0x8c0a2fde hits=1
+  0x8c0a2fe2 hits=1
+  0x8c0a2ec8 hits=26
+  0x8c0a304e hits=52
+  0x8c0a81ee hits=3
+  0x8c0a2820 hits=0
+  0x8c0a288c hits=0
+  0x8c0a28b4 hits=0
+  0x8c0a2fd2 hits=1
+  0x8c0a2ff6 hits=1
+  0x8c0b2578 hits=0
+  0x8c0b25ae hits=0
+  0x8c0beea0 hits=0
+  0x8c0beec2 hits=0
+  0x8c0befbe hits=0
+  0x8c0befe0 hits=0
+  0x8c0c5f68 hits=0
+  0x8c0c6120 hits=0
+  0x8c0c62e4 hits=0
+  0x8c0c6528 hits=0
+  0x8c0c794a hits=0
+  0x8c0c7966 hits=0
+  0x8c0c7aa0 hits=0
+  0x8c0a81f0 hits=3
+  0x8c0a81f2 hits=3
+  0x8c0a81f4 hits=3
+  0x8c0a81f6 hits=3
+  0x8c0a81f8 hits=3
+  0x8c0a81fa hits=3
+  0x8c0a81fc hits=3
+  0x8c0a81fe hits=3
+  0x8c0a8200 hits=3
+  0x8c0a8202 hits=3
+  0x8c0a8204 hits=3
+  0x8c0a8206 hits=3
+  0x8c0a8208 hits=3
+  0x8c0a820a hits=3
+  0x8c0a820c hits=3
+  0x8c0a820e hits=3
+  0x8c0a3010 hits=1
+  0x8c0a3012 hits=1
+  0x8c0a3014 hits=1
+  0x8c09d5ae hits=18
+  0x8c09d5b0 hits=18
+  0x8c09d5ce hits=48
+  0x8c09d5d2 hits=48
+  0x8c09d5da hits=48
+  0x8c09d690 hits=1017
+  0x8c09d69a hits=1017
+  0x8c09d6f4 hits=11915
+  0x8c09d70a hits=20444
+  0x8c09d778 hits=11538
+  0x8c09d77e hits=11538
+  0x8c09d782 hits=11538
+  0x8c09d794 hits=11538
+Executed PC pages (4 KiB, normalized addresses):
+  0x0 instructions=1
+  0xc001000 instructions=1438621
+  0xc004000 instructions=3741798
+  0xc005000 instructions=600037
+  0xc008000 instructions=92214119
+  0xc009000 instructions=2127152
+  0xc00b000 instructions=23
+  0xc00d000 instructions=487
+  0xc00e000 instructions=5202
+  0xc00f000 instructions=213862
+  0xc010000 instructions=24198
+  0xc020000 instructions=1282358
+  0xc034000 instructions=41661132
+  0xc035000 instructions=43086899
+  0xc036000 instructions=3194848
+  0xc037000 instructions=506
+  0xc038000 instructions=652731
+  0xc039000 instructions=6810277
+  0xc03a000 instructions=12284287
+  0xc03b000 instructions=13498818
+  0xc03c000 instructions=44691229
+  0xc03d000 instructions=3058680
+  0xc03e000 instructions=12847248
+  0xc03f000 instructions=23109501
+  0xc040000 instructions=62989207
+  0xc042000 instructions=15534519
+  0xc043000 instructions=37643606
+  0xc044000 instructions=2244322
+  0xc045000 instructions=2430286
+  0xc046000 instructions=1354338
+  0xc047000 instructions=4640752
+  0xc048000 instructions=289527769
+  0xc049000 instructions=3615696
+  0xc04a000 instructions=33638910
+  0xc04b000 instructions=943448
+  0xc04c000 instructions=428155
+  0xc04d000 instructions=4761
+  0xc04e000 instructions=177
+  0xc04f000 instructions=14295
+  0xc050000 instructions=887870
+  0xc051000 instructions=167987
+  0xc053000 instructions=521895
+  0xc054000 instructions=538287
+  0xc055000 instructions=5824651
+  0xc056000 instructions=70784368
+  0xc058000 instructions=16495856
+  0xc059000 instructions=252660268
+  0xc05a000 instructions=385205
+  0xc05b000 instructions=1003
+  0xc05c000 instructions=789958
+  0xc05d000 instructions=1293
+  0xc05e000 instructions=1141304
+  0xc05f000 instructions=392492
+  0xc060000 instructions=2322389
+  0xc061000 instructions=278508
+  0xc062000 instructions=26169549
+  0xc063000 instructions=18638040
+  0xc064000 instructions=2355610
+  0xc066000 instructions=257976
+  0xc067000 instructions=11001
+  0xc068000 instructions=8922413
+  0xc069000 instructions=11885126
+  0xc06b000 instructions=163913
+  0xc06c000 instructions=132993
+  0xc06d000 instructions=363050
+  0xc06e000 instructions=13539098
+  0xc06f000 instructions=13925082
+  0xc070000 instructions=11937500
+  0xc071000 instructions=14482576
+  0xc072000 instructions=2010117
+  0xc073000 instructions=17225874
+  0xc074000 instructions=1415299
+  0xc075000 instructions=3527
+  0xc076000 instructions=1066131
+  0xc077000 instructions=221085
+  0xc078000 instructions=32984
+  0xc079000 instructions=577
+  0xc07a000 instructions=22682
+  0xc07b000 instructions=100420235
+  0xc07c000 instructions=325009
+  0xc07d000 instructions=271485
+  0xc07e000 instructions=32464
+  0xc080000 instructions=159657
+  0xc081000 instructions=224549
+  0xc082000 instructions=9354
+  0xc083000 instructions=3941
+  0xc084000 instructions=11535
+  0xc085000 instructions=48327
+  0xc086000 instructions=108570
+  0xc087000 instructions=5941
+  0xc089000 instructions=1573917
+  0xc08a000 instructions=15618
+  0xc08b000 instructions=562774
+  0xc08c000 instructions=7821
+  0xc08d000 instructions=439508
+  0xc08e000 instructions=959748
+  0xc08f000 instructions=918114
+  0xc090000 instructions=810062
+  0xc091000 instructions=5136410
+  0xc092000 instructions=18870983
+  0xc093000 instructions=24276416
+  0xc094000 instructions=2010267
+  0xc095000 instructions=9254032
+  0xc096000 instructions=1015876
+  0xc097000 instructions=59130
+  0xc098000 instructions=21701
+  0xc09a000 instructions=5338
+  0xc09b000 instructions=10346
+  0xc09d000 instructions=7524643
+  0xc09e000 instructions=3776758
+  0xc09f000 instructions=812291
+  0xc0a0000 instructions=972
+  0xc0a1000 instructions=185116
+  0xc0a2000 instructions=561247
+  0xc0a3000 instructions=5851
+  0xc0a4000 instructions=6025
+  0xc0a5000 instructions=5040
+  0xc0a6000 instructions=1740
+  0xc0a7000 instructions=4459584
+  0xc0a8000 instructions=167211
+  0xc0a9000 instructions=276160
+  0xc0aa000 instructions=45834
+  0xc0ab000 instructions=1442
+  0xc0ad000 instructions=8512
+  0xc0ae000 instructions=72734
+  0xc0af000 instructions=288056
+  0xc0b0000 instructions=1559465
+  0xc0b1000 instructions=2555394
+  0xc0b2000 instructions=6904
+  0xc0b3000 instructions=4928
+  0xc0b4000 instructions=4879
+  0xc0b5000 instructions=4844
+  0xc0b6000 instructions=4375
+  0xc0b7000 instructions=4291
+  0xc0b8000 instructions=4396
+  0xc0b9000 instructions=5663
+  0xc0ba000 instructions=4811
+  0xc0bb000 instructions=4312
+  0xc0bc000 instructions=4522
+  0xc0bd000 instructions=4736
+  0xc0be000 instructions=2278
+  0xc0bf000 instructions=668140
+  0xc0c0000 instructions=266894
+  0xc0c1000 instructions=45665455
+  0xc0c2000 instructions=17260147
+  0xc0c3000 instructions=178860
+  0xc0c4000 instructions=226225
+  0xc0c5000 instructions=122359
+  0xc0c6000 instructions=862716
+  0xc0c7000 instructions=101993
+  0xc0c8000 instructions=7596
+  0xc0c9000 instructions=8355
+  0xc0ca000 instructions=1757696
+  0xc0cb000 instructions=812900
+  0xc0cc000 instructions=180840
