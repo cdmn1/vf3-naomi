@@ -28,8 +28,11 @@ jobs:
           set -euo pipefail
           TRACE_DIR="VF3-Flycast-Trace/VF3-Flycast-Trace-v68"
           TRACE="$TRACE_DIR/vf3-loader-trace-loader.bin"
-          if [[ ! -s "$TRACE" && -s "$TRACE_DIR/vf3-loader-trace-loader.zip" ]]; then
-            unzip -o "$TRACE_DIR/vf3-loader-trace-loader.zip" -d "$TRACE_DIR"
+          if [[ ! -s "$TRACE" ]]; then
+            for archive in "$TRACE_DIR"/*.zip; do
+              [[ -e "$archive" ]] || continue
+              unzip -o "$archive" -d "$TRACE_DIR"
+            done
           fi
           test -s "$TRACE"
           OUT="trace-v68-analysis"
