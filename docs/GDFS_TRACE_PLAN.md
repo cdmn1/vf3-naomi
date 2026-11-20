@@ -428,6 +428,52 @@ The analysis report now groups the three table reads into a one-based motion
 ID and emits `mt_motion_rows.csv` in addition to the per-slot
 `mt_slot_lookups.csv`.
 
+### All selected motion IDs are consumed by the evaluator
+
+I correlated the FA20 evaluator reads against each motion row's three
+file-relative source offsets, using the contiguous REIOS HLE transfer base
+`0x0C5F4000`:
+
+- count cursor `0x8C09D6F4`: byte reads in
+  `[offset0 + 18, offset1)`;
+- key-time cursor `0x8C09D70A`: byte reads in `[offset1, offset2)`;
+- tuple cursor PCs `0x8C09D794/778/77E/782`: reads in the first
+  `0x20` bytes beginning at `offset2`.
+
+Every selected row has non-zero reads in all three regions. The tuple
+correlation also sees all four evaluator lanes for every row. The counts are
+memory-access events; the address columns are distinct byte/word addresses,
+not total stream lengths.
+
+| Pack | Motion ID | Count reads / addresses | Time reads / addresses | Tuple-prefix reads / addresses |
+|---|---:|---:|---:|---:|
+| Pai | 38 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Pai | 109 | 24 / 6 | 24 / 6 | 16 / 4 |
+| Pai | 135 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Pai | 139 | 20 / 5 | 20 / 5 | 16 / 4 |
+| Pai | 432 | 377 / 29 | 478 / 58 | 65 / 5 |
+| Pai | 528 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Pai | 533 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Pai | 542 | 60 / 30 | 30 / 15 | 12 / 6 |
+| Pai | 1050 | 1,260 / 9 | 2,044 / 14 | 552 / 7 |
+| Pai | 2386 | 1,134 / 9 | 1,673 / 14 | 500 / 7 |
+| Wolf | 38 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Wolf | 109 | 12 / 6 | 12 / 6 | 8 / 4 |
+| Wolf | 135 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Wolf | 139 | 10 / 5 | 10 / 5 | 8 / 4 |
+| Wolf | 1050 | 1,386 / 9 | 2,190 / 14 | 608 / 7 |
+| Wolf | 1480 | 2,310 / 15 | 3,660 / 22 | 406 / 8 |
+
+This upgrades the conclusion from "the setup code selected these rows" to
+"the evaluator read count, key-time and tuple data at the source addresses
+for all 16 selected rows." It does not identify the action represented by
+each ID, prove fighter ownership, or give the full tuple-stream extent.
+The register-level v68 capture is still needed to tie the selected motion ID
+to its actor and to inspect the runtime cursor registers.
+
+The generated `mt_motion_stream_use.csv` contains the per-row counts and
+distinct-address totals.
+
 The first triplet gives us a direct bridge from setup to evaluator streams.
 Relative to the pack destination, the evaluator's first observed reads are:
 
