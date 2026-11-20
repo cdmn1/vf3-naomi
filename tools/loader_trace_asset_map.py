@@ -250,6 +250,58 @@ def group_mt_motion_rows(slot_lookups):
     return output
 
 
+def summarize_motion_stream_use(rows, motion_memory, motion_rows):
+    """Count evaluator reads at each selected motion row's source streams."""
+    pack_starts = {}
+    for name in {str(r["asset"]) for r in rows
+                 if str(r["asset"]).startswith("MT") and str(r["asset"]).endswith(".BIN")}:
+        group = [r for r in rows if str(r["asset"]) == name]
+        pack_starts[name] = min(int(r["destination"]) for r in group)
+
+    events_by_pack = defaultdict(list)
+    for event in motion_memory:
+        events_by_pack[str(event["pack"])].append(event)
+
+    count_pc = canonical(0x8C09D6F4)
+    time_pc = canonical(0x8C09D70A)
+    tuple_pcs = {
+        canonical(0x8C09D794), canonical(0x8C09D778),
+        canonical(0x8C09D77E), canonical(0x8C09D782),
+    }
+    output = []
+    for motion in motion_rows:
+        pack = str(motion["pack"])
+        base = pack_starts.get(pack)
+        if base is None or not int(motion["complete"]):
+            continue
+        offset0, offset1, offset2 = (
+            int(motion["offset0"]), int(motion["offset1"]), int(motion["offset2"])
+        )
+        count_events, time_events, tuple_events = [], [], []
+        for event in events_by_pack.get(pack, []):
+            if event["access"] != "R":
+                continue
+            relative = normalize(int(event["address"])) - base
+            pc = canonical(int(event["pc"]))
+            if pc == count_pc and offset0 + 18 <= relative < offset1:
+                count_events.append(event)
+            elif pc == time_pc and offset1 <= relative < offset2:
+                time_events.append(event)
+            elif pc in tuple_pcs and offset2 <= relative < offset2 + 0x20:
+                tuple_events.append(event)
+        output.append({
+            "pack": pack, "motion_id": int(motion["motion_id"]),
+            "count_reads": len(count_events),
+            "count_addresses": len({int(e["address"]) for e in count_events}),
+            "time_reads": len(time_events),
+            "time_addresses": len({int(e["address"]) for e in time_events}),
+            "tuple_prefix_reads": len(tuple_events),
+            "tuple_prefix_addresses": len({int(e["address"]) for e in tuple_events}),
+            "tuple_lanes": len({canonical(int(e["pc"])) for e in tuple_events}),
+        })
+    return output
+
+
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
@@ -346,6 +398,28 @@ def make_report(
     else:
         lines.append("No complete motion-ID rows were identified from the setup slot-table reads.")
 
+    stream_use = summarize_motion_stream_use(rows, motion_memory, motion_rows)
+    lines.extend(["", "## Evaluator reads at selected motion source streams", ""])
+    if stream_use:
+        lines.extend([
+            "| Pack | Motion ID | Count reads | Count bytes | Time reads | Time bytes | Tuple-prefix reads | Tuple addresses | Tuple lanes |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ])
+        for row in stream_use:
+            lines.append(
+                f"| {row['pack']} | {row['motion_id']} | {row['count_reads']} | "
+                f"{row['count_addresses']} | {row['time_reads']} | {row['time_addresses']} | "
+                f"{row['tuple_prefix_reads']} | {row['tuple_prefix_addresses']} | "
+                f"{row['tuple_lanes']} |"
+            )
+        lines.append("")
+        lines.append(
+            "Count reads are matched to [offset0+18, offset1), key-time reads to "
+            "[offset1, offset2), and tuple reads to the first 0x20 bytes at "
+            "offset2. Tuple-prefix counts confirm access near the source start; "
+            "they are not full tuple-stream lengths."
+        )
+
     pc_summary = summarize_memory_pcs(motion_memory)
     lines.extend(["", "## Memory-access summary by PC", ""])
     if pc_summary:
@@ -410,6 +484,13 @@ def write_outputs(
         writer.writeheader()
         writer.writerows(slot_lookups)
     motion_rows = group_mt_motion_rows(slot_lookups)
+    stream_use = summarize_motion_stream_use(rows, motion_memory, motion_rows)
+    with (output_dir / "mt_motion_stream_use.csv").open("w", newline="", encoding="utf-8") as handle:
+        fields = ["pack", "motion_id", "count_reads", "count_addresses", "time_reads",
+                  "time_addresses", "tuple_prefix_reads", "tuple_prefix_addresses", "tuple_lanes"]
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(stream_use)
     with (output_dir / "mt_motion_rows.csv").open("w", newline="", encoding="utf-8") as handle:
         fields = ["pack", "motion_id", "slot_start", "offset0", "offset1", "offset2",
                   "reads0", "reads1", "reads2", "complete"]
