@@ -74,6 +74,25 @@ def main() -> None:
         "\t\t\t\tu32 rv = pio_buff.read();\n\t\t\t\tvf3TraceGdromPioWord(static_cast<u16>(rv));\n",
     )
     replace_once(
+        root / "core/reios/gdrom_hle.cpp",
+        '#include "imgread/common.h"\n',
+        '#include "imgread/common.h"\n#include "hw/sh4/interpr/vf3trace.h"\n',
+    )
+    replace_once(
+        root / "core/reios/gdrom_hle.cpp",
+        "\t\t\tlibGDR_ReadSector(pDst, sector, count, 2048);\n\t\t\treturn;",
+        "\t\t\tu32 readResult = libGDR_ReadSector(pDst, sector, count, 2048);\n"
+        "\t\t\tvf3TraceGdromHleRead(addr, sector, count, virtualAddr, true, pDst, readResult);\n"
+        "\t\t\treturn;",
+    )
+    replace_once(
+        root / "core/reios/gdrom_hle.cpp",
+        "\t\tlibGDR_ReadSector((u8 *)temp, sector, 1, sizeof(temp));\n",
+        "\t\tu32 readResult = libGDR_ReadSector((u8 *)temp, sector, 1, sizeof(temp));\n"
+        "\t\tvf3TraceGdromHleRead(addr, sector, 1, virtualAddr, false, (const u8 *)temp, readResult);\n",
+    )
+
+    replace_once(
         root / "core/imgread/common.cpp",
         '#include "hw/gdrom/gdromv3.h"\n',
         '#include "hw/gdrom/gdromv3.h"\n#include "hw/sh4/interpr/vf3trace.h"\n',
