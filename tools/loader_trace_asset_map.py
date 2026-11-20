@@ -180,7 +180,7 @@ def infer_primary_records(rows, motion_memory):
 
     counts = defaultdict(Counter)
     for event in motion_memory:
-        spec = PRIMARY_RECORD_READS.get(int(event["pc"]))
+        spec = PRIMARY_RECORD_READS.get(canonical(int(event["pc"])))
         if not spec or event["access"] != "R":
             continue
         stream, delta = spec
