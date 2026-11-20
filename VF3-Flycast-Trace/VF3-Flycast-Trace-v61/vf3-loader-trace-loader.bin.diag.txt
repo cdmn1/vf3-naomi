@@ -1,0 +1,285 @@
+VF3 Flycast trace diagnostics
+Initialization: watch file loaded
+Executed SH-4 instructions: 1220703472
+GD-ROM DMA hook calls: 0
+GD-ROM sector read calls (all transfer modes): 2243
+GD-ROM sectors requested: 11021
+GD-ROM PIO data words consumed: 0
+GD-ROM host caller return addresses:
+  0x7ff75bff7793 calls=2240
+  0x7ff75bffad0c calls=1
+  0x7ff75bffbbad calls=2
+GD-ROM sector read samples (first 64):
+  FAD=45150 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x67165feb20 caller=0x7ff75bffbbad
+  FAD=45150 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x67165feb20 caller=0x7ff75bffbbad
+  FAD=45150 sectors=16 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff4175b8000 caller=0x7ff75bffad0c
+  FAD=45166 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45170 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45171 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45172 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45173 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45174 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45175 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45176 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45177 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45178 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45179 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856300 caller=0x7ff75bff7793
+  FAD=45168 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff417856340 caller=0x7ff75bff7793
+  FAD=547602 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41805e800 caller=0x7ff75bff7793
+  FAD=547607 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418061000 caller=0x7ff75bff7793
+  FAD=547612 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418063800 caller=0x7ff75bff7793
+  FAD=547617 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418066000 caller=0x7ff75bff7793
+  FAD=547622 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418068800 caller=0x7ff75bff7793
+  FAD=547627 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41806b000 caller=0x7ff75bff7793
+  FAD=533101 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41805e800 caller=0x7ff75bff7793
+  FAD=533106 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418061000 caller=0x7ff75bff7793
+  FAD=533111 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418063800 caller=0x7ff75bff7793
+  FAD=533116 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418066000 caller=0x7ff75bff7793
+  FAD=533121 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418068800 caller=0x7ff75bff7793
+  FAD=533122 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41805e800 caller=0x7ff75bff7793
+  FAD=533127 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418061000 caller=0x7ff75bff7793
+  FAD=533132 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418063800 caller=0x7ff75bff7793
+  FAD=533137 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418066000 caller=0x7ff75bff7793
+  FAD=533142 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418068800 caller=0x7ff75bff7793
+  FAD=533147 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41806b000 caller=0x7ff75bff7793
+  FAD=533152 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41806d800 caller=0x7ff75bff7793
+  FAD=533157 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418070000 caller=0x7ff75bff7793
+  FAD=533162 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418072800 caller=0x7ff75bff7793
+  FAD=533167 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418075000 caller=0x7ff75bff7793
+  FAD=533172 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418077800 caller=0x7ff75bff7793
+  FAD=533177 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807a000 caller=0x7ff75bff7793
+  FAD=533182 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807c800 caller=0x7ff75bff7793
+  FAD=533187 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807f000 caller=0x7ff75bff7793
+  FAD=533192 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418081800 caller=0x7ff75bff7793
+  FAD=533197 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418084000 caller=0x7ff75bff7793
+  FAD=533202 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418086800 caller=0x7ff75bff7793
+  FAD=533207 sectors=1 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418089000 caller=0x7ff75bff7793
+  FAD=545440 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41805e800 caller=0x7ff75bff7793
+  FAD=545445 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418061000 caller=0x7ff75bff7793
+  FAD=545450 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418063800 caller=0x7ff75bff7793
+  FAD=545455 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418066000 caller=0x7ff75bff7793
+  FAD=545460 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418068800 caller=0x7ff75bff7793
+  FAD=545465 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41806b000 caller=0x7ff75bff7793
+  FAD=545470 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41806d800 caller=0x7ff75bff7793
+  FAD=545475 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418070000 caller=0x7ff75bff7793
+  FAD=545480 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418072800 caller=0x7ff75bff7793
+  FAD=545485 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418075000 caller=0x7ff75bff7793
+  FAD=545490 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418077800 caller=0x7ff75bff7793
+  FAD=545495 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807a000 caller=0x7ff75bff7793
+  FAD=545500 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807c800 caller=0x7ff75bff7793
+  FAD=545505 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41807f000 caller=0x7ff75bff7793
+  FAD=545510 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418081800 caller=0x7ff75bff7793
+  FAD=545515 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418084000 caller=0x7ff75bff7793
+  FAD=545520 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418086800 caller=0x7ff75bff7793
+  FAD=545525 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff418089000 caller=0x7ff75bff7793
+  FAD=545530 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41808b800 caller=0x7ff75bff7793
+  FAD=545535 sectors=5 sector_size=2048 stop_on_miss=0 host_buffer=0x7ff41808e000 caller=0x7ff75bff7793
+GD-ROM DMA calls overlapping watched memory: 0
+GD-ROM DMA samples (first 0):
+PC watchpoints:
+  0x8c02dcec hits=0
+  0x8c04bda2 hits=0
+  0x8c08232e hits=0
+  0x8c0360c8 hits=0
+  0x8c0cbc40 hits=0
+  0x8c0a7f84 hits=60
+  0x8c0a2f90 hits=2
+  0x8c0a2fde hits=1
+  0x8c0a2fe2 hits=1
+  0x8c0a2ec8 hits=26
+  0x8c0a304e hits=52
+  0x8c0a81ee hits=5
+  0x8c0a2820 hits=0
+  0x8c0a288c hits=0
+  0x8c0a28b4 hits=0
+  0x8c0a2fd2 hits=1
+  0x8c0a2ff6 hits=1
+  0x8c0b2578 hits=0
+  0x8c0b25ae hits=0
+  0x8c0beea0 hits=0
+  0x8c0beec2 hits=0
+  0x8c0befbe hits=0
+  0x8c0befe0 hits=0
+  0x8c0c5f68 hits=0
+  0x8c0c6120 hits=0
+  0x8c0c62e4 hits=0
+  0x8c0c6528 hits=0
+  0x8c0c794a hits=0
+  0x8c0c7966 hits=0
+  0x8c0c7aa0 hits=0
+  0x8c0a81f0 hits=5
+  0x8c0a81f2 hits=5
+  0x8c0a81f4 hits=5
+  0x8c0a81f6 hits=5
+  0x8c0a81f8 hits=5
+  0x8c0a81fa hits=5
+  0x8c0a81fc hits=5
+  0x8c0a81fe hits=5
+  0x8c0a8200 hits=5
+  0x8c0a8202 hits=5
+  0x8c0a8204 hits=5
+  0x8c0a8206 hits=5
+  0x8c0a8208 hits=5
+  0x8c0a820a hits=5
+  0x8c0a820c hits=5
+  0x8c0a820e hits=5
+  0x8c0a3010 hits=1
+  0x8c0a3012 hits=1
+  0x8c0a3014 hits=1
+Executed PC pages (4 KiB, normalized addresses):
+  0x0 instructions=1
+  0xc001000 instructions=1437988
+  0xc004000 instructions=3328678
+  0xc005000 instructions=600037
+  0xc008000 instructions=92214119
+  0xc009000 instructions=2127152
+  0xc00b000 instructions=23
+  0xc00d000 instructions=487
+  0xc00e000 instructions=5202
+  0xc00f000 instructions=172550
+  0xc010000 instructions=24198
+  0xc020000 instructions=1282358
+  0xc034000 instructions=41659111
+  0xc035000 instructions=43069780
+  0xc036000 instructions=2604273
+  0xc037000 instructions=506
+  0xc038000 instructions=593625
+  0xc039000 instructions=5038743
+  0xc03a000 instructions=7678944
+  0xc03b000 instructions=10816681
+  0xc03c000 instructions=33257349
+  0xc03d000 instructions=2147311
+  0xc03e000 instructions=9487922
+  0xc03f000 instructions=13678334
+  0xc040000 instructions=62756523
+  0xc042000 instructions=11121743
+  0xc043000 instructions=36772612
+  0xc044000 instructions=1835903
+  0xc045000 instructions=2010013
+  0xc046000 instructions=1118844
+  0xc047000 instructions=4196313
+  0xc048000 instructions=207221699
+  0xc049000 instructions=2143854
+  0xc04a000 instructions=22915760
+  0xc04b000 instructions=850838
+  0xc04c000 instructions=354508
+  0xc04d000 instructions=4761
+  0xc04e000 instructions=177
+  0xc04f000 instructions=14295
+  0xc050000 instructions=906696
+  0xc051000 instructions=174205
+  0xc053000 instructions=432813
+  0xc054000 instructions=444795
+  0xc055000 instructions=4060877
+  0xc056000 instructions=55029729
+  0xc058000 instructions=13286915
+  0xc059000 instructions=219378990
+  0xc05a000 instructions=295847
+  0xc05b000 instructions=1003
+  0xc05c000 instructions=476326
+  0xc05d000 instructions=1293
+  0xc05e000 instructions=673248
+  0xc05f000 instructions=306640
+  0xc060000 instructions=2359499
+  0xc061000 instructions=281052
+  0xc062000 instructions=25851573
+  0xc063000 instructions=18272159
+  0xc064000 instructions=1851953
+  0xc066000 instructions=267582
+  0xc067000 instructions=22233
+  0xc068000 instructions=8199742
+  0xc069000 instructions=10297571
+  0xc06b000 instructions=127776
+  0xc06c000 instructions=88081
+  0xc06d000 instructions=222990
+  0xc06e000 instructions=9084028
+  0xc06f000 instructions=9298798
+  0xc070000 instructions=7647333
+  0xc071000 instructions=9839512
+  0xc072000 instructions=1349984
+  0xc073000 instructions=13490407
+  0xc074000 instructions=1087076
+  0xc075000 instructions=2087
+  0xc076000 instructions=772824
+  0xc077000 instructions=102630
+  0xc078000 instructions=12975
+  0xc079000 instructions=219
+  0xc07a000 instructions=16393
+  0xc07b000 instructions=75618763
+  0xc07c000 instructions=195034
+  0xc07d000 instructions=168689
+  0xc07e000 instructions=22672
+  0xc080000 instructions=75058
+  0xc081000 instructions=138435
+  0xc082000 instructions=4749
+  0xc083000 instructions=1991
+  0xc084000 instructions=9615
+  0xc085000 instructions=75410
+  0xc086000 instructions=89520
+  0xc087000 instructions=4264
+  0xc089000 instructions=734290
+  0xc08a000 instructions=10014
+  0xc08b000 instructions=430372
+  0xc08c000 instructions=801
+  0xc08d000 instructions=327433
+  0xc08e000 instructions=503901
+  0xc08f000 instructions=480161
+  0xc090000 instructions=330440
+  0xc091000 instructions=3896248
+  0xc092000 instructions=13315156
+  0xc093000 instructions=16107236
+  0xc094000 instructions=1554164
+  0xc095000 instructions=6388629
+  0xc096000 instructions=773160
+  0xc097000 instructions=36507
+  0xc098000 instructions=9614
+  0xc09a000 instructions=2888
+  0xc09b000 instructions=5296
+  0xc09d000 instructions=6300319
+  0xc09e000 instructions=3046618
+  0xc09f000 instructions=671436
+  0xc0a0000 instructions=972
+  0xc0a1000 instructions=137797
+  0xc0a2000 instructions=561247
+  0xc0a3000 instructions=5851
+  0xc0a4000 instructions=6025
+  0xc0a5000 instructions=5040
+  0xc0a6000 instructions=1740
+  0xc0a7000 instructions=3111818
+  0xc0a8000 instructions=120528
+  0xc0a9000 instructions=216590
+  0xc0aa000 instructions=33560
+  0xc0ab000 instructions=97
+  0xc0ac000 instructions=387
+  0xc0ad000 instructions=8126
+  0xc0ae000 instructions=62272
+  0xc0af000 instructions=229908
+  0xc0b0000 instructions=1199664
+  0xc0b1000 instructions=2169272
+  0xc0b2000 instructions=6904
+  0xc0b3000 instructions=4928
+  0xc0b4000 instructions=4879
+  0xc0b5000 instructions=4844
+  0xc0b6000 instructions=4375
+  0xc0b7000 instructions=4291
+  0xc0b8000 instructions=4396
+  0xc0b9000 instructions=5663
+  0xc0ba000 instructions=4811
+  0xc0bb000 instructions=4312
+  0xc0bc000 instructions=4522
+  0xc0bd000 instructions=4736
+  0xc0be000 instructions=2278
+  0xc0bf000 instructions=524713
+  0xc0c0000 instructions=130232
+  0xc0c1000 instructions=26392872
+  0xc0c2000 instructions=10605124
+  0xc0c3000 instructions=119389
+  0xc0c4000 instructions=141859
+  0xc0c5000 instructions=96019
+  0xc0c6000 instructions=666027
+  0xc0c7000 instructions=79387
+  0xc0c8000 instructions=908
+  0xc0c9000 instructions=5196
+  0xc0ca000 instructions=1350392
+  0xc0cb000 instructions=625996
+  0xc0cc000 instructions=145573
