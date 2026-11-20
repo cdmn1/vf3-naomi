@@ -87,7 +87,7 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
              "extent_match": "exact"},
         ]
         memory = [
-            {"word_index": 18, "pc": 0x8C001000, "access": "R", "width": 4,
+            {"word_index": 20, "pc": 0x8C001000, "access": "R", "width": 4,
              "address": 0x0C5F4000, "value": 1},
             {"word_index": 30, "pc": 0x8C002000, "access": "W", "width": 4,
              "address": 0x8C5F4004, "value": 2},
