@@ -19,8 +19,8 @@ jobs:
       - name: Unpack v37 trace capture
         shell: bash
         run: |
-          unzip -o VF3-Flycast-Trace/VF3-Flycast-Trace-v37/vf3-loader-trace-loader.zip -d VF3-Flycast-Trace-v37
-          ls -lah VF3-Flycast-Trace-v37
+          unzip -o VF3-Flycast-Trace/VF3-Flycast-Trace-v37/vf3-loader-trace-loader.zip -d VF3-Flycast-Trace/VF3-Flycast-Trace-v37
+          ls -lah VF3-Flycast-Trace/VF3-Flycast-Trace-v37
       - name: Decode and analyze v37 loader trace
         shell: bash
         run: |
