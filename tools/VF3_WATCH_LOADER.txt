@@ -104,3 +104,8 @@ mem 0x0C29B864 0x200
 mem 0x0C29BCC4 0x200
 mem 0x0C226864 0x200
 mem 0x0C227064 0x200
+
+# v71 follow-up: actor-structure candidates passed in R4 to the motion
+# evaluator. These should reveal stable character/type fields and pointers.
+mem 0x0C1FEFE4 0x200
+mem 0x0C20138C 0x200
