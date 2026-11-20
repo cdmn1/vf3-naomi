@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""Decode the mixed VF3 Flycast PC-probe and guest-memory trace stream.
+"""Decode the mixed VF3 Flycast PC-probe, guest-memory and GD-ROM DMA trace stream.
 
-The patched Flycast trace is a little-endian stream of u64 words. Recognized
-record groups are:
+Recognized record groups:
   Legacy PC probe: (pc<<16)|0xFA10, r13, r14, r4, r5, r6, r7, (pc<<16)|0xFA11
   expanded PC:     (pc<<16)|0xFA12, PR, R0..R15, (pc<<16)|0xFA13
   memory:    (pc<<16)|0xFA20, (size<<48)|(isWrite<<47), address, value
-
-Unknown trace words are skipped. This is deliberately a decoder for the
-published probe/memory record formats, not a general instruction-trace parser.
-
-Usage:
-  python tools/loader_trace_decode.py loader_trace.bin
-  python tools/loader_trace_decode.py loader_trace.bin --prefix out/loader
+  GD-ROM DMA: 0xFA21, destination, byte count, starting FAD, sector size, remaining sectors
 """
 from __future__ import annotations
 
@@ -27,9 +20,10 @@ PC_CLOSE = 0xFA11
 PC_EXPANDED_OPEN = 0xFA12
 PC_EXPANDED_CLOSE = 0xFA13
 MEMORY = 0xFA20
+GDROM_DMA = 0xFA21
 
 
-def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list[str]]:
+def decode(path: Path):
     try:
         raw = path.read_bytes()
     except OSError as exc:
@@ -38,9 +32,7 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
         raise RuntimeError(f"trace size {len(raw)} is not divisible by 8 bytes")
 
     words = struct.unpack(f"<{len(raw) // 8}Q", raw) if raw else ()
-    probes: list[dict[str, str]] = []
-    memory: list[dict[str, str]] = []
-    warnings: list[str] = []
+    probes, memory, transfers, warnings = [], [], [], []
     i = 0
     while i < len(words):
         marker = words[i] & 0xFFFF
@@ -56,14 +48,10 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
                 continue
             regs = words[i + 1:i + 7]
             probes.append({
-                "word_index": str(i),
-                "pc": f"0x{pc:08X}",
-                "r13": f"0x{regs[0]:016X}",
-                "r14": f"0x{regs[1]:016X}",
-                "r4": f"0x{regs[2]:016X}",
-                "r5": f"0x{regs[3]:016X}",
-                "r6": f"0x{regs[4]:016X}",
-                "r7": f"0x{regs[5]:016X}",
+                "word_index": str(i), "pc": f"0x{pc:08X}",
+                "r13": f"0x{regs[0]:016X}", "r14": f"0x{regs[1]:016X}",
+                "r4": f"0x{regs[2]:016X}", "r5": f"0x{regs[3]:016X}",
+                "r6": f"0x{regs[4]:016X}", "r7": f"0x{regs[5]:016X}",
             })
             i += 8
             continue
@@ -77,11 +65,7 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
                 i += 1
                 continue
             regs = words[i + 2:i + 18]
-            row = {
-                "word_index": str(i),
-                "pc": f"0x{pc:08X}",
-                "pr": f"0x{words[i + 1]:08X}",
-            }
+            row = {"word_index": str(i), "pc": f"0x{pc:08X}", "pr": f"0x{words[i + 1]:08X}"}
             row.update({f"r{n}": f"0x{value:08X}" for n, value in enumerate(regs)})
             probes.append(row)
             i += 19
@@ -95,17 +79,27 @@ def decode(path: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list
             is_write = (meta >> 47) & 1
             value_width = 16 if size == 8 else 8
             memory.append({
-                "word_index": str(i),
-                "pc": f"0x{pc:08X}",
-                "access": "W" if is_write else "R",
-                "width": str(size),
+                "word_index": str(i), "pc": f"0x{pc:08X}",
+                "access": "W" if is_write else "R", "width": str(size),
                 "address": f"0x{address:08X}",
                 "value": f"0x{value:0{value_width}X}" if size == 8 else f"0x{value & 0xFFFFFFFF:08X}",
             })
             i += 4
             continue
+        if marker == GDROM_DMA:
+            if i + 5 >= len(words):
+                warnings.append(f"truncated GD-ROM DMA record at u64 word {i}")
+                break
+            destination, size, fad, sector_size, remaining = words[i + 1:i + 6]
+            transfers.append({
+                "word_index": str(i), "destination": f"0x{destination:08X}",
+                "size": str(size), "start_fad": str(fad),
+                "sector_size": str(sector_size), "remaining_sectors": str(remaining),
+            })
+            i += 6
+            continue
         i += 1
-    return probes, memory, warnings
+    return probes, memory, transfers, warnings
 
 
 def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None:
@@ -118,25 +112,24 @@ def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("trace", type=Path, help="combined Flycast trace file")
-    parser.add_argument("--prefix", type=Path,
-                        help="output prefix (default: trace path without suffix)")
+    parser.add_argument("--prefix", type=Path, help="output prefix (default: trace path without suffix)")
     args = parser.parse_args(argv)
     prefix = args.prefix or args.trace.with_suffix("")
     try:
-        probes, memory, warnings = decode(args.trace)
+        probes, memory, transfers, warnings = decode(args.trace)
         prefix.parent.mkdir(parents=True, exist_ok=True)
-        pc_path = Path(str(prefix) + ".pc.csv")
-        mem_path = Path(str(prefix) + ".memory.csv")
-        pc_fields = ["word_index", "pc", "pr"] + [f"r{n}" for n in range(16)]
-        # Legacy probe rows leave expanded-only columns blank.
-        write_csv(pc_path, probes, pc_fields)
-        write_csv(mem_path, memory,
+        write_csv(Path(str(prefix) + ".pc.csv"), probes,
+                  ["word_index", "pc", "pr"] + [f"r{n}" for n in range(16)])
+        write_csv(Path(str(prefix) + ".memory.csv"), memory,
                   ["word_index", "pc", "access", "width", "address", "value"])
+        write_csv(Path(str(prefix) + ".gdrom_dma.csv"), transfers,
+                  ["word_index", "destination", "size", "start_fad", "sector_size", "remaining_sectors"])
     except (RuntimeError, OSError) as exc:
         print(f"loader_trace_decode: {exc}", file=sys.stderr)
         return 1
-    print(f"PC probe groups: {len(probes)} -> {pc_path}")
-    print(f"Memory accesses: {len(memory)} -> {mem_path}")
+    print(f"PC probe groups: {len(probes)}")
+    print(f"Memory accesses: {len(memory)}")
+    print(f"GD-ROM DMA transfers: {len(transfers)}")
     for warning in warnings:
         print(f"warning: {warning}", file=sys.stderr)
     return 0
