@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/analyze-loader-trace-v38.yml"
-      - "VF3-Flycast-Trace-v38/**"
+      - "VF3-Flycast-Trace/VF3-Flycast-Trace-v38/**"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import collections, csv, hashlib, pathlib, struct
-          trace = pathlib.Path("VF3-Flycast-Trace-v38/vf3-loader-trace-loader.bin")
+          trace = pathlib.Path("VF3-Flycast-Trace/VF3-Flycast-Trace-v38/vf3-loader-trace-loader.bin")
           raw = trace.read_bytes()
           print(f"Trace: {trace}")
           print(f"Bytes: {len(raw)}")
