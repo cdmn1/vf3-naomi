@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from tools.loader_trace_asset_map import (
-    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, group_mt_motion_rows, make_report, summarize_mt_slot_lookups,
+    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, group_mt_motion_rows, make_report, summarize_mt_slot_lookups, summarize_motion_stream_use,
 )
 
 
@@ -96,6 +96,38 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
             [0x1A028, 0x1A040, 0x1A048],
         )
         self.assertEqual(rows[0]["complete"], 1)
+
+    def test_matches_evaluator_reads_to_motion_stream_source_offsets(self) -> None:
+        rows = [
+            {"asset": "MTAKIPAI.BIN", "destination": 0x0C5F4000,
+             "sectors": 5, "word_index": 0},
+        ]
+        motion_rows = [
+            {"pack": "MTAKIPAI.BIN", "motion_id": 38,
+             "offset0": 0x1A028, "offset1": 0x1A040, "offset2": 0x1A048,
+             "complete": 1},
+        ]
+        base = 0x0C5F4000
+        memory = [
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D6F4, "access": "R",
+             "address": base + 0x1A03A},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D70A, "access": "R",
+             "address": base + 0x1A040},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D794, "access": "R",
+             "address": base + 0x1A048},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D778, "access": "R",
+             "address": base + 0x1A04C},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D77E, "access": "R",
+             "address": base + 0x1A050},
+            {"pack": "MTAKIPAI.BIN", "pc": 0x0C09D782, "access": "R",
+             "address": base + 0x1A054},
+        ]
+        result = summarize_motion_stream_use(rows, memory, motion_rows)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["count_reads"], 1)
+        self.assertEqual(result[0]["time_reads"], 1)
+        self.assertEqual(result[0]["tuple_prefix_reads"], 4)
+        self.assertEqual(result[0]["tuple_lanes"], 4)
 
     def test_transfer_crossing_asset_boundary_is_marked_overlap(self) -> None:
         assets = [
