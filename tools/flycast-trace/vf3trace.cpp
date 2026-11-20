@@ -265,6 +265,37 @@ void vf3TraceMemory(u32 pc, u32 address, u32 width, bool isWrite, u64 value)
     writeWord(value);
 }
 
+void vf3TraceGdromTransfer(u32 destination, u32 size, u32 startFad, u32 sectorSize, u32 remainingSectors)
+{
+    if (traceFile == nullptr || size == 0)
+        return;
+
+    const u64 start = normalizeAddress(destination);
+    const u64 end = start + size;
+    bool overlapsWatch = false;
+    for (const MemoryRange &range : memoryWatches)
+    {
+        const u64 watchStart = normalizeAddress(range.start);
+        const u64 watchEnd = watchStart + range.length;
+        if (start < watchEnd && end > watchStart)
+        {
+            overlapsWatch = true;
+            break;
+        }
+    }
+    if (!overlapsWatch)
+        return;
+
+    // FA21: GD-ROM DMA block: destination, byte count, starting FAD,
+    // sector size and remaining sectors before this chunk was fetched.
+    writeWord(0xFA21);
+    writeWord(destination);
+    writeWord(size);
+    writeWord(startFad);
+    writeWord(sectorSize);
+    writeWord(remainingSectors);
+}
+
 void vf3TraceInstallMemoryHooks()
 {
     if (!vf3TraceEnabled())
