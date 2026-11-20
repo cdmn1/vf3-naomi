@@ -30,10 +30,23 @@ WATCH_PCS = {
     normalize(0x8C0A2FDE): ("obj_load_indirect_call", 0x8C0A2FDE),
     normalize(0x8C0A2EC8): ("obj_buffer_zero_A", 0x8C0A2EC8),
     normalize(0x8C0A304E): ("obj_buffer_zero_B", 0x8C0A304E),
+    normalize(0x8C09D5AE): ("motion_id_row_lookup", 0x8C09D5AE),
+    normalize(0x8C09D5B0): ("motion_row_pointer", 0x8C09D5B0),
+    normalize(0x8C09D5CE): ("mt_slot_lookup_B", 0x8C09D5CE),
+    normalize(0x8C09D5D2): ("mt_slot_lookup_A", 0x8C09D5D2),
+    normalize(0x8C09D5DA): ("mt_slot_lookup_C", 0x8C09D5DA),
+    normalize(0x8C09D690): ("mt_evaluator_entry", 0x8C09D690),
+    normalize(0x8C09D69A): ("mt_linked_record_helper", 0x8C09D69A),
+    normalize(0x8C09D6F4): ("mt_counts_cursor", 0x8C09D6F4),
+    normalize(0x8C09D70A): ("mt_times_cursor", 0x8C09D70A),
+    normalize(0x8C09D778): ("mt_tuple_lane_0", 0x8C09D778),
+    normalize(0x8C09D77E): ("mt_tuple_lane_1", 0x8C09D77E),
+    normalize(0x8C09D782): ("mt_tuple_lane_2", 0x8C09D782),
+    normalize(0x8C09D794): ("mt_tuple_lane_3", 0x8C09D794),
 }
 # Expanded FA12/FA13 records carry PR and R0-R15. Include the call target
 # register (r1) and likely argument/manager registers in the compact report.
-REGISTER_FIELDS = ("pr", "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r13", "r14")
+REGISTER_FIELDS = ("pr",) + tuple(f"r{n}" for n in range(16))
 
 def read_rows(path: Path) -> list[dict[str, str]]:
     try:
@@ -100,6 +113,24 @@ def summarize(pc_path: Path, memory_path: Path) -> str:
             continue
         regs = " ".join(f"{name}={row.get(name, '?')}" for name in REGISTER_FIELDS)
         lines.append(f"  {label}: word {row['word_index']} {regs}")
+
+    mt_probe_pcs = {
+        normalize(pc) for pc in (
+            0x8C09D5AE, 0x8C09D5B0, 0x8C09D5CE, 0x8C09D5D2, 0x8C09D5DA,
+            0x8C09D690, 0x8C09D69A, 0x8C09D6F4, 0x8C09D70A,
+            0x8C09D778, 0x8C09D77E, 0x8C09D782, 0x8C09D794,
+        )
+    }
+    lines.extend(["", "MT motion-ID / slot / evaluator register snapshots (first 12 per PC):"])
+    for pc in sorted(mt_probe_pcs):
+        hits = [row for row in probes if normalize(number(row["pc"], "pc", pc_path)) == pc]
+        if not hits:
+            continue
+        label = WATCH_PCS.get(pc, (f"0x{canonical(pc):08X}", pc))[0]
+        lines.append(f"  {label}: {len(hits)} hits")
+        for row in hits[:12]:
+            regs = " ".join(f"{name}={row.get(name, '?')}" for name in REGISTER_FIELDS)
+            lines.append(f"    word {row['word_index']}: {regs}")
 
     lines.extend(["", "Memory accesses by watched range:"])
     for label, counts in by_range.items():
