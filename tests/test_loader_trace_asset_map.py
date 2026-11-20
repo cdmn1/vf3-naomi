@@ -57,7 +57,9 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
         self.assertEqual([row["asset"] for row in rows], ["MTAKIPAI.BIN", "MTAKIWOL.BIN"])
         self.assertEqual([row["extent_match"] for row in rows], ["exact", "exact"])
         self.assertEqual([row["start_lba"] for row in rows], [459459, 463527])
-        report = make_report(rows)
+        report = make_report(rows, version="v68")
+        self.assertIn("# VF3 v68 REIOS HLE asset correlation", report)
+        self.assertNotIn("VF3 v66", report)
         self.assertIn("MTAKIPAI.BIN", report)
         self.assertIn("0x0C5F0000", report)
 
