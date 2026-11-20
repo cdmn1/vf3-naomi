@@ -285,7 +285,7 @@ reads: the raw FA22 stream contains all 2,136 transfer records.
 I added `tools/loader_trace_asset_map.py` to decode every FA22 record and
 correlate its complete sector interval with the GDFS asset extents. The
 analysis ran in GitHub Actions
-[successful run #44790469102](https://github.com/cdmn1/vf3-naomi/actions/runs/44790469102).
+[successful run #44790842795](https://github.com/cdmn1/vf3-naomi/actions/runs/44790842795).
 It decoded 2,136 records, 10,491 sectors and 17,733,028 non-zero bytes,
 matching the v66 diagnostic totals.
 
@@ -310,6 +310,48 @@ direct evidence that the game reads the named matchup motion packs from the
 disc and copies their non-zero contents into the resident-MT memory region.
 The two packs reuse the same destination base rather than occupying separate
 permanent ranges.
+
+### Post-load CPU reads confirm the packs are consumed by the motion evaluator
+
+I extended the offline decoder to parse FA20 interpreter memory-access records
+as well as FA22 transfer records. For each pack, it counts accesses to the
+loaded destination span only after that pack's final transfer, and stops the
+Wolf interval immediately before the same buffer is reused for Pai.
+
+| Pack lifetime | CPU reads | CPU writes | Distinct read/write PCs |
+|---|---:|---:|---:|
+| `MTAKIWOL.BIN` | 32,073 | 18 | 20 |
+| `MTAKIPAI.BIN` | 26,717 | 0 | 19 |
+
+The dominant read PCs are the same motion-evaluation sites identified in
+the earlier MT analysis:
+
+| PC | Wolf reads | Pai reads |
+|---|---:|---:|
+| `0x8C09D6C8` | 7,474 | 7,525 |
+| `0x8C09D70A` | 5,892 | 4,309 |
+| `0x8C09D6F4` | 3,738 | 2,915 |
+| `0x8C09D778` | 3,643 | 2,834 |
+| `0x8C09D77E` | 3,643 | 2,834 |
+| `0x8C09D782` | 3,643 | 2,834 |
+| `0x8C09D794` | 3,643 | 2,833 |
+
+These are CPU accesses whose normalized guest addresses fall inside the
+corresponding pack's loaded destination span, and whose trace positions are
+after the pack's load. This directly connects the named disc asset to the
+motion-evaluation code reading its resident bytes. It closes the earlier gap
+between seeing a file copied into RAM and seeing the game use that RAM as
+motion data.
+
+The 18 Wolf-lifetime writes are zero-clears from `0x8C0A304E` (12) and
+`0x8C0A2EC8` (6) at six buffer-start addresses. They are ordinary CPU
+initialization writes, separate from the direct REIOS HLE sector copies.
+No corresponding payload-range writes were observed during the Pai lifetime.
+
+The artifact also contains `motion_memory.csv`, with each watched access
+tagged to the pack lifetime, guest PC, width, access type and guest address.
+The successful workflow run completed the Python tests, v66 asset/memory
+correlation and the existing input-capture report jobs.
 
 ### MOTHEAD.BIN is loaded immediately before each motion pack
 
