@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from tools.loader_trace_asset_map import (
-    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, make_report, summarize_mt_slot_lookups,
+    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, group_mt_motion_rows, make_report, summarize_mt_slot_lookups,
 )
 
 
@@ -80,6 +80,22 @@ class LoaderTraceAssetMapTests(unittest.TestCase):
             [(row["slot"], row["file_offset"], row["reads"]) for row in lookups],
             [(111, 0x98DD8, 1), (112, 0x98DF4, 1)],
         )
+
+    def test_groups_three_mt_slots_into_one_based_motion_id(self) -> None:
+        lookups = [
+            {"pack": "MTAKIPAI.BIN", "slot": 111, "file_offset": 0x1A028, "reads": 2, "pcs": ""},
+            {"pack": "MTAKIPAI.BIN", "slot": 112, "file_offset": 0x1A040, "reads": 2, "pcs": ""},
+            {"pack": "MTAKIPAI.BIN", "slot": 113, "file_offset": 0x1A048, "reads": 2, "pcs": ""},
+        ]
+        rows = group_mt_motion_rows(lookups)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["motion_id"], 38)
+        self.assertEqual(rows[0]["slot_start"], 111)
+        self.assertEqual(
+            [rows[0][f"offset{i}"] for i in range(3)],
+            [0x1A028, 0x1A040, 0x1A048],
+        )
+        self.assertEqual(rows[0]["complete"], 1)
 
     def test_transfer_crossing_asset_boundary_is_marked_overlap(self) -> None:
         assets = [
