@@ -20,7 +20,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import collections, csv, hashlib, pathlib, struct
-          trace = pathlib.Path("VF3-Flycast-Trace-v32/vf3-loader-trace-loader.bin")
+          trace = pathlib.Path("VF3-Flycast-Trace/VF3-Flycast-Trace-v32/vf3-loader-trace-loader.bin")
           raw = trace.read_bytes()
           print(f"Trace: {trace}")
           print(f"Bytes: {len(raw)}")
