@@ -31,6 +31,12 @@ u64 gdromTransferCalls = 0;
 u64 gdromSectorReadCalls = 0;
 u64 gdromSectorsRead = 0;
 u64 gdromPioDataWords = 0;
+u64 gdromHleReadCalls = 0;
+u64 gdromHleSectorsRead = 0;
+u64 gdromHleNonzeroBytes = 0;
+std::map<u32, u64> gdromHleDestinations;
+std::map<u32, u64> gdromHleFadPages;
+std::vector<std::string> gdromHleReadSamples;
 std::map<uintptr_t, u64> gdromCallerCounts;
 std::vector<std::string> gdromSectorReadSamples;
 u64 gdromTransferWatchOverlaps = 0;
@@ -86,6 +92,18 @@ void writeDiagnostics()
     output << "GD-ROM sector read calls (all transfer modes): " << gdromSectorReadCalls << "\n";
     output << "GD-ROM sectors requested: " << gdromSectorsRead << "\n";
     output << "GD-ROM PIO data words consumed: " << gdromPioDataWords << "\n";
+    output << "REIOS HLE sector transfers: " << gdromHleReadCalls << "\n";
+    output << "REIOS HLE sectors transferred: " << gdromHleSectorsRead << "\n";
+    output << "REIOS HLE nonzero bytes observed: " << gdromHleNonzeroBytes << "\n";
+    output << "REIOS HLE destination pages (4 KiB):\n";
+    for (const auto &entry : gdromHleDestinations)
+        output << "  0x" << std::hex << entry.first << std::dec << " transfers=" << entry.second << "\n";
+    output << "REIOS HLE FAD pages (256 sectors):\n";
+    for (const auto &entry : gdromHleFadPages)
+        output << "  " << entry.first << " transfers=" << entry.second << "\n";
+    output << "REIOS HLE samples (first " << gdromHleReadSamples.size() << "):\n";
+    for (const std::string &sample : gdromHleReadSamples)
+        output << "  " << sample << "\n";
     output << "GD-ROM host caller return addresses:\n";
     for (const auto &entry : gdromCallerCounts)
         output << "  0x" << std::hex << entry.first << std::dec
@@ -351,6 +369,62 @@ void vf3TraceGdromSectorRead(const u8 *buffer, u32 startFad, u32 sectorCount, u3
                << " caller=0x" << std::hex << caller;
         gdromSectorReadSamples.push_back(sample.str());
     }
+}
+
+void vf3TraceGdromHleRead(u32 guestDestination, u32 startFad, u32 sectorCount, bool virtualAddress, bool directMemory, const u8 *buffer, u32 readResult)
+{
+    if (traceFile == nullptr || buffer == nullptr || sectorCount == 0)
+        return;
+
+    const size_t byteCount = static_cast<size_t>(sectorCount) * 2048;
+    u64 nonzeroBytes = 0;
+    u32 hash = 2166136261u;
+    u32 firstWord = 0;
+    u32 lastWord = 0;
+    for (size_t i = 0; i < byteCount; ++i)
+    {
+        const u8 value = buffer[i];
+        if (value != 0)
+            ++nonzeroBytes;
+        hash = (hash ^ value) * 16777619u;
+    }
+    if (byteCount >= 4)
+    {
+        memcpy(&firstWord, buffer, sizeof(firstWord));
+        memcpy(&lastWord, buffer + byteCount - sizeof(lastWord), sizeof(lastWord));
+    }
+
+    ++gdromHleReadCalls;
+    gdromHleSectorsRead += sectorCount;
+    gdromHleNonzeroBytes += nonzeroBytes;
+    ++gdromHleDestinations[normalizeAddress(guestDestination) & 0xfffff000];
+    ++gdromHleFadPages[startFad / 256];
+
+    if (gdromHleReadSamples.size() < 96)
+    {
+        std::ostringstream sample;
+        sample << "dst=0x" << std::hex << guestDestination << std::dec
+               << " FAD=" << startFad << " sectors=" << sectorCount
+               << " virtual=" << (virtualAddress ? 1 : 0)
+               << " direct=" << (directMemory ? 1 : 0)
+               << " result=" << readResult
+               << " nonzero_bytes=" << nonzeroBytes
+               << " fnv1a=0x" << std::hex << hash
+               << " first_word=0x" << firstWord
+               << " last_word=0x" << lastWord;
+        gdromHleReadSamples.push_back(sample.str());
+    }
+
+    // FA22: REIOS HLE sector transfer metadata and compact content fingerprint.
+    writeWord(0xFA22);
+    writeWord(guestDestination);
+    writeWord(startFad);
+    writeWord(sectorCount);
+    writeWord((virtualAddress ? 1ull : 0ull) | (directMemory ? 2ull : 0ull));
+    writeWord(readResult);
+    writeWord(nonzeroBytes);
+    writeWord(hash);
+    writeWord((static_cast<u64>(firstWord) << 32) | lastWord);
 }
 
 void vf3TraceGdromPioWord(u16 value)
