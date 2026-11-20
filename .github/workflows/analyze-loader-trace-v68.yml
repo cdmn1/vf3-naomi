@@ -1,0 +1,55 @@
+name: Analyze VF3 Flycast loader capture v68
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "VF3-Flycast-Trace/VF3-Flycast-Trace-v68/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-loader-capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out VF3 Naomi tooling
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Decode and analyze v68 trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRACE_DIR="VF3-Flycast-Trace/VF3-Flycast-Trace-v68"
+          TRACE="$TRACE_DIR/vf3-loader-trace-loader.bin"
+          if [[ ! -s "$TRACE" && -s "$TRACE_DIR/vf3-loader-trace-loader.zip" ]]; then
+            unzip -o "$TRACE_DIR/vf3-loader-trace-loader.zip" -d "$TRACE_DIR"
+          fi
+          test -s "$TRACE"
+          OUT="trace-v68-analysis"
+          mkdir -p "$OUT"
+          python tools/loader_trace_decode.py "$TRACE" --prefix "$OUT/vf3-loader-trace"
+          python tools/loader_trace_summary.py \
+            "$OUT/vf3-loader-trace.pc.csv" \
+            "$OUT/vf3-loader-trace.memory.csv" > "$OUT/SUMMARY.txt"
+          python tools/loader_trace_asset_map.py "$TRACE" --output-dir "$OUT"
+          if [[ -s "$TRACE_DIR/vf3-loader-trace-loader.bin.diag.txt" ]]; then
+            cp "$TRACE_DIR/vf3-loader-trace-loader.bin.diag.txt" "$OUT/"
+          fi
+          sha256sum "$TRACE" > "$OUT/TRACE-SHA256.txt"
+          cat "$OUT/SUMMARY.txt" >> "$GITHUB_STEP_SUMMARY"
+          cat "$OUT/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload v68 analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-loader-trace-v68-analysis
+          path: trace-v68-analysis/
+          if-no-files-found: error
+          retention-days: 30
