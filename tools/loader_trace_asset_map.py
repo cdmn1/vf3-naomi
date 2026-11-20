@@ -312,7 +312,7 @@ def make_report(
         by_asset[str(row["asset"])].append(row)
 
     lines = [
-        "# VF3 {version} REIOS HLE asset correlation",
+        f"# VF3 {version} REIOS HLE asset correlation",
         "",
         f"- FA22 transfer records: **{len(rows):,}**",
         f"- Sectors reported: **{sum(int(r['sectors']) for r in rows):,}**",
