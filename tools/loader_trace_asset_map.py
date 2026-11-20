@@ -163,6 +163,10 @@ def correlate_motion_memory(
 PRIMARY_RECORD_READS = {
     0x8C09D6F4: ("counts", 0x736),
     0x8C09D70A: ("times", 0x75B),
+    0x8C09D778: ("tuple0", 0x7A4),
+    0x8C09D77E: ("tuple1", 0x7A8),
+    0x8C09D782: ("tuple2", 0x7AC),
+    0x8C09D794: ("tuple3", 0x7B0),
 }
 
 
@@ -184,7 +188,9 @@ def infer_primary_records(rows, motion_memory):
         address = normalize(int(event["address"]))
         for pack, (start, end) in pack_ranges.items():
             base = address - delta
-            if start <= base < end and address < end:
+            # The record header may be adjacent to the direct-read payload.
+            # Attribute by pack lifetime and keep candidates in the MT window.
+            if MT_WINDOW_START <= base < MT_WINDOW_END:
                 counts[(pack, base)][stream] += 1
     output = []
     for (pack, base), streams in sorted(counts.items()):
@@ -284,7 +290,7 @@ def make_report(
                 f"{row['counts_reads']} | {row['times_reads']} |"
             )
         lines.append("")
-        lines.append("Bases are inferred from count reads at record+0x736 and key-time reads at record+0x75B. Candidates with both streams seen are stronger, but are not yet slot IDs.")
+        lines.append("Bases are inferred from fixed evaluator PCs and documented offsets: counts +0x736, key times +0x75B, and tuple lanes +0x7A4/+0x7A8/+0x7AC/+0x7B0. Tuple lanes can also be reached through linked records, so these are candidate bases, not yet proven slot IDs.")
     else:
         lines.append("No fixed count/time cursor reads mapped to a motion-pack range.")
 
