@@ -1,49 +1,80 @@
 #!/usr/bin/env python3
-"""Correlate REIOS HLE FA22 sector-transfer records with the VF3 GDFS asset index."""
+"""Correlate REIOS HLE FA22 transfers and FA20 memory accesses with VF3 MT assets."""
 from __future__ import annotations
 
 import argparse
 import csv
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 import struct
 
-MARKER = 0xFA22
+FA20 = 0xFA20
+FA22 = 0xFA22
 WORD_BYTES = 8
-RECORD_WORDS = 9
 SECTOR_BYTES = 2048
 FAD_LBA_OFFSET = 150
+FA22_WORDS = 9
+FA20_WORDS = 4
+MT_WINDOW_START = 0x0C5F0000
+MT_WINDOW_END = 0x0C860000
 
 
-def decode_transfers(data: bytes) -> list[dict[str, int]]:
-    """Decode FA22 records from the mixed little-endian u64 trace stream."""
+def normalize(address: int) -> int:
+    """Normalize SH-4 P0/P1/P2 aliases to the 29-bit physical address."""
+    return address & 0x1FFFFFFF
+
+
+def canonical(address: int) -> int:
+    """Display a normalized RAM address through the game's P1 alias."""
+    return 0x80000000 | normalize(address)
+
+
+def decode_trace(data: bytes) -> tuple[list[dict[str, int]], list[dict[str, int]], int]:
+    """Decode FA22 transfer and FA20 memory records from a mixed u64 trace."""
     if len(data) % WORD_BYTES:
         raise ValueError(f"trace size {len(data)} is not divisible by 8 bytes")
     words = struct.unpack(f"<{len(data) // WORD_BYTES}Q", data) if data else ()
     transfers: list[dict[str, int]] = []
+    memory: list[dict[str, int]] = []
     i = 0
     while i < len(words):
-        if words[i] != MARKER:
-            i += 1
+        word = words[i]
+        if word == FA22:
+            if i + FA22_WORDS > len(words):
+                raise ValueError(f"truncated FA22 record at u64 word {i}")
+            destination, fad, sectors, flags, result, nonzero, fnv1a, endpoints = words[i + 1:i + 9]
+            transfers.append({
+                "word_index": i,
+                "destination": destination & 0xFFFFFFFF,
+                "fad": fad & 0xFFFFFFFF,
+                "sectors": sectors & 0xFFFFFFFF,
+                "flags": flags & 0xFFFFFFFF,
+                "result": result & 0xFFFFFFFF,
+                "nonzero_bytes": nonzero,
+                "fnv1a": fnv1a & 0xFFFFFFFF,
+                "first_word": (endpoints >> 32) & 0xFFFFFFFF,
+                "last_word": endpoints & 0xFFFFFFFF,
+            })
+            i += FA22_WORDS
             continue
-        if i + RECORD_WORDS > len(words):
-            raise ValueError(f"truncated FA22 record at u64 word {i}")
-        destination, fad, sectors, flags, result, nonzero, fnv1a, endpoints = words[i + 1:i + 9]
-        transfers.append({
-            "word_index": i,
-            "destination": destination & 0xFFFFFFFF,
-            "fad": fad & 0xFFFFFFFF,
-            "sectors": sectors & 0xFFFFFFFF,
-            "flags": flags & 0xFFFFFFFF,
-            "result": result & 0xFFFFFFFF,
-            "nonzero_bytes": nonzero,
-            "fnv1a": fnv1a & 0xFFFFFFFF,
-            "first_word": (endpoints >> 32) & 0xFFFFFFFF,
-            "last_word": endpoints & 0xFFFFFFFF,
-        })
-        i += RECORD_WORDS
-    return transfers
+        if (word & 0xFFFF) == FA20:
+            if i + FA20_WORDS > len(words):
+                raise ValueError(f"truncated FA20 record at u64 word {i}")
+            meta, address, value = words[i + 1:i + 4]
+            width = (meta >> 48) & 0xFFFF
+            memory.append({
+                "word_index": i,
+                "pc": (word >> 16) & 0xFFFFFFFF,
+                "access": "W" if ((meta >> 47) & 1) else "R",
+                "width": width,
+                "address": address & 0xFFFFFFFF,
+                "value": value,
+            })
+            i += FA20_WORDS
+            continue
+        i += 1
+    return transfers, memory, len(words)
 
 
 def load_assets(path: Path) -> list[dict[str, int | str]]:
@@ -89,7 +120,48 @@ def correlate(transfers: list[dict[str, int]],
     return result
 
 
-def make_report(rows: list[dict[str, int | str]]) -> str:
+def correlate_motion_memory(
+    rows: list[dict[str, int | str]],
+    memory: list[dict[str, int]],
+    trace_word_count: int,
+) -> list[dict[str, int | str]]:
+    """Attach watched CPU accesses made after each MT pack load, before reuse."""
+    groups: dict[str, list[dict[str, int | str]]] = defaultdict(list)
+    for row in rows:
+        name = str(row["asset"])
+        if name.startswith("MT") and name.endswith(".BIN"):
+            groups[name].append(row)
+
+    pack_starts = {
+        name: min(int(row["word_index"]) for row in group)
+        for name, group in groups.items()
+    }
+    ordered = sorted(pack_starts, key=pack_starts.get)
+    output: list[dict[str, int | str]] = []
+    for name in ordered:
+        group = groups[name]
+        load_end = max(int(row["word_index"]) for row in group) + FA22_WORDS
+        later_starts = [pack_starts[other] for other in ordered if pack_starts[other] > pack_starts[name]]
+        window_end = min(later_starts) if later_starts else trace_word_count
+        start = min(int(row["destination"]) for row in group)
+        end = max(int(row["destination"]) + int(row["sectors"]) * SECTOR_BYTES for row in group)
+        for event in memory:
+            if not (load_end <= event["word_index"] < window_end):
+                continue
+            address = normalize(event["address"])
+            if address < end and address + max(1, event["width"]) > start:
+                row: dict[str, int | str] = dict(event)
+                row["pack"] = name
+                row["canonical_pc"] = canonical(event["pc"])
+                row["canonical_address"] = canonical(event["address"])
+                output.append(row)
+    return output
+
+
+def make_report(
+    rows: list[dict[str, int | str]],
+    motion_memory: list[dict[str, int | str]] | None = None,
+) -> str:
     by_asset: dict[str, list[dict[str, int | str]]] = defaultdict(list)
     for row in rows:
         by_asset[str(row["asset"])].append(row)
@@ -132,8 +204,29 @@ def make_report(rows: list[dict[str, int | str]]) -> str:
                 f"{row['sectors']} | 0x{int(row['destination']):08X} | "
                 f"{int(row['nonzero_bytes']):,} | {row['result']} |"
             )
+
+    motion_memory = motion_memory or []
+    lines.extend(["", "## CPU accesses to loaded motion-pack payloads", ""])
+    if motion_memory:
+        by_pack: dict[str, list[dict[str, int | str]]] = defaultdict(list)
+        for row in motion_memory:
+            by_pack[str(row["pack"])].append(row)
+        lines.extend([
+            "| Pack lifetime | Reads | Writes | Distinct PCs |",
+            "|---|---:|---:|---:|",
+        ])
+        for name, group in by_pack.items():
+            reads = sum(row["access"] == "R" for row in group)
+            writes = sum(row["access"] == "W" for row in group)
+            pcs = {int(row["pc"]) for row in group}
+            lines.append(f"| {name} | {reads} | {writes} | {len(pcs)} |")
+            pc_counts = Counter(int(row["pc"]) for row in group if row["access"] == "R")
+            if pc_counts:
+                lines.append(f"  Top read PCs for {name}: " + ", ".join(
+                    f"0x{canonical(pc):08X} ({count})" for pc, count in pc_counts.most_common(8)
+                ))
     else:
-        lines.append("No transfer records mapped to indexed MT*.BIN assets.")
+        lines.append("No watched CPU accesses overlapped the loaded motion-pack payloads after each load.")
 
     lines.extend([
         "",
@@ -141,6 +234,7 @@ def make_report(rows: list[dict[str, int | str]]) -> str:
         "",
         "- exact means the complete requested sector interval is contained in one indexed file extent.",
         "- overlap means a transfer crosses an indexed extent boundary or overlaps multiple extents.",
+        "- FA20 records are interpreter-observed CPU accesses from configured memory watches; they do not include the direct REIOS HLE copy itself.",
         "- The index maps disc sectors to filenames; it does not by itself prove how the game interprets the bytes.",
         "- Non-zero-byte counts are content fingerprints, not proof that every byte is meaningful or consumed.",
         "- Guest destinations are the addresses recorded by the REIOS HLE hook, not hardware GD-ROM DMA destinations.",
@@ -149,19 +243,32 @@ def make_report(rows: list[dict[str, int | str]]) -> str:
     return "\n".join(lines)
 
 
-def write_outputs(rows: list[dict[str, int | str]], output_dir: Path) -> None:
+def write_outputs(
+    rows: list[dict[str, int | str]],
+    motion_memory: list[dict[str, int | str]],
+    output_dir: Path,
+) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    fields = [
+    transfer_fields = [
         "word_index", "asset", "extent_match", "fad", "start_lba", "end_lba_exclusive",
         "sectors", "destination", "flags", "result", "nonzero_bytes", "fnv1a",
         "first_word", "last_word",
     ]
     with (output_dir / "transfers.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=transfer_fields)
         writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
-    (output_dir / "report.md").write_text(make_report(rows), encoding="utf-8")
+        writer.writerows(rows)
+
+    memory_fields = [
+        "pack", "word_index", "pc", "canonical_pc", "access", "width",
+        "address", "canonical_address", "value",
+    ]
+    with (output_dir / "motion_memory.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=memory_fields)
+        writer.writeheader()
+        writer.writerows(motion_memory)
+
+    (output_dir / "report.md").write_text(make_report(rows, motion_memory), encoding="utf-8")
 
 
 def main() -> int:
@@ -172,15 +279,16 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        transfers = decode_transfers(args.trace.read_bytes())
+        transfers, memory, trace_word_count = decode_trace(args.trace.read_bytes())
         assets = load_assets(args.asset_index)
         rows = correlate(transfers, assets)
-        write_outputs(rows, args.output_dir)
-    except (OSError, ValueError, csv.Error) as exc:
+        motion_memory = correlate_motion_memory(rows, memory, trace_word_count)
+        write_outputs(rows, motion_memory, args.output_dir)
+    except (OSError, ValueError, csv.Error, struct.error) as exc:
         parser.exit(1, f"loader_trace_asset_map: {exc}\n")
 
-    print(make_report(rows))
-    print(f"\nWrote {len(rows)} transfer records to {args.output_dir}")
+    print(make_report(rows, motion_memory))
+    print(f"\nWrote {len(rows)} transfer records and {len(motion_memory)} motion-memory events to {args.output_dir}")
     return 0
 
 
