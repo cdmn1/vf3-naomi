@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/analyze-loader-trace-v37.yml"
-      - "VF3-Flycast-Trace-v37/**"
+      - "VF3-Flycast-Trace/VF3-Flycast-Trace-v37/**"
   workflow_dispatch:
 
 permissions:
@@ -19,14 +19,14 @@ jobs:
       - name: Unpack v37 trace capture
         shell: bash
         run: |
-          unzip -o VF3-Flycast-Trace-v37/vf3-loader-trace-loader.zip -d VF3-Flycast-Trace-v37
+          unzip -o VF3-Flycast-Trace/VF3-Flycast-Trace-v37/vf3-loader-trace-loader.zip -d VF3-Flycast-Trace-v37
           ls -lah VF3-Flycast-Trace-v37
       - name: Decode and analyze v37 loader trace
         shell: bash
         run: |
           python3 - <<'PY'
           import collections, csv, hashlib, pathlib, struct
-          trace = pathlib.Path("VF3-Flycast-Trace-v37/vf3-loader-trace-loader.bin")
+          trace = pathlib.Path("VF3-Flycast-Trace/VF3-Flycast-Trace-v37/vf3-loader-trace-loader.bin")
           raw = trace.read_bytes()
           print(f"Trace: {trace}")
           print(f"Bytes: {len(raw)}")
