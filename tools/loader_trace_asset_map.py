@@ -172,29 +172,25 @@ PRIMARY_RECORD_READS = {
 
 def infer_primary_records(rows, motion_memory):
     """Infer primary MT record bases from fixed evaluator cursor offsets."""
-    pack_ranges = {}
+    pack_starts = {}
     for name in {str(r["asset"]) for r in rows
                  if str(r["asset"]).startswith("MT") and str(r["asset"]).endswith(".BIN")}:
         group = [r for r in rows if str(r["asset"]) == name]
-        start = min(int(r["destination"]) for r in group)
-        end = max(int(r["destination"]) + int(r["sectors"]) * SECTOR_BYTES for r in group)
-        pack_ranges[name] = (start, end)
+        pack_starts[name] = min(int(r["destination"]) for r in group)
+
     counts = defaultdict(Counter)
     for event in motion_memory:
         spec = PRIMARY_RECORD_READS.get(int(event["pc"]))
         if not spec or event["access"] != "R":
             continue
         stream, delta = spec
-        address = normalize(int(event["address"]))
-        for pack, (start, end) in pack_ranges.items():
-            base = address - delta
-            # The record header may be adjacent to the direct-read payload.
-            # Attribute by pack lifetime and keep candidates in the MT window.
-            if MT_WINDOW_START <= base < MT_WINDOW_END:
-                counts[(pack, base)][stream] += 1
+        pack = str(event["pack"])
+        base = normalize(int(event["address"])) - delta
+        counts[(pack, base)][stream] += 1
+
     output = []
     for (pack, base), streams in sorted(counts.items()):
-        start, _ = pack_ranges[pack]
+        start = pack_starts.get(pack, 0)
         output.append({
             "pack": pack, "record_base": base,
             "canonical_record_base": canonical(base),
