@@ -161,6 +161,7 @@ def correlate_motion_memory(
 def make_report(
     rows: list[dict[str, int | str]],
     motion_memory: list[dict[str, int | str]] | None = None,
+    record_candidates: list[dict[str, int | str]] | None = None,
 ) -> str:
     by_asset: dict[str, list[dict[str, int | str]]] = defaultdict(list)
     for row in rows:
@@ -227,6 +228,24 @@ def make_report(
                 ))
     else:
         lines.append("No watched CPU accesses overlapped the loaded motion-pack payloads after each load.")
+
+    record_candidates = record_candidates or []
+    lines.extend(["", "## Primary record-base candidates from evaluator cursors", ""])
+    if record_candidates:
+        lines.extend([
+            "| Pack | Inferred record base | Pack-relative offset | Counts reads | Time reads |",
+            "|---|---:|---:|---:|---:|",
+        ])
+        for row in record_candidates:
+            lines.append(
+                f"| {row['pack']} | 0x{int(row['canonical_record_base']):08X} | "
+                f"0x{int(row['pack_relative_offset']):X} | "
+                f"{row['counts_reads']} | {row['times_reads']} |"
+            )
+        lines.append("")
+        lines.append("Bases are inferred from count reads at record+0x736 and key-time reads at record+0x75B. Candidates with both streams seen are stronger, but are not yet slot IDs.")
+    else:
+        lines.append("No fixed count/time cursor reads mapped to a motion-pack range.")
 
     lines.extend([
         "",
@@ -296,8 +315,9 @@ def main() -> int:
     except (OSError, ValueError, csv.Error, struct.error) as exc:
         parser.exit(1, f"loader_trace_asset_map: {exc}\n")
 
-    print(make_report(rows, motion_memory))
-    print(f"\nWrote {len(rows)} transfer records and {len(motion_memory)} motion-memory events to {args.output_dir}")
+    record_candidates = infer_primary_records(rows, motion_memory)
+    print(make_report(rows, motion_memory, record_candidates))
+    print(f"\nWrote {len(rows)} transfer records, {len(motion_memory)} motion-memory events and {len(record_candidates)} record-base candidates to {args.output_dir}")
     return 0
 
 
