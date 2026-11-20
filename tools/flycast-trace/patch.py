@@ -74,21 +74,6 @@ def main() -> None:
         "\t\t\t\tu32 rv = pio_buff.read();\n\t\t\t\tvf3TraceGdromPioWord(static_cast<u16>(rv));\n",
     )
     replace_once(
-        root / "core/hw/gdrom/gdromv3.cpp",
-        "\t\tif (libGDR_ReadSector((u8*)sector, cdda.CurrAddr.FAD, 1, 2352, true) == 0)",
-        "\t\tvf3TraceGdromReadPath(\"CDDA\", cdda.CurrAddr.FAD, 1, 2352);\n\t\tif (libGDR_ReadSector((u8*)sector, cdda.CurrAddr.FAD, 1, 2352, true) == 0)",
-    )
-    replace_once(
-        root / "core/hw/gdrom/gdromv3.cpp",
-        "\tlibGDR_ReadSector(cache, params.start_sector, count, params.sector_type);",
-        "\tvf3TraceGdromReadPath(\"DMA\", params.start_sector, count, params.sector_type);\n\tlibGDR_ReadSector(cache, params.start_sector, count, params.sector_type);",
-    )
-    replace_once(
-        root / "core/hw/gdrom/gdromv3.cpp",
-        "\t\t\t\tlibGDR_ReadSector((u8*)buffer, read_params.start_sector, sector_count, read_params.sector_type);",
-        "\t\t\t\tvf3TraceGdromReadPath(\"PIO\", read_params.start_sector, sector_count, read_params.sector_type);\n\t\t\t\tlibGDR_ReadSector((u8*)buffer, read_params.start_sector, sector_count, read_params.sector_type);",
-    )
-    replace_once(
         root / "core/imgread/common.cpp",
         '#include "hw/gdrom/gdromv3.h"\n',
         '#include "hw/gdrom/gdromv3.h"\n#include "hw/sh4/interpr/vf3trace.h"\n',
@@ -96,7 +81,7 @@ def main() -> None:
     replace_once(
         root / "core/imgread/common.cpp",
         "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\n{\n",
-        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\n{\n\tvf3TraceGdromSectorRead(buff, startSector, sectorCount, sectorSize, stopOnMiss);\n",
+        "u32 libGDR_ReadSector(u8 *buff, u32 startSector, u32 sectorCount, u32 sectorSize, bool stopOnMiss)\n{\n\tvf3TraceGdromSectorRead(buff, startSector, sectorCount, sectorSize, stopOnMiss, reinterpret_cast<uintptr_t>(__builtin_return_address(0)));\n",
     )
     replace_once(
         root / "core/hw/sh4/sh4_mem.cpp",
