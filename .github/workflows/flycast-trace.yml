@@ -94,7 +94,7 @@ jobs:
           VF3 tooling commit: $env:GITHUB_SHA
           Build version: $version
           Built by GitHub Actions run: $env:GITHUB_RUN_ID
-          Instrumentation: expanded PC probes (FA12/FA13), guest memory access records (FA20), GD-ROM DMA blocks (FA21), and GD-ROM hook diagnostics
+          Instrumentation: expanded PC probes (FA12/FA13), guest memory access records (FA20), GD-ROM DMA blocks (FA21), REIOS HLE sector transfers and data fingerprints (FA22), and GD-ROM hook diagnostics
           Default watch profile: VF3_WATCH_INPUT.txt (four controller-path PCs)
           Loader capture launcher: run-trace-loader.cmd (GDFS/MT PCs plus watched memory ranges)
           Controller probes: selected-port reader, controller merge, player action update, packet lookup
