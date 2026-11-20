@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from tools.loader_trace_asset_map import (
-    FA20, FA22, correlate, correlate_motion_memory, decode_trace, load_assets, make_report,
+    FA20, FA22, correlate, correlate_motion_memory, decode_trace, infer_primary_records, load_assets, make_report,
 )
 
 
