@@ -23,7 +23,7 @@ MEMORY = 0xFA20
 GDROM_DMA = 0xFA21
 
 
-def decode(path: Path):
+def decode(path: Path, include_transfers: bool = False):
     try:
         raw = path.read_bytes()
     except OSError as exc:
@@ -99,7 +99,9 @@ def decode(path: Path):
             i += 6
             continue
         i += 1
-    return probes, memory, transfers, warnings
+    if include_transfers:
+        return probes, memory, transfers, warnings
+    return probes, memory, warnings
 
 
 def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None:
@@ -116,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     prefix = args.prefix or args.trace.with_suffix("")
     try:
-        probes, memory, transfers, warnings = decode(args.trace)
+        probes, memory, transfers, warnings = decode(args.trace, include_transfers=True)
         prefix.parent.mkdir(parents=True, exist_ok=True)
         write_csv(Path(str(prefix) + ".pc.csv"), probes,
                   ["word_index", "pc", "pr"] + [f"r{n}" for n in range(16)])
