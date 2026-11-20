@@ -64,3 +64,25 @@ jobs:
             input-field-report.md
           if-no-files-found: error
           retention-days: 30
+
+  v66-hle-asset-correlation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Correlate v66 REIOS HLE reads with GDFS asset extents
+        run: |
+          python tools/loader_trace_asset_map.py \
+            VF3-Flycast-Trace/VF3-Flycast-Trace-v66/vf3-loader-trace-loader.bin \
+            --asset-index docs/GDFS_ASSET_INDEX.csv \
+            --output-dir artifacts/v66-hle-asset-correlation
+          cat artifacts/v66-hle-asset-correlation/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload per-transfer correlation
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-v66-hle-asset-correlation
+          path: artifacts/v66-hle-asset-correlation/
+          if-no-files-found: error
+          retention-days: 30
