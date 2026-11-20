@@ -1,0 +1,85 @@
+name: Analyze VF3 Flycast loader capture v45
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/analyze-loader-trace-v45.yml"
+      - "VF3-Flycast-Trace-v45/**"
+      - "tools/loader_trace_decode.py"
+      - "tools/loader_trace_summary.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decode-loader-capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode v45 trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRACE="VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin"
+          test -s "$TRACE"
+          mkdir -p trace-v45-analysis
+          python3 tools/loader_trace_decode.py "$TRACE" --prefix trace-v45-analysis/vf3-loader-trace
+          python3 tools/loader_trace_summary.py trace-v45-analysis/vf3-loader-trace.pc.csv trace-v45-analysis/vf3-loader-trace.memory.csv > trace-v45-analysis/SUMMARY.txt
+          cp VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin.diag.txt trace-v45-analysis/ 2>/dev/null || true
+          python3 - <<'PY'
+          import csv, hashlib, pathlib
+          trace = pathlib.Path("VF3-Flycast-Trace-v45/vf3-loader-trace-loader.bin")
+          out = pathlib.Path("trace-v45-analysis")
+          raw = trace.read_bytes()
+          dma_path = out / "vf3-loader-trace.gdrom_dma.csv"
+          rows = list(csv.DictReader(dma_path.open(newline="", encoding="utf-8")))
+          mt_start, mt_end = 0x0C5F0000, 0x0C860000
+          def norm(x): return x & 0x1FFFFFFF
+          overlaps = []
+          for r in rows:
+              dst, size = int(r["destination"], 0), int(r["size"])
+              lo, hi = norm(dst), norm(dst) + size
+              if lo < mt_end and hi > mt_start:
+                  overlaps.append((r, max(lo, mt_start), min(hi, mt_end)))
+          report = [
+              "# VF3 Flycast loader trace v45 — GD-ROM DMA analysis", "",
+              f"- Trace bytes: **{len(raw):,}**",
+              f"- SHA-256: `{hashlib.sha256(raw).hexdigest()}`",
+              f"- GD-ROM DMA records decoded: **{len(rows):,}**",
+              f"- DMA records overlapping resident MT window (0x0C5F0000–0x0C860000): **{len(overlaps):,}**",
+              "", "## DMA destinations overlapping resident MT window", "",
+              "| Word | Destination | Bytes | FAD | Sector bytes | Remaining sectors | MT overlap |",
+              "|---:|---:|---:|---:|---:|---:|---:|"
+          ]
+          for r, lo, hi in overlaps:
+              report.append(f"| {r['word_index']} | `{r['destination']}` | {int(r['size']):,} | {r['start_fad']} | {r['sector_size']} | {r['remaining_sectors']} | `0x{lo:08X}–0x{hi:08X}` |")
+          if not overlaps:
+              report.append("| — | — | — | — | — | — | No recorded DMA overlap |")
+          report += ["", "## DMA record summary", ""]
+          if rows:
+              fads = sorted({int(r["start_fad"]) for r in rows})
+              sizes = sorted({int(r["size"]) for r in rows})
+              report += [f"- Unique starting FADs: **{len(fads)}**",
+                         f"- Distinct transfer sizes: **{len(sizes)}**",
+                         f"- Total recorded DMA bytes: **{sum(int(r['size']) for r in rows):,}**",
+                         f"- FAD range: **{min(fads)}–{max(fads)}**"]
+          else:
+              report.append("- No FA21 GD-ROM DMA records were decoded.")
+          report += ["", "## Interpretation limits", "",
+                     "- A destination overlap identifies DMA into the watched resident MT address range; it does not by itself identify the resource or prove the data is motion data.",
+                     "- FAD values are disc-sector addresses. Mapping them to filenames requires the matching disc filesystem metadata / GDFS index.",
+                     ""]
+          (out / "GDROM-DMA-REPORT.md").write_text("\n".join(report), encoding="utf-8")
+          print("\n".join(report))
+          PY
+          cat trace-v45-analysis/GDROM-DMA-REPORT.md >> "$GITHUB_STEP_SUMMARY"
+          cat trace-v45-analysis/SUMMARY.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload decoded v45 analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-loader-trace-v45-analysis
+          path: trace-v45-analysis/
+          if-no-files-found: error
+          retention-days: 30
