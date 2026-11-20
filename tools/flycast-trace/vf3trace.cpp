@@ -26,7 +26,7 @@ std::vector<u64> pcWatchHits;
 std::vector<MemoryRange> memoryWatches;
 std::map<u32, u64> executedPcPages;
 u64 instructionCount = 0;
-u64 gdromTransferCalls = 0;
+u64 gdromTransferCalls = 0;\nu64 gdromSectorReadCalls = 0;\nu64 gdromSectorsRead = 0;\nu64 gdromPioDataWords = 0;\nstd::vector<std::string> gdromSectorReadSamples;
 u64 gdromTransferWatchOverlaps = 0;
 std::vector<std::string> gdromTransferSamples;
 std::string diagnosticsPath;
@@ -315,6 +315,31 @@ void vf3TraceGdromTransfer(u32 destination, u32 size, u32 startFad, u32 sectorSi
     writeWord(startFad);
     writeWord(sectorSize);
     writeWord(remainingSectors);
+}
+
+void vf3TraceGdromSectorRead(const u8 *buffer, u32 startFad, u32 sectorCount, u32 sectorSize, bool stopOnMiss)
+{
+    if (traceFile == nullptr || sectorCount == 0)
+        return;
+
+    ++gdromSectorReadCalls;
+    gdromSectorsRead += sectorCount;
+    if (gdromSectorReadSamples.size() < 64)
+    {
+        std::ostringstream sample;
+        sample << "FAD=" << startFad << " sectors=" << sectorCount
+               << " sector_size=" << sectorSize
+               << " stop_on_miss=" << (stopOnMiss ? 1 : 0)
+               << " host_buffer=0x" << std::hex << reinterpret_cast<uintptr_t>(buffer);
+        gdromSectorReadSamples.push_back(sample.str());
+    }
+}
+
+void vf3TraceGdromPioWord(u16 value)
+{
+    (void)value;
+    if (traceFile != nullptr)
+        ++gdromPioDataWords;
 }
 
 void vf3TraceInstallMemoryHooks()
