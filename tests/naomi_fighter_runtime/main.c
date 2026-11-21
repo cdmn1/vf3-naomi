@@ -234,7 +234,6 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
         mesh->first_index > scene->index_count ||
         mesh->index_count > scene->index_count - mesh->first_index)
         return;
-    pvr_prim(&mesh_header, sizeof(mesh_header));
     for (uint32_t i = 0; i + 2u < mesh->index_count; i += 3u) {
         for (unsigned corner = 0; corner < 3u; ++corner) {
             const uint32_t index = scene->indices[mesh->first_index + i + corner];
@@ -284,7 +283,7 @@ static void draw_akira(void)
         if (!model) continue;
         for (uint32_t m = 0; m < part->mesh_count; ++m)
             measure_mesh(scene, &scene->meshes[model->first_mesh + m],
-                         attachment[i], root, part->source == 1u);
+                         attachment[i], root);
     }
     {
         const float width = camera_max_x - camera_min_x;
@@ -306,7 +305,7 @@ static void draw_akira(void)
         if (!model) continue;
         for (uint32_t m = 0; m < part->mesh_count; ++m)
             draw_mesh(scene, &scene->meshes[model->first_mesh + m],
-                      attachment[i], root);
+                      attachment[i], root, part->source == 1u);
     }
 }
 
