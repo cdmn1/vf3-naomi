@@ -686,7 +686,7 @@ jobs:
           ROM="vf3_naomi_akira_motion-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_fighter_runtime/${ROM}" "akira-motion-artifact/${ROM}"
           SIZE="$(stat -c '%s' "akira-motion-artifact/${ROM}")"
-          SHA="$(sha256sum "akira-static-artifact/${ROM}" | awk '{print $1}')"
+          SHA="$(sha256sum "akira-motion-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
           cat > akira-motion-artifact/BUILD_INFO.txt <<EOF
           Target: VF3 Naomi Akira textured POL geometry and real MT motion renderer
