@@ -577,7 +577,9 @@ jobs:
           path: |
             MKAO_AKI.POL
             ROB_AKI.POL
-          key: vf3-naomi-akira-poltex-assets-v1
+            MKAO_AKI.TEX
+            ROB_AKI.TEX
+          key: vf3-naomi-akira-poltex-assets-v2
 
       - name: Download Akira POL assets if cache is unavailable
         if: steps.akira-pol-cache.outputs.cache-hit != 'true'
@@ -603,7 +605,7 @@ jobs:
           path: |
             MKAO_AKI.POL
             ROB_AKI.POL
-          key: vf3-naomi-akira-poltex-assets-v1
+          key: vf3-naomi-akira-poltex-assets-v2
 
       - name: Stage Akira POL files for Naomi
         run: |
@@ -622,7 +624,7 @@ jobs:
               with target.open("w") as f:
                   for i in range(0, len(data), 16):
                       f.write(",".join(f"0x{b:02x}" for b in data[i:i+16]) + ",\n")
-              print(f"{stem}.POL: embedded {len(data)} bytes")
+              print(f"{stem}.{ext}: embedded {len(data)} bytes")
           data = (out / "MTAKIPAI.BIN").read_bytes()
           target = out / "MTAKIPAI.inc"
           with target.open("w") as f:
@@ -651,7 +653,7 @@ jobs:
           (out / "motion_pose_kos.c").write_text(source.replace(marker, '#include "motion_pose_kos.h"'))
           PY
 
-      - name: Compile Akira static model renderer for Naomi
+      - name: Compile Akira textured motion renderer for Naomi
         env:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
@@ -675,16 +677,16 @@ jobs:
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_fighter_runtime rom
           test -s "tests/naomi_fighter_runtime/vf3_naomi_akira_motion-v${GITHUB_RUN_NUMBER}.bin"
 
-      - name: Validate and upload Akira static model ROM
+      - name: Validate and upload Akira motion renderer ROM
         run: |
           set -euo pipefail
           mkdir -p akira-motion-artifact
-          ROM="vf3_naomi_akira_static-v${GITHUB_RUN_NUMBER}.bin"
-          cp "tests/naomi_fighter_runtime/${ROM}" "akira-static-artifact/${ROM}"
+          ROM="vf3_naomi_akira_motion-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_fighter_runtime/${ROM}" "akira-motion-artifact/${ROM}"
           SIZE="$(stat -c '%s' "akira-static-artifact/${ROM}")"
           SHA="$(sha256sum "akira-static-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
-          cat > akira-static-artifact/BUILD_INFO.txt <<EOF
+          cat > akira-motion-artifact/BUILD_INFO.txt <<EOF
           Target: VF3 Naomi Akira textured POL geometry and real MT motion renderer
           VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
@@ -711,7 +713,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vf3-naomi-akira-motion-v${{ github.run_number }}
-          path: akira-static-artifact/*
+          path: akira-motion-artifact/*
           if-no-files-found: error
 
       - name: Compile pinned native pose family for Naomi
