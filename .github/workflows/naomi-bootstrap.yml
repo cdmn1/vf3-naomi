@@ -9,6 +9,7 @@ on:
       - "tests/naomi_dma_probe/**"
       - "tests/naomi_vf3_runtime/**"
       - "tests/naomi_fighter_runtime/**"
+      - "tests/naomi_pose_core_probe/**"
       - ".github/workflows/naomi-bootstrap.yml"
   workflow_dispatch:
 
@@ -704,4 +705,65 @@ jobs:
         with:
           name: vf3-naomi-akira-static-v${{ github.run_number }}
           path: akira-static-artifact/*
+          if-no-files-found: error
+
+      - name: Compile pinned native pose family for Naomi
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_pose_core_probe all
+          test -s tests/naomi_pose_core_probe/vf3_naomi_pose_core_probe.elf
+
+      - name: Package native pose core probe ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -eo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_pose_core_probe rom
+          test -s "tests/naomi_pose_core_probe/vf3_naomi_pose_core_probe-v${GITHUB_RUN_NUMBER}.bin"
+
+      - name: Validate and upload native pose core probe
+        run: |
+          set -euo pipefail
+          mkdir -p pose-core-artifact
+          ROM="vf3_naomi_pose_core_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_pose_core_probe/${ROM}" "pose-core-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "pose-core-artifact/${ROM}")"
+          SHA="$(sha256sum "pose-core-artifact/${ROM}" | awk '{print $1}')"
+          test "$SIZE" -gt 0
+          cat > pose-core-artifact/BUILD_INFO.txt <<EOF
+          Target: VF3 Naomi native pose/matrix core conformance probe
+          VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
+          KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
+          Workflow run: ${GITHUB_RUN_ID}
+          ROM: ${ROM}
+          Size: ${SIZE}
+          SHA-256: ${SHA}
+          Compiled source family: matrix, aim_math, motion_aim, pose_orchestration, seven_pass, halfword_frame, facing_update, aim_midpoints, matrix_basis
+          Runtime checks: matrix identity/multiply/point transform, pose matrix stack, composed rotation, context layout
+          Scope: validates SH-4 compilation and foundational native pose math; full actor orchestration and live actor inputs are not yet exercised
+          EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Native pose core probe
+          - ROM: ${ROM}
+          - Size: ${SIZE} bytes
+          - SHA-256: ${SHA}
+          - Full actor orchestration: not yet exercised
+          EOF
+        shell: bash
+
+      - name: Upload native pose core probe ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-pose-core-probe-v${{ github.run_number }}
+          path: pose-core-artifact/*
           if-no-files-found: error
