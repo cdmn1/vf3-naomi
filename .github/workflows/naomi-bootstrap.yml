@@ -452,7 +452,7 @@ jobs:
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.S', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
       - name: Preserve timestamps for restored MT asset probe objects
         if: steps.vf3-runtime-cache.outputs.cache-hit == 'true'
@@ -478,7 +478,7 @@ jobs:
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.S', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
       - name: Package real VF3 MT asset probe Naomi ROM
         env:
