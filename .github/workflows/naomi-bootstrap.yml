@@ -8,6 +8,7 @@ on:
       - "tests/naomi_vf3core_smoke/**"
       - "tests/naomi_dma_probe/**"
       - "tests/naomi_vf3_runtime/**"
+      - "tests/naomi_fighter_runtime/**"
       - ".github/workflows/naomi-bootstrap.yml"
   workflow_dispatch:
 
@@ -566,4 +567,118 @@ jobs:
         with:
           name: vf3-naomi-mt-asset-probe-v${{ github.run_number }}
           path: vf3-mt-asset-probe-artifact/*
+          if-no-files-found: error
+
+      - name: Restore Akira POL asset cache
+        id: akira-pol-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            MKAO_AKI.POL
+            ROB_AKI.POL
+          key: vf3-naomi-akira-poltex-assets-v1
+
+      - name: Download Akira POL assets if cache is unavailable
+        if: steps.akira-pol-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            --output vf3-assets.zip
+          unzip -Z1 vf3-assets.zip > asset-list.txt
+          for name in MKAO_AKI.POL ROB_AKI.POL; do
+            entry="$(grep -E "(^|/)\${name}$" asset-list.txt | head -n 1)"
+            test -n "$entry"
+            unzip -p vf3-assets.zip "$entry" > "$name"
+            test -s "$name"
+          done
+          rm -f vf3-assets.zip asset-list.txt
+
+      - name: Stage Akira POL files for Naomi
+        run: |
+          set -euo pipefail
+          cp MKAO_AKI.POL ROB_AKI.POL tests/naomi_fighter_runtime/
+
+      - name: Prepare portable native pose builder
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          native = Path("vf3-decomp/src/native")
+          out = Path("tests/naomi_fighter_runtime")
+          header = (native / "motion_pose.h").read_text()
+          marker = '#include "fighter_view.h"'
+          replacement = 'enum { VF3_NATIVE_ATTACHMENT_COUNT = 18, VF3_NATIVE_ATTACHMENT_MATRIX_FLOATS = 16 };'
+          if marker not in header:
+              raise SystemExit("motion_pose.h SDL dependency marker not found")
+          (out / "motion_pose_kos.h").write_text(header.replace(marker, replacement))
+          source = (native / "motion_pose.c").read_text()
+          marker = '#include "motion_pose.h"'
+          if marker not in source:
+              raise SystemExit("motion_pose.c header marker not found")
+          (out / "motion_pose_kos.c").write_text(source.replace(marker, '#include "motion_pose_kos.h"'))
+          PY
+
+      - name: Compile Akira static model renderer for Naomi
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -euo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_fighter_runtime all
+          test -s tests/naomi_fighter_runtime/vf3_naomi_akira_static.elf
+
+      - name: Package Akira static model Naomi ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -euo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_fighter_runtime rom
+          test -s "tests/naomi_fighter_runtime/vf3_naomi_akira_static-v${GITHUB_RUN_NUMBER}.bin"
+
+      - name: Validate and upload Akira static model ROM
+        run: |
+          set -euo pipefail
+          mkdir -p akira-static-artifact
+          ROM="vf3_naomi_akira_static-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_fighter_runtime/${ROM}" "akira-static-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "akira-static-artifact/${ROM}")"
+          SHA="$(sha256sum "akira-static-artifact/${ROM}" | awk '{print $1}')"
+          test "$SIZE" -gt 0
+          cat > akira-static-artifact/BUILD_INFO.txt <<EOF
+          Target: VF3 Naomi Akira static POL geometry renderer
+          VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
+          KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
+          Workflow run: ${GITHUB_RUN_ID}
+          ROM: ${ROM}
+          Size: ${SIZE}
+          SHA-256: ${SHA}
+          Model assets: MKAO_AKI.POL and ROB_AKI.POL
+          Model parser: pinned upstream pol_scene_parse
+          Pose: inferred Akira bind rig, zero motion fields
+          Rendering: native Naomi PowerVR, untextured
+          EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Akira static model on Naomi
+          - ROM: ${ROM}
+          - Size: ${SIZE} bytes
+          - SHA-256: ${SHA}
+          - Pose: inferred bind rig (static)
+          - Renderer: native PowerVR geometry
+          EOF
+        shell: bash
+
+      - name: Upload Akira static model Naomi ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-akira-static-v${{ github.run_number }}
+          path: akira-static-artifact/*
           if-no-files-found: error
