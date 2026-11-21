@@ -53,6 +53,20 @@ static PolTextureDesc head_desc[32], body_desc[32];
 static pvr_ptr_t head_texture[32], body_texture[32];
 static uint32_t head_texture_count, body_texture_count;
 static float attachment[AKIRA_PART_COUNT][16];
+
+/* Captured Akira actor context for the recovered native row-0 chain.
+ * The remaining 17 attachment rows still use the inferred Akira rig. */
+static const vf3_native_motion_actor akira_actor = {
+    .yaw = (uint16_t)(int16_t)-16064,
+    .position = {-4.31287f, 8.99f, -3.22019f},
+    .mode = 11u,
+    .flags = 0x00400000u,
+    .pose_flags = 0x00400000u,
+    .global_flags = 0x00000008u,
+    .arg = 0,
+    .offset = {0.0f, 0.0f, 0.0f},
+    .aim_record = 0u
+};
 static pvr_ptr_t font_texture;
 static pvr_poly_hdr_t mesh_header;
 static pvr_poly_hdr_t textured_header[2][32];
@@ -156,8 +170,8 @@ static int load_model(void)
                                &motion_storage, &motion_stream) != 0)
         return -5;
     motion_ready = 1;
-    if (vf3_native_motion_pose(&motion_stream, motion_phase,
-            VF3_NATIVE_MOTION_RIG_AKIRA, attachment) != 0)
+    if (vf3_native_motion_pose_actor(&motion_stream, motion_phase,
+            VF3_NATIVE_MOTION_RIG_AKIRA, &akira_actor, attachment) != 0)
         return -6;
     pose_ready = 1;
     model_ready = 1;
@@ -168,7 +182,7 @@ static int load_model(void)
     snprintf(status_lines[2], sizeof status_lines[2],
              "PART SELECTORS: 18 / 18");
     snprintf(status_lines[3], sizeof status_lines[3],
-             "POSE: MT 1050 / INFERRED AKIRA RIG");
+             "POSE: MT 1050 / NATIVE ROOT + INFERRED BODY");
     snprintf(status_lines[4], sizeof status_lines[4],
              "MTAKIPAI: REAL ASSET / CYCLE 60");
     snprintf(status_lines[5], sizeof status_lines[5],
@@ -262,8 +276,8 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
 
 static void draw_akira(void)
 {
-    if (!motion_ready || vf3_native_motion_pose(&motion_stream, motion_phase,
-            VF3_NATIVE_MOTION_RIG_AKIRA, attachment) != 0) {
+    if (!motion_ready || vf3_native_motion_pose_actor(&motion_stream, motion_phase,
+            VF3_NATIVE_MOTION_RIG_AKIRA, &akira_actor, attachment) != 0) {
         pose_ready = 0;
         return;
     }
@@ -379,7 +393,7 @@ static void draw_screen(void)
                  (unsigned long)motion_phase, (unsigned long)motion_frame);
         draw_text(16, 238, motion_line);
     }
-    draw_text(16, 438, "REAL MT MOTION - INFERRED RIG - TEXTURED PVR");
+    draw_text(16, 438, "REAL MT MOTION - NATIVE ROOT / INFERRED BODY");
     pvr_list_finish();
     pvr_scene_finish();
 }
