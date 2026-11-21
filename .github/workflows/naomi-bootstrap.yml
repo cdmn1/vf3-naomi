@@ -622,6 +622,12 @@ jobs:
                   for i in range(0, len(data), 16):
                       f.write(",".join(f"0x{b:02x}" for b in data[i:i+16]) + ",\n")
               print(f"{stem}.POL: embedded {len(data)} bytes")
+          data = (out / "MTAKIPAI.BIN").read_bytes()
+          target = out / "MTAKIPAI.inc"
+          with target.open("w") as f:
+              for i in range(0, len(data), 16):
+                  f.write(",".join(f"0x{x:02x}" for x in data[i:i+16]) + ",\\n")
+          print(f"MTAKIPAI.BIN: embedded {len(data)} bytes")
           PY
 
       - name: Prepare portable native pose builder
