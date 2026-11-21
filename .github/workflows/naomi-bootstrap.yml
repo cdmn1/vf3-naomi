@@ -525,11 +525,11 @@ jobs:
           Asset size: 1572408
           Asset SHA-256: 57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554
           Record boundaries: sorted unique file offsets; not slot-order subtraction
-          Scope: real asset table validation only; motion playback not yet enabled
+          Scope: real MTAKIPAI motion component validation; playback semantics not yet mapped
           Packaging: KallistiOS naomibintool
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ## VF3 Naomi real MT asset probe
+          ## VF3 Naomi real MT motion-component probe
           - Build version: v${GITHUB_RUN_NUMBER}
           - ROM: ${ROM}
           - Size: ${SIZE} bytes
