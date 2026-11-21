@@ -444,6 +444,18 @@ jobs:
           set -euo pipefail
           cp mt-asset/MTAKIPAI.BIN tests/naomi_vf3_runtime/MTAKIPAI.BIN
 
+      - name: Generate C initializer for real MT asset
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          data = Path("tests/naomi_vf3_runtime/MTAKIPAI.BIN").read_bytes()
+          out = Path("tests/naomi_vf3_runtime/MTAKIPAI.inc")
+          with out.open("w") as f:
+              for i in range(0, len(data), 16):
+                  f.write(",".join(f"0x{x:02x}" for x in data[i:i+16]) + ",\\n")
+          print(f"Generated {out}: {len(data)} bytes")
+          PY
+
       - name: Restore VF3 real MT asset probe object cache
         id: vf3-runtime-cache
         uses: actions/cache/restore@v4
@@ -452,7 +464,7 @@ jobs:
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
       - name: Preserve timestamps for restored MT asset probe objects
         if: steps.vf3-runtime-cache.outputs.cache-hit == 'true'
@@ -478,7 +490,7 @@ jobs:
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
       - name: Package real VF3 MT asset probe Naomi ROM
         env:
