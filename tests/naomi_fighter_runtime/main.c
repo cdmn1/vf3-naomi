@@ -291,7 +291,10 @@ static void draw_akira(void)
         const AkiraPart *part = &parts[i];
         const PolScene *scene;
         const PolModel *model;
-        if (!part->source) continue;
+        /* Row 0 now uses a sampled native actor transform; do not let that
+         * single experimental row distort camera auto-fit for the 17 inferred
+         * body rows. The native row is still drawn using the same camera. */
+        if (!part->source || i == 0u) continue;
         scene = part->source == 1u ? &head_scene : &body_scene;
         model = find_model(scene, part->slot);
         if (!model) continue;
