@@ -239,7 +239,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: celsowm/vf3-decomp
-          ref: 958937aff8b6ddcd40a5dd01ee5d60350d4140f6
+          ref: 208e2e2402743123a4ba79c1733f479bec9f4906
           path: vf3-decomp
           fetch-depth: 1
 
@@ -456,6 +456,18 @@ jobs:
           print(f"Generated {out}: {len(data)} bytes")
           PY
 
+      - name: Validate real MT source rows and 63-channel evaluation
+        run: |
+          set -euo pipefail
+          gcc -std=c99 -O2 -Wall -Wextra \
+            -I vf3-decomp/src/media -I vf3-decomp/src/native \
+            tests/naomi_vf3_runtime/mt_host_validate.c \
+            vf3-decomp/src/media/mt.c \
+            vf3-decomp/src/native/motion.c \
+            vf3-decomp/src/native/matrix.c \
+            -lm -o mt-asset/mt-host-validate
+          mt-asset/mt-host-validate mt-asset/MTAKIPAI.BIN | tee mt-asset/MOTION_EVAL_AUDIT.txt
+
       - name: Restore VF3 real MT asset probe object cache
         id: vf3-runtime-cache
         uses: actions/cache/restore@v4
@@ -463,17 +475,21 @@ jobs:
           path: |
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
+            tests/naomi_vf3_runtime/mt.o
+            tests/naomi_vf3_runtime/motion.o
+            tests/naomi_vf3_runtime/matrix.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN', 'vf3-decomp/src/media/mt.c', 'vf3-decomp/src/native/motion.c', 'vf3-decomp/src/native/matrix.c') }}-v2
 
       - name: Preserve timestamps for restored MT asset probe objects
         if: steps.vf3-runtime-cache.outputs.cache-hit == 'true'
         run: |
-          touch tests/naomi_vf3_runtime/main.o tests/naomi_vf3_runtime/mt_asset.o tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
+          touch tests/naomi_vf3_runtime/main.o tests/naomi_vf3_runtime/mt_asset.o tests/naomi_vf3_runtime/mt.o tests/naomi_vf3_runtime/motion.o tests/naomi_vf3_runtime/matrix.o tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
 
       - name: Compile real VF3 MT asset probe for Naomi
         env:
           KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
           set -eo pipefail
           export KOS_SUBARCH=naomi
@@ -489,8 +505,11 @@ jobs:
           path: |
             tests/naomi_vf3_runtime/main.o
             tests/naomi_vf3_runtime/mt_asset.o
+            tests/naomi_vf3_runtime/mt.o
+            tests/naomi_vf3_runtime/motion.o
+            tests/naomi_vf3_runtime/matrix.o
             tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
-          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.c', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN', 'vf3-decomp/src/media/mt.c', 'vf3-decomp/src/native/motion.c', 'vf3-decomp/src/native/matrix.c') }}-v2
 
       - name: Package real VF3 MT asset probe Naomi ROM
         env:
@@ -510,6 +529,7 @@ jobs:
           ROM="vf3_naomi_mt_asset_probe-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_vf3_runtime/${ROM}" "vf3-mt-asset-probe-artifact/${ROM}"
           python3 tests/naomi_vf3_runtime/mt_ref_audit.py tests/naomi_vf3_runtime/MTAKIPAI.BIN > vf3-mt-asset-probe-artifact/MT_REFERENCE_AUDIT.txt
+          cp mt-asset/MOTION_EVAL_AUDIT.txt vf3-mt-asset-probe-artifact/MOTION_EVAL_AUDIT.txt
           SIZE="$(stat -c '%s' "vf3-mt-asset-probe-artifact/${ROM}")"
           SHA="$(sha256sum "vf3-mt-asset-probe-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
@@ -526,7 +546,7 @@ jobs:
           Asset size: 1572408
           Asset SHA-256: 57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554
           Record boundaries: sorted unique file offsets; not slot-order subtraction
-          Scope: real MTAKIPAI component validation and cross-record reference audit; playback semantics not yet mapped
+          Scope: real MTAKIPAI source-row decoding and 63-channel evaluation at four phases; channel-to-bone/POL mapping and visible playback remain open
           Packaging: KallistiOS naomibintool
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF

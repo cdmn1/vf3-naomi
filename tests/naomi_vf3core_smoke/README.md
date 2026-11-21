@@ -1,7 +1,7 @@
 # VF3 Naomi MT parser smoke test
 
 This target builds and executes the real `mt_parse()` and `mt_each()`
-implementation from the pinned `celsowm/vf3-decomp` source revision.
+implementation from the pinned `celsowm/vf3-decomp` source revision (`208e2e2402743123a4ba79c1733f479bec9f4906`).
 
 It constructs a small synthetic MT file in RAM with one valid slot and one
 four-byte record, calls the upstream parser, iterates the record, and checks

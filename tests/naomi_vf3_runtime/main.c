@@ -1,11 +1,11 @@
 /*
- * VF3 Naomi real MT motion-component probe.
+ * VF3 Naomi real MT source-row and 63-channel evaluator probe.
  *
- * Embeds the verified MTAKIPAI.BIN asset and inspects the three slot
- * components selected by the motion IDs observed in the two actor contexts.
- * Component boundaries are found by the next greater unique file offset,
- * never by slot order. This validates real game data without pretending
- * that the component semantics or playback path are already understood.
+ * Uses the real MTAKIPAI.BIN source rows for motion IDs 1050 and 2386.
+ * The upstream MT reader expands the packed 2-bit channel map, bounds the
+ * count/time/tuple streams, and the native evaluator samples several Q8
+ * phases. This proves source decoding and channel evaluation, not yet the
+ * channel-to-bone/POL mapping or visible character playback.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -13,113 +13,122 @@
 #include <kos.h>
 #include <dc/minifont.h>
 #include <dc/pvr.h>
+#include "mt.h"
+#include "motion.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
 #define FONT_W 12
 #define FONT_H 24
-#define MT_SLOTS 8880u
-#define MT_TABLE_BYTES (MT_SLOTS * 4u)
 #define EXPECTED_ASSET_SIZE 1572408u
-#define MT_PAYLOAD_FLOOR 0x8AC0u
+#define EXPECTED_POPULATED_SLOTS 2280u
+#define TEST_CYCLE 60u
 
 extern const uint8_t vf3_mt_asset[EXPECTED_ASSET_SIZE];
 
 static pvr_ptr_t font_texture;
-static char lines[15][96];
+static char lines[14][96];
+static MtFile mt_file;
 static int asset_ok;
+static int motion_eval_ok;
 
-static uint32_t rd32le(const uint8_t *p) {
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
-           ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-}
+static int inspect_motion(unsigned motion_id, unsigned line)
+{
+    static const int32_t phases[] = {
+        0x0100, 0x1000, 0x2000, 0x3B00
+    };
+    MtMotionView view;
+    vf3_native_motion_stream stream;
+    float values[VF3_NATIVE_MOTION_CHANNELS];
+    unsigned op_count[4] = {0, 0, 0, 0};
+    float minimum = 0.0f, maximum = 0.0f;
+    unsigned sampled = 0;
+    int rc;
 
-static uint32_t slot_offset(unsigned slot) {
-    if (slot >= MT_SLOTS) return 0;
-    return rd32le(vf3_mt_asset + slot * 4u);
-}
-
-static uint32_t next_greater_offset(uint32_t off) {
-    uint32_t next = EXPECTED_ASSET_SIZE;
-    for (unsigned i = 0; i < MT_SLOTS; ++i) {
-        uint32_t v = slot_offset(i);
-        if (v > off && v < next && v < EXPECTED_ASSET_SIZE)
-            next = v;
-    }
-    return next;
-}
-
-static int inspect_motion(unsigned motion_id, unsigned line) {
-    const unsigned first_slot = (motion_id - 1u) * 3u;
-    uint32_t off[3], len[3];
-    for (unsigned i = 0; i < 3; ++i) {
-        off[i] = slot_offset(first_slot + i);
-        if (off[i] < MT_PAYLOAD_FLOOR || off[i] >= EXPECTED_ASSET_SIZE)
-            return 0;
-        uint32_t next = next_greater_offset(off[i]);
-        if (next <= off[i] || next > EXPECTED_ASSET_SIZE)
-            return 0;
-        len[i] = next - off[i];
-    }
-
-    const uint8_t *descriptor = vf3_mt_asset + off[0];
-    const uint32_t reference = rd32le(descriptor + 8);
-    if (len[0] != 28u || len[1] != 16u || len[2] != 404u ||
-        reference < MT_PAYLOAD_FLOOR || reference >= EXPECTED_ASSET_SIZE)
+    snprintf(lines[line], sizeof(lines[line]), "ID %u: LOAD FAIL", motion_id);
+    rc = vf3_native_motion_load(&mt_file, motion_id, TEST_CYCLE,
+                                &view, &stream);
+    if (rc != 0) {
+        snprintf(lines[line], sizeof(lines[line]),
+                 "ID %u: LOAD ERROR %d", motion_id, rc);
         return 0;
-
-    const uint8_t *payload = vf3_mt_asset + off[2];
-    float min_value = 0.0f, max_value = 0.0f;
-    unsigned valid_floats = 0;
-    for (unsigned i = 0; i < len[2] / 4u; ++i) {
-        float value;
-        memcpy(&value, payload + i * 4u, sizeof(value));
-        if (!(value == value) || value > 1000000.0f || value < -1000000.0f)
-            continue;
-        if (!valid_floats || value < min_value) min_value = value;
-        if (!valid_floats || value > max_value) max_value = value;
-        ++valid_floats;
     }
-    if (valid_floats != 101u) return 0;
+
+    for (unsigned i = 0; i < VF3_NATIVE_MOTION_CHANNELS; ++i) {
+        if (view.ops[i] > 3u)
+            return 0;
+        ++op_count[view.ops[i]];
+    }
+
+    for (unsigned p = 0; p < sizeof(phases) / sizeof(phases[0]); ++p) {
+        rc = vf3_native_motion_eval(&stream, phases[p], values);
+        if (rc != 0) {
+            snprintf(lines[line], sizeof(lines[line]),
+                     "ID %u: EVAL ERROR %d", motion_id, rc);
+            return 0;
+        }
+        for (unsigned ch = 0; ch < VF3_NATIVE_MOTION_CHANNELS; ++ch) {
+            const float value = values[ch];
+            if (!(value == value) || value > 1000000.0f ||
+                value < -1000000.0f) {
+                snprintf(lines[line], sizeof(lines[line]),
+                         "ID %u: NON-FINITE CHANNEL", motion_id);
+                return 0;
+            }
+            if (!sampled || value < minimum) minimum = value;
+            if (!sampled || value > maximum) maximum = value;
+            ++sampled;
+        }
+    }
 
     snprintf(lines[line], sizeof(lines[line]),
-             "ID %u  SLOTS %u-%u", motion_id, first_slot, first_slot + 2u);
+             "ID %u: PASS  WORD0 %u", motion_id,
+             (unsigned)view.descriptor_word);
     snprintf(lines[line + 1], sizeof(lines[line + 1]),
-             "A %06lX/28  B %06lX/16",
-             (unsigned long)off[0], (unsigned long)off[1]);
+             "OPS 0:%u 1:%u 2:%u 3:%u",
+             op_count[0], op_count[1], op_count[2], op_count[3]);
     snprintf(lines[line + 2], sizeof(lines[line + 2]),
-             "C %06lX/404  101 FLOATS",
-             (unsigned long)off[2]);
+             "STREAM C/T/U %lu/%lu/%lu",
+             (unsigned long)view.counts_size,
+             (unsigned long)view.times_size,
+             (unsigned long)view.tuples_size);
     snprintf(lines[line + 3], sizeof(lines[line + 3]),
-             "REF %06lX  HDR %08lX %08lX",
-             (unsigned long)reference,
-             (unsigned long)rd32le(descriptor),
-             (unsigned long)rd32le(descriptor + 4));
-    snprintf(lines[line + 4], sizeof(lines[line + 4]),
-             "RANGE %.1f .. %.1f", min_value, max_value);
+             "RANGE %.2f .. %.2f", minimum, maximum);
     return 1;
 }
 
-static void inspect_asset(void) {
-    if (EXPECTED_ASSET_SIZE < MT_TABLE_BYTES) return;
-    unsigned populated = 0, invalid = 0;
-    for (unsigned i = 0; i < MT_SLOTS; ++i) {
-        uint32_t off = slot_offset(i);
-        if (!off) continue;
-        ++populated;
-        if (off < MT_PAYLOAD_FLOOR || off >= EXPECTED_ASSET_SIZE)
-            ++invalid;
-    }
+static void inspect_asset(void)
+{
+    int first_ok, second_ok;
+
     snprintf(lines[0], sizeof(lines[0]), "ASSET BYTES: %lu",
              (unsigned long)EXPECTED_ASSET_SIZE);
-    snprintf(lines[1], sizeof(lines[1]), "POPULATED SLOTS: %u", populated);
-    if (invalid || populated != 2280u) return;
-    if (!inspect_motion(1050u, 3u)) return;
-    if (!inspect_motion(2386u, 9u)) return;
-    asset_ok = 1;
+    if (mt_parse(vf3_mt_asset, EXPECTED_ASSET_SIZE, &mt_file) != 0) {
+        snprintf(lines[1], sizeof(lines[1]), "MT TABLE: PARSE FAIL");
+        return;
+    }
+
+    snprintf(lines[1], sizeof(lines[1]), "POPULATED SLOTS: %lu",
+             (unsigned long)mt_file.count);
+    asset_ok = mt_file.count == EXPECTED_POPULATED_SLOTS &&
+               mt_file.first_record_off == MT_PAYLOAD_FLOOR;
+    first_ok = inspect_motion(1050u, 2u);
+    second_ok = inspect_motion(2386u, 6u);
+    motion_eval_ok = asset_ok && first_ok && second_ok;
+
+    snprintf(lines[10], sizeof(lines[10]),
+             "CYCLE TEST INPUT: %u", TEST_CYCLE);
+    snprintf(lines[11], sizeof(lines[11]),
+             "Q8 PHASES: 0100 1000 2000 3B00");
+    snprintf(lines[12], sizeof(lines[12]),
+             "SAMPLED CHANNELS: %u PER PHASE",
+             VF3_NATIVE_MOTION_CHANNELS);
+    snprintf(lines[13], sizeof(lines[13]),
+             "CHANNEL-TO-BONE MAP STILL OPEN");
 }
 
-static void font_init(void) {
+static void font_init(void)
+{
     uint16_t *vram = (uint16_t *)font_texture;
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 16; ++x) {
@@ -130,7 +139,8 @@ static void font_init(void) {
     }
 }
 
-static void draw_char(float x, float y, unsigned char c) {
+static void draw_char(float x, float y, unsigned char c)
+{
     pvr_vertex_t v;
     int ix = (c % 16) * 16, iy = (c / 16) * 24;
     float u1 = ix / 256.0f, v1 = iy / 256.0f;
@@ -146,31 +156,41 @@ static void draw_char(float x, float y, unsigned char c) {
     pvr_prim(&v, sizeof(v));
 }
 
-static void draw_text(float x, float y, const char *s) {
-    pvr_poly_cxt_t cxt; pvr_poly_hdr_t poly;
+static void draw_text(float x, float y, const char *s)
+{
+    pvr_poly_cxt_t cxt;
+    pvr_poly_hdr_t poly;
     if (!s || !s[0]) return;
     pvr_poly_cxt_txr(&cxt, PVR_LIST_TR_POLY,
         PVR_TXRFMT_ARGB1555 | PVR_TXRFMT_NONTWIDDLED,
         256, 256, font_texture, PVR_FILTER_NONE);
-    pvr_poly_compile(&poly, &cxt); pvr_prim(&poly, sizeof(poly));
+    pvr_poly_compile(&poly, &cxt);
+    pvr_prim(&poly, sizeof(poly));
     for (size_t i = 0; s[i]; ++i) {
         draw_char(x, y, (unsigned char)s[i]);
         x += FONT_W;
     }
 }
 
-static void draw_screen(void) {
-    pvr_wait_ready(); pvr_scene_begin(); pvr_list_begin(PVR_LIST_TR_POLY);
-    draw_text(20, 16, "VIRTUA FIGHTER 3 - REAL MT DATA");
-    draw_text(20, 48, asset_ok ? "MTAKIPAI: MOTION DATA PASS" :
-                                  "MTAKIPAI: MOTION DATA FAIL");
+static void draw_screen(void)
+{
+    pvr_wait_ready();
+    pvr_scene_begin();
+    pvr_list_begin(PVR_LIST_TR_POLY);
+    draw_text(20, 16, "VIRTUA FIGHTER 3 - REAL MT EVALUATION");
+    draw_text(20, 48, asset_ok ? "MTAKIPAI TABLE: PASS" :
+                                  "MTAKIPAI TABLE: FAIL");
+    draw_text(20, 72, motion_eval_ok ? "63-CHANNEL EVALUATOR: PASS" :
+                                       "63-CHANNEL EVALUATOR: FAIL");
     for (unsigned i = 0; i < 14; ++i)
-        draw_text(20, 76 + i * 25, lines[i]);
-    draw_text(20, 438, "COMPONENTS VALIDATED - PLAYBACK NOT YET MAPPED");
-    pvr_list_finish(); pvr_scene_finish();
+        draw_text(20, 100 + i * 23, lines[i]);
+    draw_text(20, 438, "SOURCE EVALUATED - BONE MAP STILL OPEN");
+    pvr_list_finish();
+    pvr_scene_finish();
 }
 
-int main(void) {
+int main(void)
+{
     inspect_asset();
     pvr_init_defaults();
     pvr_set_bg_color(0.015f, 0.025f, 0.055f);
@@ -178,5 +198,5 @@ int main(void) {
     if (!font_texture) for (;;) thd_sleep(1000);
     font_init();
     for (;;) { draw_screen(); thd_sleep(16); }
-    return asset_ok ? 0 : 1;
+    return motion_eval_ok ? 0 : 1;
 }
