@@ -27,7 +27,19 @@ jobs:
           path: vf3-decomp
           fetch-depth: 1
 
+      - name: Restore Akira asset cache
+        id: akira-assets
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            MKAO_AKI.POL
+            MKAO_AKI.TEX
+            ROB_AKI.POL
+            ROB_AKI.TEX
+          key: vf3-naomi-akira-poltex-assets-v1
+
       - name: Download the already-shared VF3 asset folder
+        if: steps.akira-assets.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-all-errors \
@@ -36,12 +48,23 @@ jobs:
             --output vf3-assets.zip
           unzip -Z1 vf3-assets.zip > asset-list.txt
           for name in MKAO_AKI.POL MKAO_AKI.TEX ROB_AKI.POL ROB_AKI.TEX; do
-            entry="$(grep -E "(^|/)${name}$" asset-list.txt | head -n 1)"
+            entry="$(grep -E "(^|/)\${name}$" asset-list.txt | head -n 1)"
             test -n "$entry"
             unzip -p vf3-assets.zip "$entry" > "$name"
             test -s "$name"
           done
           rm -f vf3-assets.zip asset-list.txt
+
+      - name: Cache selected Akira assets
+        if: steps.akira-assets.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            MKAO_AKI.POL
+            MKAO_AKI.TEX
+            ROB_AKI.POL
+            ROB_AKI.TEX
+          key: vf3-naomi-akira-poltex-assets-v1
 
       - name: Audit Akira model geometry and textures
         run: |

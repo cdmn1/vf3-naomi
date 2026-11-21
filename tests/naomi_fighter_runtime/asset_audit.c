@@ -55,7 +55,7 @@ static int audit_pol(const char *name, const char *tex_name,
         fail = 1; goto done;
     }
     desc = (PolTextureDesc *)calloc(desc_count, sizeof *desc);
-    if (desc_count && (!desc || pol_textures(pol, pol_size, desc, desc_count))) {
+    if (desc_count && (!desc || pol_textures(pol, pol_size, desc, desc_count, &desc_count))) {
         fail = 1; goto done;
     }
     for (uint32_t i = 0; i < desc_count; ++i) {
