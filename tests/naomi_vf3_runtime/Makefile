@@ -18,6 +18,7 @@ all: $(TARGET)
 
 mt_asset.o: MTAKIPAI.BIN
 	sh-elf-objcopy -I binary -O elf32-shl -B sh4 --rename-section .data=.rodata,alloc,load,readonly,data,contents --set-section-alignment .rodata=32 $< $@
+	sh-elf-nm -g $@
 
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
