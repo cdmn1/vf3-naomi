@@ -20,7 +20,7 @@ CPPFLAGS += -I$(VF3_DECOMP_DIR)/src/media -I$(VF3_DECOMP_DIR)/src/native
 
 all: $(TARGET)
 
-assets.o: assets.S MKAO_AKI.POL ROB_AKI.POL
+assets.o: assets.c MKAO_AKI_POL.inc ROB_AKI_POL.inc
 	kos-cc $(CFLAGS) -c $< -o $@
 
 pol.o: $(VF3_DECOMP_DIR)/src/media/pol.c $(VF3_DECOMP_DIR)/src/media/pol.h

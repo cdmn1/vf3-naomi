@@ -25,9 +25,9 @@ KOS_INIT_FLAGS(INIT_DEFAULT);
 #define AKIRA_PART_COUNT 18u
 
 extern const uint8_t vf3_mkao_aki_pol[];
-extern const uint8_t vf3_mkao_aki_pol_end[];
+extern const uint32_t vf3_mkao_aki_pol_size;
 extern const uint8_t vf3_rob_aki_pol[];
-extern const uint8_t vf3_rob_aki_pol_end[];
+extern const uint32_t vf3_rob_aki_pol_size;
 
 typedef struct {
     uint8_t source; /* 1 = MKAO_AKI, 2 = ROB_AKI, 0 = empty */
@@ -59,10 +59,8 @@ static const PolModel *find_model(const PolScene *scene, uint32_t slot)
 
 static int load_model(void)
 {
-    const uint32_t head_size =
-        (uint32_t)(vf3_mkao_aki_pol_end - vf3_mkao_aki_pol);
-    const uint32_t body_size =
-        (uint32_t)(vf3_rob_aki_pol_end - vf3_rob_aki_pol);
+    const uint32_t head_size = vf3_mkao_aki_pol_size;
+    const uint32_t body_size = vf3_rob_aki_pol_size;
     int16_t zero_fields[VF3_NATIVE_POSE_FIELDS] = {0};
 
     if (pol_scene_parse(vf3_mkao_aki_pol, head_size, &head_scene) != 0)
