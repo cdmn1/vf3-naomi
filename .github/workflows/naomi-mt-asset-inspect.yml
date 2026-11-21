@@ -1,0 +1,71 @@
+name: Inspect VF3 MT asset from Dropbox
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/naomi-mt-asset-inspect.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-and-inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download MTAKIPAI.BIN from the user-provided public Dropbox link
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mt-asset
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
+            --output mt-asset/MTAKIPAI.BIN
+          SIZE="$(stat -c '%s' mt-asset/MTAKIPAI.BIN)"
+          test "$SIZE" -eq 1572408
+          sha256sum mt-asset/MTAKIPAI.BIN | tee mt-asset/SHA256.txt
+          file mt-asset/MTAKIPAI.BIN | tee mt-asset/FILE_TYPE.txt
+          xxd -g 1 -l 256 mt-asset/MTAKIPAI.BIN > mt-asset/HEADER_HEXDUMP.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, collections, struct
+          p = Path("mt-asset/MTAKIPAI.BIN")
+          b = p.read_bytes()
+          out = [
+              f"file={p.name}",
+              f"size={len(b)}",
+              f"sha256={hashlib.sha256(b).hexdigest()}",
+              f"first_16={b[:16].hex(' ')}",
+              f"first_64={b[:64].hex(' ')}",
+              f"zero_bytes={b.count(0)}",
+              f"distinct_byte_values={len(set(b))}",
+          ]
+          for width in (2, 4):
+              n = len(b) // width
+              vals = struct.unpack("<" + ("H" if width == 2 else "I") * n, b[:n*width])
+              counts = collections.Counter(vals)
+              out.append(f"most_common_{width*8}_bit_values=" + repr(counts.most_common(20)))
+          Path("mt-asset/INSPECTION.txt").write_text("\n".join(out) + "\n")
+          print("\n".join(out))
+          PY
+      - name: Publish binary and inspection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-mtakipai-asset-inspection
+          path: mt-asset/*
+          if-no-files-found: error
+          retention-days: 14
+      - name: Add inspection summary
+        if: always()
+        run: |
+          {
+            echo "## VF3 MTAKIPAI asset fetch"
+            if [ -f mt-asset/INSPECTION.txt ]; then
+              cat mt-asset/INSPECTION.txt
+            else
+              echo "Dropbox download or validation failed; see step logs."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
