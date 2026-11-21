@@ -1,10 +1,8 @@
 /*
  * VF3 Naomi first native Akira model render.
  *
- * Parses the retail POL model packages, resolves the 18 selector-driven part
- * slots, builds the current inferred Akira bind pose, and submits the model
- * triangles directly to the Naomi PowerVR. Textures are intentionally omitted
- * in this first render milestone; the validated POL/TEX parser is upstream.
+ * Parses retail POL/TEX packages, resolves the 18 selector-driven part slots,
+ * evaluates real MTAKIPAI motion, and submits textured geometry to Naomi PVR.
  */
 #include <kos.h>
 #include <dc/minifont.h>
@@ -19,6 +17,7 @@
 #include "matrix.h"
 #include "mt.h"
 #include "motion.h"
+#include "pvr_texture.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
@@ -32,6 +31,10 @@ extern const uint8_t vf3_rob_aki_pol[];
 extern const uint32_t vf3_rob_aki_pol_size;
 extern const uint8_t vf3_mtakipai_asset[];
 extern const uint32_t vf3_mtakipai_asset_size;
+extern const uint8_t vf3_mkao_aki_tex[];
+extern const uint32_t vf3_mkao_aki_tex_size;
+extern const uint8_t vf3_rob_aki_tex[];
+extern const uint32_t vf3_rob_aki_tex_size;
 
 typedef struct {
     uint8_t source; /* 1 = MKAO_AKI, 2 = ROB_AKI, 0 = empty */
@@ -46,9 +49,13 @@ static const AkiraPart parts[AKIRA_PART_COUNT] = {
 };
 
 static PolScene head_scene, body_scene;
+static PolTextureDesc head_desc[32], body_desc[32];
+static pvr_ptr_t head_texture[32], body_texture[32];
+static uint32_t head_texture_count, body_texture_count;
 static float attachment[AKIRA_PART_COUNT][16];
 static pvr_ptr_t font_texture;
 static pvr_poly_hdr_t mesh_header;
+static pvr_poly_hdr_t textured_header[2][32];
 static int model_ready;
 static int pose_ready;
 static int motion_ready;
@@ -71,6 +78,45 @@ static const PolModel *find_model(const PolScene *scene, uint32_t slot)
     return NULL;
 }
 
+static int load_texture_bank(const uint8_t *tex, uint32_t tex_size, const PolScene *scene, PolTextureDesc *descs, uint32_t *count_out, pvr_ptr_t *textures, pvr_poly_hdr_t headers[32])
+{
+    PolHeader header;
+    uint32_t count = 0;
+    if (pol_header(scene == &head_scene ? vf3_mkao_aki_pol : vf3_rob_aki_pol,
+                   scene == &head_scene ? vf3_mkao_aki_pol_size : vf3_rob_aki_pol_size, &header) != 0)
+        return -1;
+    if (pol_textures(scene == &head_scene ? vf3_mkao_aki_pol : vf3_rob_aki_pol,
+                     scene == &head_scene ? vf3_mkao_aki_pol_size : vf3_rob_aki_pol_size,
+                     descs, 32u, &count) != 0 || count != header.texture_count)
+        return -2;
+    for (uint32_t i = 0; i < count; ++i) {
+        size_t bytes = 0;
+        const uint8_t pixel = (uint8_t)(descs[i].raw_flags & 0xffu);
+        const uint8_t layout = (uint8_t)((descs[i].raw_flags >> 8) & 0xffu);
+        int format;
+        pvr_poly_cxt_t cxt;
+        if (vf3_pvr_texture_payload_size(&descs[i], &bytes) != 0 ||
+            (uint64_t)descs[i].data_offset + bytes > tex_size)
+            return -3;
+        if (pixel == 0u) format = PVR_TXRFMT_ARGB1555;
+        else if (pixel == 1u) format = PVR_TXRFMT_RGB565;
+        else if (pixel == 2u) format = PVR_TXRFMT_ARGB4444;
+        else return -4;
+        if (layout == 3u) format |= PVR_TXRFMT_VQ_ENABLE;
+        else if (layout != 1u) return -5;
+        textures[i] = pvr_mem_malloc(bytes);
+        if (!textures[i]) return -6;
+        memcpy(textures[i], tex + descs[i].data_offset, bytes);
+        pvr_poly_cxt_txr(&cxt, PVR_LIST_OP_POLY, format,
+                         descs[i].width, descs[i].height, textures[i], PVR_FILTER_BILINEAR);
+        cxt.gen.shading = PVR_SHADE_GOURAUD;
+        cxt.gen.culling = PVR_CULLING_NONE;
+        pvr_poly_compile(&headers[i], &cxt);
+    }
+    *count_out = count;
+    return 0;
+}
+
 static int load_model(void)
 {
     const uint32_t head_size = vf3_mkao_aki_pol_size;
@@ -81,6 +127,14 @@ static int load_model(void)
         return -1;
     if (pol_scene_parse(vf3_rob_aki_pol, body_size, &body_scene) != 0)
         return -2;
+    if (load_texture_bank(vf3_mkao_aki_tex, vf3_mkao_aki_tex_size,
+                          &head_scene, head_desc, &head_texture_count,
+                          head_texture, textured_header[0]) != 0)
+        return -7;
+    if (load_texture_bank(vf3_rob_aki_tex, vf3_rob_aki_tex_size,
+                          &body_scene, body_desc, &body_texture_count,
+                          body_texture, textured_header[1]) != 0)
+        return -8;
 
     for (unsigned i = 0; i < AKIRA_PART_COUNT; ++i) {
         const AkiraPart *part = &parts[i];
@@ -118,7 +172,8 @@ static int load_model(void)
     snprintf(status_lines[4], sizeof status_lines[4],
              "MTAKIPAI: REAL ASSET / CYCLE 60");
     snprintf(status_lines[5], sizeof status_lines[5],
-             "POWER VR: UNTEXTURED GEOMETRY");
+             "PVR TEXTURES: %lu + %lu", (unsigned long)head_texture_count,
+             (unsigned long)body_texture_count);
     return 0;
 }
 
@@ -165,9 +220,17 @@ static void measure_mesh(const PolScene *scene, const PolMesh *mesh,
 }
 
 static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
-                      const float matrix[16], const float root[3])
+                      const float matrix[16], const float root[3],
+                      int is_head)
 {
     const uint32_t color = mesh_color(mesh);
+    const uint32_t texture_count = is_head ? head_texture_count : body_texture_count;
+    const pvr_ptr_t *textures = is_head ? head_texture : body_texture;
+    const pvr_poly_hdr_t *headers = textured_header[is_head ? 0 : 1];
+    const int textured = mesh->texture_index != POL_TEXTURE_NONE &&
+                        mesh->texture_index < texture_count;
+    if (textured) pvr_prim(&headers[mesh->texture_index], sizeof(headers[0]));
+    else pvr_prim(&mesh_header, sizeof(mesh_header));
     if (mesh->index_count < 3u ||
         mesh->first_index > scene->index_count ||
         mesh->index_count > scene->index_count - mesh->first_index)
@@ -191,7 +254,9 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
             v.x = camera_center_x + (sx - (camera_min_x + camera_max_x) * 0.5f) * camera_scale;
             v.y = camera_center_y - (sy - (camera_min_y + camera_max_y) * 0.5f) * camera_scale;
             v.z = 8.0f + (world[2] + 2.0f) * 0.1f;
-            v.argb = color; v.oargb = 0;
+            v.argb = textured ? PVR_PACK_COLOR(1,1,1,1) : color;
+            v.oargb = 0;
+            if (textured) { v.u = src->u; v.v = src->v; }
             pvr_prim(&v, sizeof v);
         }
     }
@@ -220,7 +285,7 @@ static void draw_akira(void)
         if (!model) continue;
         for (uint32_t m = 0; m < part->mesh_count; ++m)
             measure_mesh(scene, &scene->meshes[model->first_mesh + m],
-                         attachment[i], root);
+                         attachment[i], root, part->source == 1u);
     }
     {
         const float width = camera_max_x - camera_min_x;
@@ -302,11 +367,11 @@ static void draw_screen(void)
     pvr_list_finish();
 
     pvr_list_begin(PVR_LIST_TR_POLY);
-    draw_text(16, 12, "VF3 NAOMI - AKIRA MODEL");
+    draw_text(16, 12, "VF3 NAOMI - AKIRA MOTION");
     draw_text(16, 38, model_ready ? "POL GEOMETRY: PASS" :
                                       "POL GEOMETRY: FAIL");
-    draw_text(16, 62, pose_ready ? "BIND POSE: PASS" :
-                                     "BIND POSE: FAIL");
+    draw_text(16, 62, pose_ready ? "MOTION POSE: PASS" :
+                                     "MOTION POSE: FAIL");
     for (unsigned i = 0; i < 6; ++i)
         draw_text(16, 92 + i * 22, status_lines[i]);
     {
@@ -316,7 +381,7 @@ static void draw_screen(void)
                  (unsigned long)motion_phase, (unsigned long)motion_frame);
         draw_text(16, 238, motion_line);
     }
-    draw_text(16, 438, "REAL MT EVALUATION - INFERRED RIG - NO TEXTURES");
+    draw_text(16, 438, "REAL MT MOTION - INFERRED RIG - TEXTURED PVR");
     pvr_list_finish();
     pvr_scene_finish();
 }
