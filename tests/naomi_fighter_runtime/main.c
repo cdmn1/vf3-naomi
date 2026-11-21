@@ -308,6 +308,11 @@ static void draw_akira(void)
         const float sx = width > 0.0001f ? 560.0f / width : 205.0f;
         const float sy = height > 0.0001f ? 208.0f / height : 205.0f;
         camera_scale = (sx < sy ? sx : sy) * 0.90f;
+        /* Inferred attachment rows can contain extreme offsets while the rig
+         * is still being reconstructed. Never let one outlier shrink the
+         * whole fighter to an unreadable speck; clip the outlier at the
+         * viewport edges instead. */
+        if (camera_scale < 70.0f) camera_scale = 70.0f;
         if (camera_scale > 320.0f) camera_scale = 320.0f;
         camera_center_x = 320.0f;
         camera_center_y = 305.0f;
