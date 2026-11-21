@@ -1,0 +1,66 @@
+name: VF3 Naomi Akira asset preflight
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tests/naomi_fighter_runtime/**"
+      - ".github/workflows/naomi-fighter-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out VF3 Naomi
+        uses: actions/checkout@v4
+
+      - name: Check out pinned VF3 parsers
+        uses: actions/checkout@v4
+        with:
+          repository: celsowm/vf3-decomp
+          ref: 208e2e2402743123a4ba79c1733f479bec9f4906
+          path: vf3-decomp
+          fetch-depth: 1
+
+      - name: Download the already-shared VF3 asset folder
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            --output vf3-assets.zip
+          unzip -Z1 vf3-assets.zip > asset-list.txt
+          for name in MKAO_AKI.POL MKAO_AKI.TEX ROB_AKI.POL ROB_AKI.TEX; do
+            entry="$(grep -E "(^|/)\${name}$" asset-list.txt | head -n 1)"
+            test -n "$entry"
+            unzip -p vf3-assets.zip "$entry" > "$name"
+            test -s "$name"
+          done
+          rm -f vf3-assets.zip asset-list.txt
+
+      - name: Audit Akira model geometry and textures
+        run: |
+          set -euo pipefail
+          mkdir -p build-artifacts
+          gcc -std=c99 -O2 -Wall -Wextra \
+            -I vf3-decomp/src/media \
+            tests/naomi_fighter_runtime/asset_audit.c \
+            vf3-decomp/src/media/pol.c \
+            vf3-decomp/src/media/pol_mesh.c \
+            vf3-decomp/src/media/pvr_texture.c \
+            -o asset-audit
+          ./asset-audit | tee build-artifacts/AKIRA_ASSET_AUDIT.txt
+          cp build-artifacts/AKIRA_ASSET_AUDIT.txt "$GITHUB_STEP_SUMMARY"
+          rm -f MKAO_AKI.POL MKAO_AKI.TEX ROB_AKI.POL ROB_AKI.TEX
+
+      - name: Upload audit report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-akira-asset-audit
+          path: build-artifacts/AKIRA_ASSET_AUDIT.txt
+          if-no-files-found: error
