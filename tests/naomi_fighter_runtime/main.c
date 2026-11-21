@@ -17,6 +17,8 @@
 #include "pol_mesh.h"
 #include "motion_pose_kos.h"
 #include "matrix.h"
+#include "mt.h"
+#include "motion.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
@@ -28,6 +30,8 @@ extern const uint8_t vf3_mkao_aki_pol[];
 extern const uint32_t vf3_mkao_aki_pol_size;
 extern const uint8_t vf3_rob_aki_pol[];
 extern const uint32_t vf3_rob_aki_pol_size;
+extern const uint8_t vf3_mtakipai_asset[];
+extern const uint32_t vf3_mtakipai_asset_size;
 
 typedef struct {
     uint8_t source; /* 1 = MKAO_AKI, 2 = ROB_AKI, 0 = empty */
@@ -47,7 +51,13 @@ static pvr_ptr_t font_texture;
 static pvr_poly_hdr_t mesh_header;
 static int model_ready;
 static int pose_ready;
-static char status_lines[5][80];
+static int motion_ready;
+static MtFile motion_file;
+static MtMotionView motion_storage;
+static vf3_native_motion_stream motion_stream;
+static int32_t motion_phase = 0x0100;
+static uint32_t motion_frame;
+static char status_lines[6][80];
 static float camera_scale = 205.0f;
 static float camera_center_x = 320.0f;
 static float camera_center_y = 305.0f;
@@ -65,7 +75,7 @@ static int load_model(void)
 {
     const uint32_t head_size = vf3_mkao_aki_pol_size;
     const uint32_t body_size = vf3_rob_aki_pol_size;
-    int16_t zero_fields[VF3_NATIVE_POSE_FIELDS] = {0};
+
 
     if (pol_scene_parse(vf3_mkao_aki_pol, head_size, &head_scene) != 0)
         return -1;
@@ -85,9 +95,16 @@ static int load_model(void)
             return -3;
     }
 
-    if (vf3_native_motion_pose_fields(zero_fields,
-            VF3_NATIVE_MOTION_RIG_AKIRA, attachment) != 0)
+    if (mt_parse(vf3_mtakipai_asset, vf3_mtakipai_asset_size,
+                 &motion_file) != 0)
         return -4;
+    if (vf3_native_motion_load(&motion_file, 1050u, 60u,
+                               &motion_storage, &motion_stream) != 0)
+        return -5;
+    motion_ready = 1;
+    if (vf3_native_motion_pose(&motion_stream, motion_phase,
+            VF3_NATIVE_MOTION_RIG_AKIRA, attachment) != 0)
+        return -6;
     pose_ready = 1;
     model_ready = 1;
     snprintf(status_lines[0], sizeof status_lines[0],
@@ -97,8 +114,10 @@ static int load_model(void)
     snprintf(status_lines[2], sizeof status_lines[2],
              "PART SELECTORS: 18 / 18");
     snprintf(status_lines[3], sizeof status_lines[3],
-             "POSE: INFERRED AKIRA BIND RIG");
+             "POSE: MT 1050 / INFERRED AKIRA RIG");
     snprintf(status_lines[4], sizeof status_lines[4],
+             "MTAKIPAI: REAL ASSET / CYCLE 60");
+    snprintf(status_lines[5], sizeof status_lines[5],
              "POWER VR: UNTEXTURED GEOMETRY");
     return 0;
 }
@@ -180,6 +199,12 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
 
 static void draw_akira(void)
 {
+    if (!motion_ready || vf3_native_motion_pose(&motion_stream, motion_phase,
+            VF3_NATIVE_MOTION_RIG_AKIRA, attachment) != 0) {
+        pose_ready = 0;
+        return;
+    }
+    pose_ready = 1;
     const float root[3] = {
         attachment[0][12], attachment[0][13], attachment[0][14]
     };
@@ -282,9 +307,16 @@ static void draw_screen(void)
                                       "POL GEOMETRY: FAIL");
     draw_text(16, 62, pose_ready ? "BIND POSE: PASS" :
                                      "BIND POSE: FAIL");
-    for (unsigned i = 0; i < 5; ++i)
+    for (unsigned i = 0; i < 6; ++i)
         draw_text(16, 92 + i * 22, status_lines[i]);
-    draw_text(16, 438, "AUTO-FIT MODEL - TEXTURES AND LIVE MOTION NEXT");
+    {
+        char motion_line[64];
+        snprintf(motion_line, sizeof motion_line,
+                 "MOTION 1050 PHASE %04lX FRAME %lu",
+                 (unsigned long)motion_phase, (unsigned long)motion_frame);
+        draw_text(16, 238, motion_line);
+    }
+    draw_text(16, 438, "REAL MT EVALUATION - INFERRED RIG - NO TEXTURES");
     pvr_list_finish();
     pvr_scene_finish();
 }
@@ -311,6 +343,11 @@ int main(void)
 
     for (;;) {
         draw_screen();
+        if (motion_ready) {
+            motion_phase += 0x0100;
+            if (motion_phase >= 0x3C00) motion_phase = 0x0100;
+            ++motion_frame;
+        }
         thd_sleep(16);
     }
     return 0;
