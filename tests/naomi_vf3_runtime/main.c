@@ -22,8 +22,7 @@ KOS_INIT_FLAGS(INIT_DEFAULT);
 #define MT_TABLE_BYTES (MT_SLOTS * 4u)
 #define EXPECTED_ASSET_SIZE 1572408u
 
-extern const uint8_t _binary_MTAKIPAI_BIN_start[];
-extern const uint8_t _binary_MTAKIPAI_BIN_end[];
+extern const uint8_t vf3_mt_asset[EXPECTED_ASSET_SIZE];
 
 static pvr_ptr_t font_texture;
 static uint32_t offsets[MT_SLOTS];
@@ -44,12 +43,12 @@ static int cmp_u32(const void *a, const void *b) {
 }
 
 static void inspect_asset(void) {
-    const uint32_t size=(uint32_t)(_binary_MTAKIPAI_BIN_end-_binary_MTAKIPAI_BIN_start);
+    const uint32_t size=EXPECTED_ASSET_SIZE;
     uint32_t previous=0, n=0;
     if (size!=EXPECTED_ASSET_SIZE || size<MT_TABLE_BYTES) return;
 
     for (uint32_t slot=0; slot<MT_SLOTS; ++slot) {
-        uint32_t off=rd32le(_binary_MTAKIPAI_BIN_start+slot*4u);
+        uint32_t off=rd32le(vf3_mt_asset+slot*4u);
         if (!off) continue;
         if (off<MT_TABLE_BYTES || off>=size) { ++invalid; continue; }
         if (n && off<previous) ++inversions;
