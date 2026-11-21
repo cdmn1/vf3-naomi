@@ -14,6 +14,7 @@ endif
 BUILD_VERSION ?= dev
 TARGET = vf3_naomi_akira_static.elf
 ROM = vf3_naomi_akira_static-$(BUILD_VERSION).bin
+NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
 OBJS = main.o assets.o pol.o pol_mesh.o mt.o motion.o matrix.o motion_vectors.o motion_pose_kos.o
 
 CPPFLAGS += -I$(VF3_DECOMP_DIR)/src/media -I$(VF3_DECOMP_DIR)/src/native
