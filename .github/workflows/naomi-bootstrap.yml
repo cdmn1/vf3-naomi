@@ -588,7 +588,7 @@ jobs:
             "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
             --output vf3-assets.zip
           unzip -Z1 vf3-assets.zip > asset-list.txt
-          for name in MKAO_AKI.POL ROB_AKI.POL; do
+          for name in MKAO_AKI.POL ROB_AKI.POL MKAO_AKI.TEX ROB_AKI.TEX; do
             entry="$(grep -E "(^|/)${name}$" asset-list.txt | head -n 1)"
             test -n "$entry"
             unzip -p vf3-assets.zip "$entry" > "$name"
@@ -608,7 +608,7 @@ jobs:
       - name: Stage Akira POL files for Naomi
         run: |
           set -euo pipefail
-          cp MKAO_AKI.POL ROB_AKI.POL tests/naomi_fighter_runtime/
+          cp MKAO_AKI.POL ROB_AKI.POL MKAO_AKI.TEX ROB_AKI.TEX tests/naomi_fighter_runtime/
           cp tests/naomi_vf3_runtime/MTAKIPAI.BIN tests/naomi_fighter_runtime/
 
       - name: Generate embedded Akira POL C arrays
@@ -616,9 +616,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           out = Path("tests/naomi_fighter_runtime")
-          for stem in ("MKAO_AKI", "ROB_AKI"):
-              data = (out / f"{stem}.POL").read_bytes()
-              target = out / f"{stem}_POL.inc"
+          for stem, ext in (("MKAO_AKI", "POL"), ("ROB_AKI", "POL"), ("MKAO_AKI", "TEX"), ("ROB_AKI", "TEX")):
+              data = (out / f"{stem}.{ext}").read_bytes()
+              target = out / f"{stem}_{ext}.inc"
               with target.open("w") as f:
                   for i in range(0, len(data), 16):
                       f.write(",".join(f"0x{b:02x}" for b in data[i:i+16]) + ",\n")
@@ -661,9 +661,9 @@ jobs:
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
           make -C tests/naomi_fighter_runtime all
-          test -s tests/naomi_fighter_runtime/vf3_naomi_akira_static.elf
+          test -s tests/naomi_fighter_runtime/vf3_naomi_akira_motion.elf
 
-      - name: Package Akira static model Naomi ROM
+      - name: Package Akira motion renderer Naomi ROM
         env:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
@@ -673,44 +673,44 @@ jobs:
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_fighter_runtime rom
-          test -s "tests/naomi_fighter_runtime/vf3_naomi_akira_static-v${GITHUB_RUN_NUMBER}.bin"
+          test -s "tests/naomi_fighter_runtime/vf3_naomi_akira_motion-v${GITHUB_RUN_NUMBER}.bin"
 
       - name: Validate and upload Akira static model ROM
         run: |
           set -euo pipefail
-          mkdir -p akira-static-artifact
+          mkdir -p akira-motion-artifact
           ROM="vf3_naomi_akira_static-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_fighter_runtime/${ROM}" "akira-static-artifact/${ROM}"
           SIZE="$(stat -c '%s' "akira-static-artifact/${ROM}")"
           SHA="$(sha256sum "akira-static-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
           cat > akira-static-artifact/BUILD_INFO.txt <<EOF
-          Target: VF3 Naomi Akira static POL geometry renderer
+          Target: VF3 Naomi Akira textured POL geometry and real MT motion renderer
           VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
           Workflow run: ${GITHUB_RUN_ID}
           ROM: ${ROM}
           Size: ${SIZE}
           SHA-256: ${SHA}
-          Model assets: MKAO_AKI.POL and ROB_AKI.POL
+          Model assets: MKAO_AKI.POL, ROB_AKI.POL, MKAO_AKI.TEX and ROB_AKI.TEX
           Model parser: pinned upstream pol_scene_parse
-          Pose: inferred Akira bind rig, zero motion fields
-          Rendering: native Naomi PowerVR, untextured
+          Pose: real MTAKIPAI motion 1050, inferred Akira attachment rig
+          Rendering: native Naomi PowerVR, POL UVs and companion TEX payloads
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ## Akira static model on Naomi
+          ## Akira textured motion renderer on Naomi
           - ROM: ${ROM}
           - Size: ${SIZE} bytes
           - SHA-256: ${SHA}
-          - Pose: inferred bind rig (static)
-          - Renderer: native PowerVR geometry
+          - Pose: real MTAKIPAI motion 1050 on inferred Akira rig
+          - Renderer: native PowerVR textured geometry
           EOF
         shell: bash
 
-      - name: Upload Akira static model Naomi ROM
+      - name: Upload Akira motion renderer Naomi ROM
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-naomi-akira-static-v${{ github.run_number }}
+          name: vf3-naomi-akira-motion-v${{ github.run_number }}
           path: akira-static-artifact/*
           if-no-files-found: error
 
