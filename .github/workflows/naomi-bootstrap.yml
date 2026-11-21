@@ -698,7 +698,7 @@ jobs:
           SHA-256: ${SHA}
           Model assets: MKAO_AKI.POL, ROB_AKI.POL, MKAO_AKI.TEX and ROB_AKI.TEX
           Model parser: pinned upstream pol_scene_parse
-          Pose: real MTAKIPAI motion 1050, inferred Akira attachment rig
+          Pose: real MTAKIPAI motion 1050; native recovered row 0 uses the documented Akira actor sample; remaining 17 attachment rows inferred
           Rendering: native Naomi PowerVR, POL UVs and companion TEX payloads
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
@@ -706,7 +706,7 @@ jobs:
           - ROM: ${ROM}
           - Size: ${SIZE} bytes
           - SHA-256: ${SHA}
-          - Pose: real MTAKIPAI motion 1050 on inferred Akira rig
+          - Pose: native recovered row 0 with documented Akira actor sample; remaining 17 attachment rows inferred
           - Renderer: native PowerVR textured geometry
           EOF
         shell: bash
