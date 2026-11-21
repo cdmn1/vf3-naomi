@@ -48,6 +48,10 @@ static pvr_poly_hdr_t mesh_header;
 static int model_ready;
 static int pose_ready;
 static char status_lines[5][80];
+static float camera_scale = 205.0f;
+static float camera_center_x = 320.0f;
+static float camera_center_y = 305.0f;
+static float camera_min_x, camera_max_x, camera_min_y, camera_max_y;
 
 static const PolModel *find_model(const PolScene *scene, uint32_t slot)
 {
@@ -116,6 +120,31 @@ static uint32_t mesh_color(const PolMesh *mesh)
     return PVR_PACK_COLOR(1.0f, r, g, b);
 }
 
+static void measure_mesh(const PolScene *scene, const PolMesh *mesh,
+                         const float matrix[16], const float root[3])
+{
+    if (mesh->index_count < 3u ||
+        mesh->first_index > scene->index_count ||
+        mesh->index_count > scene->index_count - mesh->first_index)
+        return;
+    for (uint32_t i = 0; i < mesh->index_count; ++i) {
+        const uint32_t index = scene->indices[mesh->first_index + i];
+        const PolMeshVertex *src;
+        float point[3], world[3], sx, sy;
+        if (index >= scene->vertex_count) continue;
+        src = &scene->vertices[index];
+        point[0] = src->x; point[1] = src->y; point[2] = src->z;
+        vf3_native_matrix_transform_point(matrix, point, world);
+        world[0] -= root[0]; world[1] -= root[1]; world[2] -= root[2];
+        sx = world[0];
+        sy = world[1] * 0.9759001f + world[2] * 0.2182179f;
+        if (sx < camera_min_x) camera_min_x = sx;
+        if (sx > camera_max_x) camera_max_x = sx;
+        if (sy < camera_min_y) camera_min_y = sy;
+        if (sy > camera_max_y) camera_max_y = sy;
+    }
+}
+
 static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
                       const float matrix[16], const float root[3])
 {
@@ -124,30 +153,26 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
         mesh->first_index > scene->index_count ||
         mesh->index_count > scene->index_count - mesh->first_index)
         return;
-
     pvr_prim(&mesh_header, sizeof(mesh_header));
     for (uint32_t i = 0; i + 2u < mesh->index_count; i += 3u) {
         for (unsigned corner = 0; corner < 3u; ++corner) {
             const uint32_t index = scene->indices[mesh->first_index + i + corner];
             const PolMeshVertex *src;
-            float point[3], world[3];
+            float point[3], world[3], sx, sy;
             pvr_vertex_t v;
             if (index >= scene->vertex_count) continue;
             src = &scene->vertices[index];
             point[0] = src->x; point[1] = src->y; point[2] = src->z;
             vf3_native_matrix_transform_point(matrix, point, world);
-            world[0] -= root[0];
-            world[1] -= root[1];
-            world[2] -= root[2];
-
+            world[0] -= root[0]; world[1] -= root[1]; world[2] -= root[2];
+            sx = world[0];
+            sy = world[1] * 0.9759001f + world[2] * 0.2182179f;
             memset(&v, 0, sizeof v);
             v.flags = corner == 2u ? PVR_CMD_VERTEX_EOL : PVR_CMD_VERTEX;
-            v.x = 320.0f + world[0] * 205.0f;
-            v.y = 424.0f -
-                (world[1] * 0.9759001f + world[2] * 0.2182179f) * 205.0f;
+            v.x = camera_center_x + (sx - (camera_min_x + camera_max_x) * 0.5f) * camera_scale;
+            v.y = camera_center_y - (sy - (camera_min_y + camera_max_y) * 0.5f) * camera_scale;
             v.z = 8.0f + (world[2] + 2.0f) * 0.1f;
-            v.argb = color;
-            v.oargb = 0;
+            v.argb = color; v.oargb = 0;
             pvr_prim(&v, sizeof v);
         }
     }
@@ -158,6 +183,8 @@ static void draw_akira(void)
     const float root[3] = {
         attachment[0][12], attachment[0][13], attachment[0][14]
     };
+    camera_min_x = camera_min_y = 1.0e30f;
+    camera_max_x = camera_max_y = -1.0e30f;
     for (unsigned i = 0; i < AKIRA_PART_COUNT; ++i) {
         const AkiraPart *part = &parts[i];
         const PolScene *scene;
@@ -166,10 +193,31 @@ static void draw_akira(void)
         scene = part->source == 1u ? &head_scene : &body_scene;
         model = find_model(scene, part->slot);
         if (!model) continue;
-        for (uint32_t m = 0; m < part->mesh_count; ++m) {
-            const PolMesh *mesh = &scene->meshes[model->first_mesh + m];
-            draw_mesh(scene, mesh, attachment[i], root);
-        }
+        for (uint32_t m = 0; m < part->mesh_count; ++m)
+            measure_mesh(scene, &scene->meshes[model->first_mesh + m],
+                         attachment[i], root);
+    }
+    {
+        const float width = camera_max_x - camera_min_x;
+        const float height = camera_max_y - camera_min_y;
+        const float sx = width > 0.0001f ? 560.0f / width : 205.0f;
+        const float sy = height > 0.0001f ? 208.0f / height : 205.0f;
+        camera_scale = (sx < sy ? sx : sy) * 0.90f;
+        if (camera_scale > 320.0f) camera_scale = 320.0f;
+        camera_center_x = 320.0f;
+        camera_center_y = 305.0f;
+    }
+    for (unsigned i = 0; i < AKIRA_PART_COUNT; ++i) {
+        const AkiraPart *part = &parts[i];
+        const PolScene *scene;
+        const PolModel *model;
+        if (!part->source) continue;
+        scene = part->source == 1u ? &head_scene : &body_scene;
+        model = find_model(scene, part->slot);
+        if (!model) continue;
+        for (uint32_t m = 0; m < part->mesh_count; ++m)
+            draw_mesh(scene, &scene->meshes[model->first_mesh + m],
+                      attachment[i], root);
     }
 }
 
@@ -236,7 +284,7 @@ static void draw_screen(void)
                                      "BIND POSE: FAIL");
     for (unsigned i = 0; i < 5; ++i)
         draw_text(16, 92 + i * 22, status_lines[i]);
-    draw_text(16, 438, "STATIC MODEL - TEXTURES AND LIVE MOTION NEXT");
+    draw_text(16, 438, "AUTO-FIT MODEL - TEXTURES AND LIVE MOTION NEXT");
     pvr_list_finish();
     pvr_scene_finish();
 }
