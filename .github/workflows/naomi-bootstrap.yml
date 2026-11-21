@@ -408,66 +408,100 @@ jobs:
           path: naomi-dma-artifact/*
           if-no-files-found: error
 
-      - name: Restore VF3 motion runtime object cache
+      - name: Restore MTAKIPAI asset cache
+        id: mtakipai-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mt-asset/MTAKIPAI.BIN
+          key: vf3-mt-asset-mtakipai-dropbox-v1
+
+      - name: Download MTAKIPAI.BIN on cache miss
+        if: steps.mtakipai-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mt-asset
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
+            --output mt-asset/MTAKIPAI.BIN
+
+      - name: Validate and cache MTAKIPAI.BIN
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(stat -c '%s' mt-asset/MTAKIPAI.BIN)" -eq 1572408
+          echo "57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554  mt-asset/MTAKIPAI.BIN" | sha256sum --check
+      - name: Save MTAKIPAI asset cache
+        if: steps.mtakipai-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mt-asset/MTAKIPAI.BIN
+          key: vf3-mt-asset-mtakipai-dropbox-v1
+
+      - name: Stage real MT asset for Naomi link
+        run: |
+          set -euo pipefail
+          cp mt-asset/MTAKIPAI.BIN tests/naomi_vf3_runtime/MTAKIPAI.BIN
+
+      - name: Restore VF3 real MT asset probe object cache
         id: vf3-runtime-cache
         uses: actions/cache/restore@v4
         with:
           path: |
             tests/naomi_vf3_runtime/main.o
-            tests/naomi_vf3_runtime/mt_play.o
-            tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
-          key: vf3-naomi-motion-runtime-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'vf3-decomp/src/fight/mt_play.c') }}-v1
+            tests/naomi_vf3_runtime/mt_asset.o
+            tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.S', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
-      - name: Preserve timestamps for restored runtime objects
+      - name: Preserve timestamps for restored MT asset probe objects
         if: steps.vf3-runtime-cache.outputs.cache-hit == 'true'
         run: |
-          touch tests/naomi_vf3_runtime/main.o tests/naomi_vf3_runtime/mt_play.o tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+          touch tests/naomi_vf3_runtime/main.o tests/naomi_vf3_runtime/mt_asset.o tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
 
-      - name: Compile VF3 motion evaluator Naomi runtime
+      - name: Compile real VF3 MT asset probe for Naomi
         env:
           KOS_BASE: ${{ github.workspace }}/kos
-          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
           set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
           make -C tests/naomi_vf3_runtime all
-          test -s tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+          test -s tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
 
-      - name: Save VF3 motion runtime object cache
+      - name: Save VF3 real MT asset probe object cache
         if: steps.vf3-runtime-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             tests/naomi_vf3_runtime/main.o
-            tests/naomi_vf3_runtime/mt_play.o
-            tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
-          key: vf3-naomi-motion-runtime-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'vf3-decomp/src/fight/mt_play.c') }}-v1
+            tests/naomi_vf3_runtime/mt_asset.o
+            tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe.elf
+          key: vf3-naomi-mt-asset-probe-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'tests/naomi_vf3_runtime/mt_asset.S', 'tests/naomi_vf3_runtime/MTAKIPAI.BIN') }}-v1
 
-      - name: Package VF3 motion evaluator Naomi ROM
+      - name: Package real VF3 MT asset probe Naomi ROM
         env:
           KOS_BASE: ${{ github.workspace }}/kos
-          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
           set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_vf3_runtime rom
-          test -s "tests/naomi_vf3_runtime/vf3_naomi_motion_lab-v${GITHUB_RUN_NUMBER}.bin"
+          test -s "tests/naomi_vf3_runtime/vf3_naomi_mt_asset_probe-v${GITHUB_RUN_NUMBER}.bin"
 
-      - name: Validate and upload VF3 motion lab ROM
+      - name: Validate and upload real VF3 MT asset probe
         run: |
-          set -eo pipefail
-          mkdir -p vf3-motion-lab-artifact
-          ROM="vf3_naomi_motion_lab-v${GITHUB_RUN_NUMBER}.bin"
-          cp "tests/naomi_vf3_runtime/${ROM}" "vf3-motion-lab-artifact/${ROM}"
-          SIZE="$(stat -c '%s' "vf3-motion-lab-artifact/${ROM}")"
-          SHA="$(sha256sum "vf3-motion-lab-artifact/${ROM}" | awk '{print $1}')"
+          set -euo pipefail
+          mkdir -p vf3-mt-asset-probe-artifact
+          ROM="vf3_naomi_mt_asset_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_vf3_runtime/${ROM}" "vf3-mt-asset-probe-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "vf3-mt-asset-probe-artifact/${ROM}")"
+          SHA="$(sha256sum "vf3-mt-asset-probe-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
-          cat > vf3-motion-lab-artifact/BUILD_INFO.txt <<EOF
-          Target: VF3 Naomi motion evaluator visual runtime
+          cat > vf3-mt-asset-probe-artifact/BUILD_INFO.txt <<EOF
+          Target: VF3 Naomi real MT asset table probe
           VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
           Workflow run: ${GITHUB_RUN_ID}
@@ -475,23 +509,27 @@ jobs:
           ROM: ${ROM}
           Size: ${SIZE}
           SHA-256: ${SHA}
-          VF3 code: upstream mt_play.c motion evaluator
-          Motion data: synthetic fixture; no commercial game data
+          Embedded asset: MTAKIPAI.BIN
+          Asset size: 1572408
+          Asset SHA-256: 57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554
+          Record boundaries: sorted unique file offsets; not slot-order subtraction
+          Scope: real asset table validation only; motion playback not yet enabled
           Packaging: KallistiOS naomibintool
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ## VF3 Naomi motion lab
+          ## VF3 Naomi real MT asset probe
           - Build version: v${GITHUB_RUN_NUMBER}
           - ROM: ${ROM}
           - Size: ${SIZE} bytes
-          - SHA-256: ${SHA}
-          - Upstream evaluator: ${{ steps.vf3-source-revision.outputs.sha }}
+          - MTAKIPAI SHA-256: 57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554
+          - Asset cache hit: ${{ steps.mtakipai-cache.outputs.cache-hit }}
+          - Runtime object cache hit: ${{ steps.vf3-runtime-cache.outputs.cache-hit }}
           EOF
         shell: bash
 
-      - name: Upload VF3 motion lab ROM
+      - name: Upload real VF3 MT asset probe Naomi ROM
         uses: actions/upload-artifact@v4
         with:
-          name: vf3-naomi-motion-lab-v${{ github.run_number }}
-          path: vf3-motion-lab-artifact/*
+          name: vf3-naomi-mt-asset-probe-v${{ github.run_number }}
+          path: vf3-mt-asset-probe-artifact/*
           if-no-files-found: error
