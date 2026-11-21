@@ -225,7 +225,6 @@ static void draw_mesh(const PolScene *scene, const PolMesh *mesh,
 {
     const uint32_t color = mesh_color(mesh);
     const uint32_t texture_count = is_head ? head_texture_count : body_texture_count;
-    const pvr_ptr_t *textures = is_head ? head_texture : body_texture;
     const pvr_poly_hdr_t *headers = textured_header[is_head ? 0 : 1];
     const int textured = mesh->texture_index != POL_TEXTURE_NONE &&
                         mesh->texture_index < texture_count;
@@ -389,13 +388,14 @@ static void draw_screen(void)
 int main(void)
 {
     pvr_poly_cxt_t cxt;
-    const int load_rc = load_model();
+    int load_rc;
+    pvr_init_defaults();
+    load_rc = load_model();
     if (load_rc != 0) {
         snprintf(status_lines[0], sizeof status_lines[0],
                  "MODEL LOAD ERROR %d", load_rc);
     }
 
-    pvr_init_defaults();
     pvr_set_bg_color(0.015f, 0.025f, 0.055f);
     pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
     cxt.gen.shading = PVR_SHADE_GOURAUD;
