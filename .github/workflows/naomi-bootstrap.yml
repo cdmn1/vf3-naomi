@@ -581,7 +581,7 @@ jobs:
             ROB_AKI.TEX
           key: vf3-naomi-akira-poltex-assets-v2
 
-      - name: Download Akira POL assets if cache is unavailable
+      - name: Download Akira POL and TEX assets if cache is unavailable
         if: steps.akira-pol-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
@@ -605,15 +605,17 @@ jobs:
           path: |
             MKAO_AKI.POL
             ROB_AKI.POL
+            MKAO_AKI.TEX
+            ROB_AKI.TEX
           key: vf3-naomi-akira-poltex-assets-v2
 
-      - name: Stage Akira POL files for Naomi
+      - name: Stage Akira POL and TEX files for Naomi
         run: |
           set -euo pipefail
           cp MKAO_AKI.POL ROB_AKI.POL MKAO_AKI.TEX ROB_AKI.TEX tests/naomi_fighter_runtime/
           cp tests/naomi_vf3_runtime/MTAKIPAI.BIN tests/naomi_fighter_runtime/
 
-      - name: Generate embedded Akira POL C arrays
+      - name: Generate embedded Akira POL and TEX C arrays
         run: |
           python3 - <<'PY'
           from pathlib import Path
