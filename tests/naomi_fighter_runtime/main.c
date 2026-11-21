@@ -256,6 +256,7 @@ int main(void)
     pvr_set_bg_color(0.015f, 0.025f, 0.055f);
     pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
     cxt.gen.shading = PVR_SHADE_GOURAUD;
+    cxt.gen.culling = PVR_CULLING_NONE;
     pvr_poly_compile(&mesh_header, &cxt);
 
     font_texture = pvr_mem_malloc(256 * 256 * 2);
