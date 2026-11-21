@@ -7,6 +7,7 @@ on:
       - "tests/naomi_bootstrap/**"
       - "tests/naomi_vf3core_smoke/**"
       - "tests/naomi_dma_probe/**"
+      - "tests/naomi_vf3_runtime/**"
       - ".github/workflows/naomi-bootstrap.yml"
   workflow_dispatch:
 
@@ -405,4 +406,67 @@ jobs:
         with:
           name: vf3-naomi-dma-probe-v${{ github.run_number }}
           path: naomi-dma-artifact/*
+          if-no-files-found: error
+
+      - name: Compile VF3 motion evaluator Naomi runtime
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -euo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_vf3_runtime all
+          test -s tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+
+      - name: Package VF3 motion evaluator Naomi ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
+        run: |
+          set -euo pipefail
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_vf3_runtime rom
+          test -s "tests/naomi_vf3_runtime/vf3_naomi_motion_lab-v${GITHUB_RUN_NUMBER}.bin"
+
+      - name: Validate and upload VF3 motion lab ROM
+        run: |
+          set -euo pipefail
+          mkdir -p vf3-motion-lab-artifact
+          ROM="vf3_naomi_motion_lab-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_vf3_runtime/${ROM}" "vf3-motion-lab-artifact/${ROM}"
+          SIZE="$(stat -c '%s' "vf3-motion-lab-artifact/${ROM}")"
+          SHA="$(sha256sum "vf3-motion-lab-artifact/${ROM}" | awk '{print $1}')"
+          test "$SIZE" -gt 0
+          cat > vf3-motion-lab-artifact/BUILD_INFO.txt <<EOF
+          Target: VF3 Naomi motion evaluator visual runtime
+          VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
+          KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
+          Workflow run: ${GITHUB_RUN_ID}
+          Build version: v${GITHUB_RUN_NUMBER}
+          ROM: ${ROM}
+          Size: ${SIZE}
+          SHA-256: ${SHA}
+          VF3 code: upstream mt_play.c motion evaluator
+          Motion data: synthetic fixture; no commercial game data
+          Packaging: KallistiOS naomibintool
+          EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## VF3 Naomi motion lab
+          - Build version: v${GITHUB_RUN_NUMBER}
+          - ROM: ${ROM}
+          - Size: ${SIZE} bytes
+          - SHA-256: ${SHA}
+          - Upstream evaluator: ${{ steps.vf3-source-revision.outputs.sha }}
+          EOF
+        shell: bash
+
+      - name: Upload VF3 motion lab ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-motion-lab-v${{ github.run_number }}
+          path: vf3-motion-lab-artifact/*
           if-no-files-found: error
