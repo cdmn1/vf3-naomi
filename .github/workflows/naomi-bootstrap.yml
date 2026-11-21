@@ -579,7 +579,7 @@ jobs:
             ROB_AKI.POL
             MKAO_AKI.TEX
             ROB_AKI.TEX
-          key: vf3-naomi-akira-poltex-assets-v2
+          key: vf3-naomi-akira-poltex-assets-v3
 
       - name: Download Akira POL and TEX assets if cache is unavailable
         if: steps.akira-pol-cache.outputs.cache-hit != 'true'
@@ -607,7 +607,7 @@ jobs:
             ROB_AKI.POL
             MKAO_AKI.TEX
             ROB_AKI.TEX
-          key: vf3-naomi-akira-poltex-assets-v2
+          key: vf3-naomi-akira-poltex-assets-v3
 
       - name: Stage Akira POL and TEX files for Naomi
         run: |
