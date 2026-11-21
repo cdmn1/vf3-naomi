@@ -15,7 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Download MTAKIPAI.BIN from the user-provided public Dropbox link
+      - name: Restore downloaded MT asset cache
+        id: mt-asset-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mt-asset/MTAKIPAI.BIN
+          # Bump v1 if the Dropbox asset is intentionally replaced.
+          key: vf3-mt-asset-mtakipai-dropbox-v1
+
+      - name: Download MTAKIPAI.BIN from Dropbox on cache miss
+        if: steps.mt-asset-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -24,6 +33,11 @@ jobs:
             --user-agent "Mozilla/5.0" \
             "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
             --output mt-asset/MTAKIPAI.BIN
+
+      - name: Validate and inspect cached/downloaded MT asset
+        shell: bash
+        run: |
+          set -euo pipefail
           SIZE="$(stat -c '%s' mt-asset/MTAKIPAI.BIN)"
           test "$SIZE" -eq 1572408
           sha256sum mt-asset/MTAKIPAI.BIN | tee mt-asset/SHA256.txt
@@ -51,6 +65,13 @@ jobs:
           Path("mt-asset/INSPECTION.txt").write_text("\n".join(out) + "\n")
           print("\n".join(out))
           PY
+      - name: Save downloaded MT asset cache
+        if: steps.mt-asset-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mt-asset/MTAKIPAI.BIN
+          key: vf3-mt-asset-mtakipai-dropbox-v1
+
       - name: Publish binary and inspection report
         uses: actions/upload-artifact@v4
         with:
