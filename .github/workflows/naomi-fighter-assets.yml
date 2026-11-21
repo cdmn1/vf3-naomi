@@ -36,7 +36,7 @@ jobs:
             --output vf3-assets.zip
           unzip -Z1 vf3-assets.zip > asset-list.txt
           for name in MKAO_AKI.POL MKAO_AKI.TEX ROB_AKI.POL ROB_AKI.TEX; do
-            entry="$(grep -E "(^|/)\${name}$" asset-list.txt | head -n 1)"
+            entry="$(grep -E "(^|/)${name}$" asset-list.txt | head -n 1)"
             test -n "$entry"
             unzip -p vf3-assets.zip "$entry" > "$name"
             test -s "$name"
