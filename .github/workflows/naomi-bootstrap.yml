@@ -741,7 +741,7 @@ jobs:
           SHA="$(sha256sum "pose-core-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
           cat > pose-core-artifact/BUILD_INFO.txt <<EOF
-          Target: VF3 Naomi native pose/matrix core conformance probe
+          Target: VF3 Naomi full native pose orchestration probe
           VF3 source commit: ${{ steps.vf3-source-revision.outputs.sha }}
           KallistiOS commit: ${{ steps.kos-revision.outputs.sha }}
           Workflow run: ${GITHUB_RUN_ID}
@@ -749,15 +749,15 @@ jobs:
           Size: ${SIZE}
           SHA-256: ${SHA}
           Compiled source family: matrix, aim_math, motion_aim, pose_orchestration, seven_pass, halfword_frame, facing_update, aim_midpoints, matrix_basis
-          Runtime checks: matrix identity/multiply/point transform, pose matrix stack, composed rotation, context layout
-          Scope: validates SH-4 compilation and foundational native pose math; full actor orchestration and live actor inputs are not yet exercised
+          Runtime checks: complete actor pose orchestration for kinds 3, 12 (special code branch), 21 and 0; validates four output blocks, finite matrices, stack and caller-state restoration
+          Scope: executes the full recovered native pose driver on Naomi SH-4 using deterministic synthetic actor fixtures; upstream host differential replay covers 4/4 matching scenarios and 14/14 deliberate mutations; live retail actor-state wiring and inferred rig mapping remain separate tasks
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ## Native pose core probe
+          ## Full native pose orchestration probe
           - ROM: ${ROM}
           - Size: ${SIZE} bytes
           - SHA-256: ${SHA}
-          - Full actor orchestration: not yet exercised
+          - Full actor orchestration: executed for four actor-kind scenarios
           EOF
         shell: bash
 
