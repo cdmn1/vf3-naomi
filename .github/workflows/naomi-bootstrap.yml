@@ -509,6 +509,7 @@ jobs:
           mkdir -p vf3-mt-asset-probe-artifact
           ROM="vf3_naomi_mt_asset_probe-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_vf3_runtime/${ROM}" "vf3-mt-asset-probe-artifact/${ROM}"
+          python3 tests/naomi_vf3_runtime/mt_ref_audit.py tests/naomi_vf3_runtime/MTAKIPAI.BIN > vf3-mt-asset-probe-artifact/MT_REFERENCE_AUDIT.txt
           SIZE="$(stat -c '%s' "vf3-mt-asset-probe-artifact/${ROM}")"
           SHA="$(sha256sum "vf3-mt-asset-probe-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
@@ -525,7 +526,7 @@ jobs:
           Asset size: 1572408
           Asset SHA-256: 57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554
           Record boundaries: sorted unique file offsets; not slot-order subtraction
-          Scope: real MTAKIPAI motion component validation; playback semantics not yet mapped
+          Scope: real MTAKIPAI component validation and cross-record reference audit; playback semantics not yet mapped
           Packaging: KallistiOS naomibintool
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
