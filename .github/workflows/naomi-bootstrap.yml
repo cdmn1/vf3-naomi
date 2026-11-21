@@ -609,6 +609,7 @@ jobs:
         run: |
           set -euo pipefail
           cp MKAO_AKI.POL ROB_AKI.POL tests/naomi_fighter_runtime/
+          cp tests/naomi_vf3_runtime/MTAKIPAI.BIN tests/naomi_fighter_runtime/
 
       - name: Generate embedded Akira POL C arrays
         run: |
