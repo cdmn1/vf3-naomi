@@ -408,6 +408,16 @@ jobs:
           path: naomi-dma-artifact/*
           if-no-files-found: error
 
+      - name: Restore VF3 motion runtime object cache
+        id: vf3-runtime-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            tests/naomi_vf3_runtime/main.o
+            tests/naomi_vf3_runtime/mt_play.o
+            tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+          key: vf3-naomi-motion-runtime-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'vf3-decomp/src/fight/mt_play.c') }}-v1
+
       - name: Compile VF3 motion evaluator Naomi runtime
         env:
           KOS_BASE: ${{ github.workspace }}/kos
@@ -419,6 +429,16 @@ jobs:
           export KOS_INC_PATHS_CPP=""
           make -C tests/naomi_vf3_runtime all
           test -s tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+
+      - name: Save VF3 motion runtime object cache
+        if: steps.vf3-runtime-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tests/naomi_vf3_runtime/main.o
+            tests/naomi_vf3_runtime/mt_play.o
+            tests/naomi_vf3_runtime/vf3_naomi_motion_lab.elf
+          key: vf3-naomi-motion-runtime-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-${{ steps.vf3-source-revision.outputs.sha }}-${{ hashFiles('tests/naomi_vf3_runtime/main.c', 'tests/naomi_vf3_runtime/Makefile', 'vf3-decomp/src/fight/mt_play.c') }}-v1
 
       - name: Package VF3 motion evaluator Naomi ROM
         env:
