@@ -1,6 +1,7 @@
 #include <kos.h>
 #include <dc/minifont.h>
-#include <dc/video.h>
+#include <dc/pvr.h>
+#include <dc/minifont.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,6 +19,7 @@ KOS_INIT_FLAGS(INIT_DEFAULT);
 
 static float ram[RAM_SIZE / sizeof(float)];
 static char lines[8][64];
+static pvr_ptr_t font_texture;
 static int pass_count, fail_count;
 
 static void check(int ok, const char *name)
@@ -30,6 +32,51 @@ static void check(int ok, const char *name)
 static int nearf(float a, float b)
 {
     return isfinite(a) && fabsf(a - b) < 0.0005f;
+}
+
+static void font_init(void)
+{
+    uint16_t *vram = (uint16_t *)font_texture;
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 16; ++x) {
+            minifont_draw(vram, 256, (uint32_t)(y * 16 + x));
+            vram += 16;
+        }
+        vram += 23 * 256;
+    }
+}
+
+static void draw_char(float x, float y, unsigned char c)
+{
+    pvr_vertex_t v;
+    int ix = (c % 16) * 16, iy = (c / 16) * 24;
+    float u1 = ix / 256.0f, v1 = iy / 256.0f;
+    float u2 = (ix + 12) / 256.0f, v2 = (iy + 24) / 256.0f;
+    if (c <= ' ' || c >= 127) return;
+    memset(&v, 0, sizeof v);
+    v.flags = PVR_CMD_VERTEX; v.z = 1.0f; v.u = u1; v.v = v2;
+    v.x = x; v.y = y + 24; v.argb = PVR_PACK_COLOR(1,1,1,1);
+    pvr_prim(&v, sizeof v);
+    v.x = x; v.y = y; v.v = v1; pvr_prim(&v, sizeof v);
+    v.x = x + 12; v.y = y + 24; v.u = u2; v.v = v2;
+    pvr_prim(&v, sizeof v);
+    v.flags = PVR_CMD_VERTEX_EOL; v.x = x + 12; v.y = y; v.v = v1;
+    pvr_prim(&v, sizeof v);
+}
+
+static void draw_text(float x, float y, const char *s)
+{
+    pvr_poly_cxt_t cxt;
+    pvr_poly_hdr_t poly;
+    pvr_poly_cxt_txr(&cxt, PVR_LIST_TR_POLY,
+        PVR_TXRFMT_ARGB1555 | PVR_TXRFMT_NONTWIDDLED,
+        256, 256, font_texture, PVR_FILTER_NONE);
+    pvr_poly_compile(&poly, &cxt);
+    pvr_prim(&poly, sizeof poly);
+    for (size_t i = 0; s[i]; ++i) {
+        draw_char(x, y, (unsigned char)s[i]);
+        x += 12;
+    }
 }
 
 int main(void)
@@ -77,19 +124,25 @@ int main(void)
     check(sizeof(vf3_native_aim) >= sizeof(float) * (16*16 + 16 + 16),
           "POSE CONTEXT LAYOUT");
 
-    vid_set_mode(DM_640x480, PM_RGB565);
+    pvr_init_defaults();
+    pvr_set_bg_color(0.015f, 0.025f, 0.055f);
+    font_texture = pvr_mem_malloc(256 * 256 * 2);
+    if (!font_texture) for (;;) thd_sleep(1000);
+    font_init();
     for (;;) {
-        vid_clear(0, 0, 0);
-        bfont_draw_str(vram_s + 640 * 12 + 16, 640, 1,
-                       "VF3 NAOMI - NATIVE POSE CORE");
+        pvr_wait_ready();
+        pvr_scene_begin();
+        pvr_list_begin(PVR_LIST_TR_POLY);
+        draw_text(16, 12, "VF3 NAOMI - NATIVE POSE CORE");
         for (int i = 0; i < pass_count + fail_count; ++i)
-            bfont_draw_str(vram_s + 640 * (48 + i * 24) + 16, 640, 1, lines[i]);
+            draw_text(16, 60 + i * 32, lines[i]);
         char summary[64];
         snprintf(summary, sizeof summary, "RESULT: %d PASS / %d FAIL",
                  pass_count, fail_count);
-        bfont_draw_str(vram_s + 640 * 420 + 16, 640, 1, summary);
-        vid_flip(-1);
-        thd_sleep(100);
+        draw_text(16, 420, summary);
+        pvr_list_finish();
+        pvr_scene_finish();
+        thd_sleep(16);
     }
     return 0;
 }
