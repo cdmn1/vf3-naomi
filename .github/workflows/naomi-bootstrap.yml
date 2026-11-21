@@ -413,7 +413,7 @@ jobs:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
@@ -425,7 +425,7 @@ jobs:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
@@ -434,7 +434,7 @@ jobs:
 
       - name: Validate and upload VF3 motion lab ROM
         run: |
-          set -euo pipefail
+          set -eo pipefail
           mkdir -p vf3-motion-lab-artifact
           ROM="vf3_naomi_motion_lab-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_vf3_runtime/${ROM}" "vf3-motion-lab-artifact/${ROM}"
