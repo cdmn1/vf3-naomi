@@ -31,6 +31,8 @@ $(TARGET): $(OBJS)
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 Motion Lab $(BUILD_VERSION)" -e $(TARGET)
 
+rom: $(ROM)
+
 include $(KOS_BASE)/Makefile.rules
 
 clean:
