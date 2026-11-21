@@ -2,7 +2,7 @@ name: VF3 Naomi bootstrap build
 
 on:
   push:
-    branches: [main]
+    branches: [main, akira-native-row0-experiment]
     paths:
       - "tests/naomi_bootstrap/**"
       - "tests/naomi_vf3core_smoke/**"
