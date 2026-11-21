@@ -1,20 +1,22 @@
-# VF3 Naomi motion lab
+# VF3 Naomi real MT motion-component probe
 
-This target is the first visible Naomi runtime that executes a real gameplay
-kernel from the pinned VF3 C reconstruction.
+This Naomi ROM embeds the verified `MTAKIPAI.BIN` asset and inspects the
+three slot components selected by the two motion IDs observed in the actor
+contexts (1050 and 2386).
 
-It calls upstream `src/fight/mt_play.c::vf3_mt_eval_frame()` every frame and
-renders the resulting 63-channel pose as a simple animated stick figure using
-the Naomi PowerVR2.
+For each motion it derives component boundaries from the next greater unique
+file offset, validates component sizes (28, 16 and 404 bytes), checks the
+descriptor's in-file reference, and verifies all 101 floats in the third
+component are finite and within the probe's sanity bound.
 
-The fixture is synthetic and exists only to exercise the evaluator. It is not
-an extracted fighter model, production animation, or playable game. No
-commercial game data is included.
+The ROM displays the actual component offsets, descriptor words, referenced
+file offset, and float range on the Naomi PowerVR2.
+
+This is real game data, not a synthetic fixture. The component field meanings,
+mount-time relocation, evaluator header construction, and real pose playback
+are still open. The probe deliberately does not label the components as
+counts, times, opcodes, bones, or transforms without evidence.
 
 Build through the `VF3 Naomi bootstrap build` GitHub Actions workflow. The
-artifact is named `vf3-naomi-motion-lab-vN` and contains a versioned Naomi
-ROM plus `BUILD_INFO.txt`.
-
-This is intentionally a stepping stone: next, replace the synthetic channel
-fixture with a parsed motion record and then connect it to a real fighter
-model/texture asset path.
+artifact is named `vf3-naomi-mt-asset-probe-vN` and contains a versioned
+Naomi ROM plus `BUILD_INFO.txt`.
