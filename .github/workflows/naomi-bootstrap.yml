@@ -634,7 +634,7 @@ jobs:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
@@ -646,7 +646,7 @@ jobs:
           KOS_BASE: ${{ github.workspace }}/kos
           VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
