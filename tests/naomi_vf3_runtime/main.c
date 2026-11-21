@@ -22,8 +22,8 @@ KOS_INIT_FLAGS(INIT_DEFAULT);
 #define MT_TABLE_BYTES (MT_SLOTS * 4u)
 #define EXPECTED_ASSET_SIZE 1572408u
 
-extern const uint8_t vf3_mt_asset_start[];
-extern const uint8_t vf3_mt_asset_end[];
+extern const uint8_t _binary_MTAKIPAI_BIN_start[];
+extern const uint8_t _binary_MTAKIPAI_BIN_end[];
 
 static pvr_ptr_t font_texture;
 static uint32_t offsets[MT_SLOTS];
@@ -43,25 +43,13 @@ static int cmp_u32(const void *a, const void *b) {
     return (x>y)-(x<y);
 }
 
-static int find_record(uint32_t off, uint32_t *length) {
-    uint32_t lo=0, hi=records;
-    while (lo<hi) {
-        uint32_t mid=lo+(hi-lo)/2;
-        if (unique_offsets[mid] < off) lo=mid+1;
-        else hi=mid;
-    }
-    if (lo>=records || unique_offsets[lo]!=off) return 0;
-    *length=(lo+1<records ? unique_offsets[lo+1] : EXPECTED_ASSET_SIZE)-off;
-    return 1;
-}
-
 static void inspect_asset(void) {
-    const uint32_t size=(uint32_t)(vf3_mt_asset_end-vf3_mt_asset_start);
+    const uint32_t size=(uint32_t)(_binary_MTAKIPAI_BIN_end-_binary_MTAKIPAI_BIN_start);
     uint32_t previous=0, n=0;
     if (size!=EXPECTED_ASSET_SIZE || size<MT_TABLE_BYTES) return;
 
     for (uint32_t slot=0; slot<MT_SLOTS; ++slot) {
-        uint32_t off=rd32le(vf3_mt_asset_start+slot*4u);
+        uint32_t off=rd32le(_binary_MTAKIPAI_BIN_start+slot*4u);
         if (!off) continue;
         if (off<MT_TABLE_BYTES || off>=size) { ++invalid; continue; }
         if (n && off<previous) ++inversions;
@@ -79,11 +67,11 @@ static void inspect_asset(void) {
     first_offset=unique_offsets[0];
     last_offset=unique_offsets[records-1];
 
-    snprintf(summary[0],sizeof(summary[0]),"ASSET BYTES: %u",size);
-    snprintf(summary[1],sizeof(summary[1]),"POPULATED SLOTS: %u / %u",populated,MT_SLOTS);
-    snprintf(summary[2],sizeof(summary[2]),"UNIQUE RECORD OFFSETS: %u",records);
-    snprintf(summary[3],sizeof(summary[3]),"DUPLICATE POINTERS: %u",duplicates);
-    snprintf(summary[4],sizeof(summary[4]),"SLOT ORDER INVERSIONS: %u",inversions);
+    snprintf(summary[0],sizeof(summary[0]),"ASSET BYTES: %lu",(unsigned long)size);
+    snprintf(summary[1],sizeof(summary[1]),"POPULATED SLOTS: %lu / %u",(unsigned long)populated,MT_SLOTS);
+    snprintf(summary[2],sizeof(summary[2]),"UNIQUE FILE OFFSETS: %lu",(unsigned long)records);
+    snprintf(summary[3],sizeof(summary[3]),"DUPLICATE POINTERS: %lu",(unsigned long)duplicates);
+    snprintf(summary[4],sizeof(summary[4]),"SLOT ORDER INVERSIONS: %lu",(unsigned long)inversions);
     snprintf(summary[5],sizeof(summary[5]),"PAYLOAD: %06X .. %06X",(unsigned)first_offset,(unsigned)last_offset);
     snprintf(summary[6],sizeof(summary[6]),"MOTION 1050 SLOTS: %u-%u",(1050u-1u)*3u,(1050u-1u)*3u+2u);
     snprintf(summary[7],sizeof(summary[7]),"MOTION 2386 SLOTS: %u-%u",(2386u-1u)*3u,(2386u-1u)*3u+2u);
