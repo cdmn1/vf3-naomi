@@ -514,6 +514,7 @@ jobs:
       - name: Package real VF3 MT asset probe Naomi ROM
         env:
           KOS_BASE: ${{ github.workspace }}/kos
+          VF3_DECOMP_DIR: ${{ github.workspace }}/vf3-decomp
         run: |
           set -eo pipefail
           export KOS_SUBARCH=naomi
