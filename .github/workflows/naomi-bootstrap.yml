@@ -655,6 +655,9 @@ jobs:
           (out / "motion_pose_kos.c").write_text(source.replace(marker, '#include "motion_pose_kos.h"'))
           PY
 
+      - name: Apply native-root hierarchy correction
+        run: python3 tests/naomi_fighter_runtime/patch_native_pose.py
+
       - name: Compile Akira textured motion renderer for Naomi
         env:
           KOS_BASE: ${{ github.workspace }}/kos
