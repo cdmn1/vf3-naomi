@@ -655,6 +655,7 @@ jobs:
           (out / "motion_pose_kos.c").write_text(source.replace(marker, '#include "motion_pose_kos.h"'))
           PY
 
+      # v85 keeps the authored torso orientation; only the native actor origin is reused.
       - name: Apply native-root hierarchy correction
         run: python3 tests/naomi_fighter_runtime/patch_native_pose.py
 
