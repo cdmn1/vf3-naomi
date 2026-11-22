@@ -37,8 +37,15 @@ old_pose_loop = """        const motion_bone *bone = &bones[row];
 new_pose_loop = """        const motion_bone *bone = &bones[row];
         float anim[16], posed[16];
         if (row == 0u && root_override) {
-            memcpy(world[row], root_override, sizeof world[row]);
-            memcpy(matrices[row], root_override, sizeof matrices[row]);
+            /* Keep the renderer's authored torso/model basis. The recovered
+             * row-0 sample supplies the actor origin, but its orientation is
+             * not yet proven compatible with the POL attachment basis. */
+            turns_for_row(bone, pose_fields, anim);
+            vf3_native_matrix_multiply(bind_local[row], anim, world[row]);
+            world[row][12] = root_override[12];
+            world[row][13] = root_override[13];
+            world[row][14] = root_override[14];
+            memcpy(matrices[row], world[row], sizeof matrices[row]);
             continue;
         }
         if (bone->parent == -2) {
