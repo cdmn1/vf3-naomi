@@ -29,6 +29,13 @@ EXTRA_WINDOWS = {
     "global pose flags 0x0C29BCCC": (0x0C29BCCC, 0x4),
     "watch-A model resource object": (0x0C03006C, 0x100),
     "watch-B model resource object": (0x0C030D6C, 0x100),
+    "watch-A translation input +0x1488": (0x0C20046C, 0x0C),
+    "watch-B translation input +0x1488": (0x0C202814, 0x0C),
+    "watch-A anchor output +0x1F14": (0x0C200EF8, 0x0C),
+    "watch-B anchor output +0x1F14": (0x0C2032A0, 0x0C),
+    "global attachment flags 0x0C29B864": (0x0C29B864, 0x40),
+    "global handler descriptor block 0x0C29BB84": (0x0C29BB84, 0x100),
+    "global scene matrix 0x0C2A5F60": (0x0C2A5F60, 0x40),
 }
 
 def norm(x: int) -> int:
@@ -130,7 +137,19 @@ def main() -> int:
             0x8C0B1860: "fighter_refresh scene-link call-site",
             0x8C0B188E: "fighter_refresh handler-list call-site",
             0x8C0B1A46: "scene_link",
-            0x8C0B1B2E: "handler_list",
+            0x8C0B1B2E: "handler_list dispatcher",
+            0x8C0B1B6C: "selector-0 no-op callback",
+            0x8C08D898: "selector-1 callback A",
+            0x8C0940C8: "selector-1 callback B",
+            0x8C0B1B7C: "selector-1 mode descriptor callback",
+            0x8C0B1C92: "selector-1 matrix callback",
+            0x8C0869BC: "selector-14 callback",
+            0x8C0B1C8E: "selector-17 no-op callback",
+            0x8C0A756C: "attachment slot pass A",
+            0x8C0A7662: "attachment slot pass B",
+            0x8C03B56C: "attachment matrix copy",
+            0x8C03B62E: "attachment matrix store",
+            0x8C074854: "actor translation/offset helper",
         }
         print("=== POSE PC PROBE HITS (last 30 per entry) ===")
         for pc, label in watched_pcs.items():
