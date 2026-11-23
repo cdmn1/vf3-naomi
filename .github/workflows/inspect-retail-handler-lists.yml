@@ -47,19 +47,31 @@ jobs:
             | tee HANDLER_LIST_AUDIT.txt
           rm -f vf3-assets.zip
 
-      - name: Recover actor watches from retained v71 and v72 traces
+      - name: Recover actor watches from retained v66 through v72 traces
         run: |
           set -euo pipefail
           : > ACTOR_WATCH_REPORT.txt
-          for version in 71 72; do
+          for version in 66 68 70 71 72; do
             trace_dir="VF3-Flycast-Trace/VF3-Flycast-Trace-v${version}"
-            archive="$trace_dir/vf3-loader-trace-loader.zip"
             work="/tmp/vf3-v${version}"
             mkdir -p "$work"
-            unzip -oq "$archive" -d "$work"
+            if [ -f "$trace_dir/vf3-loader-trace-loader.bin" ]; then
+              cp "$trace_dir/vf3-loader-trace-loader.bin" "$work/"
+            elif [ -f "$trace_dir/vf3-loader-trace-loader.zip" ]; then
+              unzip -oq "$trace_dir/vf3-loader-trace-loader.zip" -d "$work"
+            else
+              echo "v${version}: no retained loader trace" >> ACTOR_WATCH_REPORT.txt
+              continue
+            fi
             trace="$(find "$work" -type f -name 'vf3-loader-trace-loader.bin' -print -quit)"
-            test -n "$trace"
-            python3 tools/loader_trace_decode.py "$trace" --prefix "$work/decoded"
+            if [ -z "$trace" ]; then
+              echo "v${version}: loader trace missing after extraction" >> ACTOR_WATCH_REPORT.txt
+              continue
+            fi
+            if ! python3 tools/loader_trace_decode.py "$trace" --prefix "$work/decoded"; then
+              echo "v${version}: trace decoder rejected this format" >> ACTOR_WATCH_REPORT.txt
+              continue
+            fi
             python3 tools/inspect_actor_watch_trace.py "$work/decoded.memory.csv" \
               --pc-csv "$work/decoded.pc.csv" \
               --version "v${version}" >> ACTOR_WATCH_REPORT.txt
