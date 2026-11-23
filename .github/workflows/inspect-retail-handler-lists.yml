@@ -41,6 +41,7 @@ jobs:
           set -euo pipefail
           python3 tools/inspect_retail_handler_lists.py vf3-assets.zip \
             --readable-status vf3-decomp/docs/readable_status.csv \
+            --sh4-tools vf3-decomp/tools \
             | tee HANDLER_LIST_AUDIT.txt
           rm -f vf3-assets.zip
 
