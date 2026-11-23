@@ -99,12 +99,10 @@ jobs:
               python3 tools/inspect_actor_watch_trace.py "$work/decoded.memory.csv" \
                 --pc-csv "$work/decoded.pc.csv" \
                 --version "full-pose capture" >> ACTOR_WATCH_REPORT.txt
-              for diag in "$pose_dir"/*.diag.txt; do
-                if [ -f "$diag" ]; then
-                  echo "=== POSE CAPTURE DIAGNOSTICS: $(basename "$diag") ===" >> ACTOR_WATCH_REPORT.txt
-                  cat "$diag" >> ACTOR_WATCH_REPORT.txt
-                fi
-              done
+              while IFS= read -r diag; do
+                echo "=== POSE CAPTURE DIAGNOSTICS: $(basename "$diag") ===" >> ACTOR_WATCH_REPORT.txt
+                cat "$diag" >> ACTOR_WATCH_REPORT.txt
+              done < <(find "$pose_dir" "$work" -type f -name '*.diag.txt' -print)
             else
               echo "No vf3-pose-trace.bin found in $pose_dir" >> ACTOR_WATCH_REPORT.txt
             fi
