@@ -18,6 +18,24 @@ EXTRA_WINDOWS = {
     "watch-B +0x54 pointer 0x0C030D6C": (0x0C030D6C, 0x100),
     "watch-A +0x58 pointer 0x0C10E548": (0x0C10E548, 0x100),
     "watch-B +0x58 pointer 0x0C10EB60": (0x0C10EB60, 0x100),
+    "watch-A attachment rows 2-17": (0x0C1FF1E4, 0x400),
+    "watch-B attachment rows 2-17": (0x0C20158C, 0x400),
+    "watch-A aim block +0x640": (0x0C1FF624, 0x100),
+    "watch-B aim block +0x640": (0x0C2019CC, 0x100),
+    "watch-A aim block +0x740": (0x0C1FF724, 0x100),
+    "watch-B aim block +0x740": (0x0C201ACC, 0x100),
+    "watch-A 23-bone matrices +0x7C0": (0x0C1FF7A4, 0x5C0),
+    "watch-B 23-bone matrices +0x7C0": (0x0C201B4C, 0x5C0),
+    "watch-A MT channels +0x1D58": (0x0C200D3C, 0xFC),
+    "watch-B MT channels +0x1D58": (0x0C2030E4, 0xFC),
+    "watch-A pose fields +0x1F50": (0x0C200F34, 0x54),
+    "watch-B pose fields +0x1F50": (0x0C2032DC, 0x54),
+    "watch-A pose offsets +0x208C": (0x0C201070, 0x0C),
+    "watch-B pose offsets +0x208C": (0x0C203418, 0x0C),
+    "watch-A arg +0x22E4": (0x0C2012C8, 0x18),
+    "watch-B arg +0x22E4": (0x0C203670, 0x18),
+    "watch-A aim selector +0x420B": (0x0C2031EF, 0x10),
+    "watch-B aim selector +0x420B": (0x0C205597, 0x10),
 }
 
 def norm(x: int) -> int:
@@ -100,16 +118,19 @@ def main() -> int:
         print(f"{name}: base=0x{base:08X} bytes=0x{size:X} "
               f"events={count} unique_addresses={len(words)}")
         for off in sorted(words):
-            rows = [r for r in words[off] if r["width"] == 4]
-            if not rows:
-                continue
-            latest = max(rows, key=lambda r: r["word"])
-            reads = sum(r["access"] == "R" for r in rows)
-            writes = sum(r["access"] == "W" for r in rows)
-            vals = Counter(r["value"] & 0xFFFFFFFF for r in rows)
-            common = ",".join(f"0x{v:08X}({n})" for v,n in vals.most_common(3))
-            print(f"  +0x{off:03X}: last=0x{latest['value'] & 0xFFFFFFFF:08X} "
-                  f"R{reads}/W{writes} values={common}")
+            by_width = defaultdict(list)
+            for row in words[off]:
+                by_width[row["width"]].append(row)
+            for width, rows in sorted(by_width.items()):
+                latest = max(rows, key=lambda r: r["word"])
+                reads = sum(r["access"] == "R" for r in rows)
+                writes = sum(r["access"] == "W" for r in rows)
+                mask = (1 << (width * 8)) - 1
+                vals = Counter(r["value"] & mask for r in rows)
+                digits = width * 2
+                common = ",".join(f"0x{v:0{digits}X}({n})" for v,n in vals.most_common(3))
+                print(f"  +0x{off:03X} w{width}: last=0x{latest['value'] & mask:0{digits}X} "
+                      f"R{reads}/W{writes} values={common}")
     return 0
 
 if __name__ == "__main__":
