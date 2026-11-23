@@ -20,6 +20,10 @@ TABLES = {
     "0x0C10EB60 actor-B motion record": (0x0C10EB60, 32),
     "0x0C11D4E8 actor-A model record": (0x0C11D4E8, 204),
     "0x0C11D1B8 actor-B model record": (0x0C11D1B8, 204),
+    "0x0C03006C actor-A descriptor": (0x0C03006C, 16),
+    "0x0C030D6C actor-B descriptor": (0x0C030D6C, 16),
+    "0x0C03186C actor-B alternate descriptor": (0x0C03186C, 16),
+    "0x0C11D8D0 actor descriptor pointer table": (0x0C11D8D0, 32),
     "0x0C0AB9A0 node handler table": (0x0C0AB9A0, 64),
     "0x0C0B1C20 mode_table_ptr": (0x0C0B1C20, 1),
     "0x0C0B1C24 kind_table_ptr": (0x0C0B1C24, 1),
@@ -116,7 +120,7 @@ def main() -> int:
                   (f" -> {canon:08x}" if is_ptr else ""))
     print("ACTOR_RECORD_POINTER_REFERENCES:")
     actor_record_targets = (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60,
-                           0x0C03006C, 0x0C030D6C, 0x0C03186C)
+                           0x0C03006C, 0x0C030D6C, 0x0C03186C, 0x0C11D8E8)
     pointer_literals: dict[int, list[int]] = {}
     for target in actor_record_targets:
         needle = struct.pack("<I", target)
