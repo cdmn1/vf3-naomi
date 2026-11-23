@@ -94,6 +94,20 @@ def main() -> int:
             name = names.get(canon, "unmapped") if is_ptr else "value"
             print(f"  {addr:08x}: {raw:08x}" +
                   (f" -> {canon:08x} {name}" if is_ptr else f" ({name})"))
+    print("MODE_DISPATCH_RECORD_PREFIXES:")
+    mode_ptrs = sorted({u32(image, 0x0C10F940 + i * 4)
+                        for i in range(26)
+                        if (u32(image, 0x0C10F940 + i * 4) & 0xFF000000)
+                        in (0x0C000000, 0x8C000000)})
+    for ptr in mode_ptrs:
+        print(f"  record 0x{ptr:08x}:")
+        for i in range(16):
+            addr = ptr + i * 4
+            raw = u32(image, addr)
+            is_ptr = (raw & 0xFF000000) in (0x0C000000, 0x8C000000)
+            canon = canonical(raw) if is_ptr else raw
+            print(f"    +0x{i*4:02x}: {raw:08x}" +
+                  (f" -> {canon:08x}" if is_ptr else ""))
     print("STATIC_HALFWORD_CONSTANTS:")
     for label, (base, count) in HALFWORDS.items():
         vals = [u16(image, base + i * 2) for i in range(count)]
