@@ -45,7 +45,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("zip", type=Path)
     ap.add_argument("--readable-status", type=Path, required=True)
+    ap.add_argument("--sh4-tools", type=Path, required=True)
     args = ap.parse_args()
+    sys.path.insert(0, str(args.sh4_tools))
+    import sh4
 
     with zipfile.ZipFile(args.zip) as zf:
         entries = zf.infolist()
@@ -93,6 +96,7 @@ def main() -> int:
         print(f"  {label}: " + " ".join(f"{v:04x}" for v in vals))
 
     total = 0
+    callbacks_seen: list[int] = []
     print("ATTACHMENT_HANDLER_LISTS:")
     for selector in range(SELECTORS):
         table_cell = HANDLER_TABLE + selector * 4
@@ -110,6 +114,7 @@ def main() -> int:
                 break
             addr = canonical(callback)
             callbacks.append((callback, addr, names.get(addr, "unmapped")))
+            callbacks_seen.append(addr)
         print(f" count={len(callbacks)} terminated={terminated}")
         for index, (raw, addr, name) in enumerate(callbacks):
             print(f"  [{index:02d}] raw=0x{raw:08x} entry=0x{addr:08x} name={name}")
@@ -117,6 +122,17 @@ def main() -> int:
         if not terminated:
             print("  WARNING: no zero terminator within 64 entries")
     print(f"TOTAL_CALLBACKS={total}")
+    print("CALLBACK_ENTRY_DISASSEMBLY (mnemonics only; up to 8 instructions):")
+    for addr in sorted(set(callbacks_seen)):
+        print(f"  0x{addr:08x}:")
+        count = 0
+        for rec in sh4.disasm(image, IMAGE_BASE, addr, 8):
+            print(f"    0x{rec['addr']:08x}: {rec['text']}")
+            count += 1
+            if rec["text"].startswith("rts"):
+                break
+        if count == 0:
+            print("    <unreadable>")
     return 0
 
 if __name__ == "__main__":
