@@ -14,6 +14,8 @@ HANDLER_TABLE = 0x0C10F7A8
 SELECTORS = 18
 MAX_HANDLERS = 64
 TABLES = {
+    "0x0C10F940 mode_dispatch_table": (0x0C10F940, 32),
+    "0x0C10F6D0 mode_selector_table": (0x0C10F6D0, 32),
     "0x0C0B1C20 mode_table_ptr": (0x0C0B1C20, 1),
     "0x0C0B1C24 kind_table_ptr": (0x0C0B1C24, 1),
     "0x0C0B1CF8 callback_targets": (0x0C0B1CF8, 7),
@@ -87,9 +89,11 @@ def main() -> int:
         for i in range(count):
             addr = base + i * 4
             raw = u32(image, addr)
-            canon = canonical(raw) if raw not in (0, 0xFFFFFFFF) else raw
-            name = names.get(canon, "unmapped")
-            print(f"  {addr:08x}: {raw:08x} -> {canon:08x} {name}")
+            is_ptr = (raw & 0xFF000000) in (0x0C000000, 0x8C000000)
+            canon = canonical(raw) if is_ptr else raw
+            name = names.get(canon, "unmapped") if is_ptr else "value"
+            print(f"  {addr:08x}: {raw:08x}" +
+                  (f" -> {canon:08x} {name}" if is_ptr else f" ({name})"))
     print("STATIC_HALFWORD_CONSTANTS:")
     for label, (base, count) in HALFWORDS.items():
         vals = [u16(image, base + i * 2) for i in range(count)]
