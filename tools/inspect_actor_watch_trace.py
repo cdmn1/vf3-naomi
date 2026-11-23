@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Recover the previously watched 512-byte fighter actor regions from trace CSVs.
+"""Recover the previously watched fighter actor regions and full pose tables from trace CSVs.
 
 This does not assume a savestate exists. It collects only memory events already
 present in the retained v71/v72 Flycast traces and reports observed actor words.
@@ -65,13 +65,13 @@ def main() -> int:
                         words[addr - base].append(event)
                         break
 
-    print(f"=== {args.version} RETAINED ACTOR WATCHES ===")
+    print(f"=== {args.version} RETAINED ACTOR WATCHES (0x{ACTOR_BYTES:X}-byte windows) ===")
     for base in bases:
         by_offset = events[base]
         print(f"ACTOR 0x{bases[base]:08X}: events={sum(len(v) for v in by_offset.values())} "
               f"unique_addresses={len(by_offset)}")
         if not by_offset:
-            print("  NO_EVENTS_IN_512_BYTE_WINDOW")
+            print("  NO_EVENTS_IN_0x600_BYTE_ACTOR_WINDOW")
             continue
         print("  HEADER:")
         for off in (0x00, 0x04, 0x54, 0x58):
