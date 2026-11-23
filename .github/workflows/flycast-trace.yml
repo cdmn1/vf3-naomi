@@ -2,11 +2,12 @@ name: Build VF3 Flycast trace tool
 
 on:
   push:
-    branches: [main]
+    branches: [main, akira-native-row0-experiment]
     paths:
       - "tools/flycast-trace/**"
       - "tools/VF3_WATCH_LOADER.txt"
       - "tools/VF3_WATCH_INPUT.txt"
+      - "tools/VF3_WATCH_POSE_FULL.txt"
       - "tools/loader_trace_summary.py"
       - ".github/workflows/flycast-trace.yml"
   workflow_dispatch:
@@ -87,6 +88,77 @@ jobs:
           Copy-Item "tools/flycast-trace/LOADER_CAPTURE_README.txt" $package
           Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
           Copy-Item "tools/VF3_WATCH_INPUT.txt" $package
+          Copy-Item "tools/VF3_WATCH_POSE_FULL.txt" $package
+          $poseLauncher = @'
+          @echo off
+          setlocal
+          cd /d "%~dp0"
+          set "VF3_INTERPRETER=1"
+          set "VF3_WATCH=%~dp0VF3_WATCH_POSE_FULL.txt"
+          set "VF3_TRACE=%~dp0vf3-pose-trace.bin"
+          set "VF3_DIAG=%VF3_TRACE%.diag.txt"
+          if exist "%VF3_TRACE%" del "%VF3_TRACE%"
+          if exist "%VF3_DIAG%" del "%VF3_DIAG%"
+          echo.
+          echo VF3 FULL POSE tracing is enabled.
+          echo Load the Dreamcast version of Virtua Fighter 3.
+          echo Start from a cold boot, use the same Akira versus Jacky matchup,
+          echo confirm into Round 1, and let the fight run for 5-10 seconds.
+          echo Then close Flycast normally.
+          echo Do not use the Naomi probe ROM or a savestate.
+          echo.
+          echo Output:
+          echo %VF3_TRACE%
+          echo.
+          start "" /wait "%~dp0flycast.exe"
+          if exist "%VF3_TRACE%" (
+            echo.
+            echo Pose trace created. Size:
+            for %%F in ("%VF3_TRACE%") do echo %%~zF bytes
+          ) else (
+            echo.
+            echo No pose trace file was created. Check that Flycast started correctly.
+          )
+          if exist "%VF3_DIAG%" (
+            echo.
+            echo Pose diagnostics created:
+            echo %VF3_DIAG%
+          ) else (
+            echo.
+            echo WARNING: pose diagnostics file was not created.
+          )
+          pause
+          '@
+          $poseLauncher | Set-Content -Encoding ascii (Join-Path $package "run-trace-pose.cmd")
+          $poseReadme = @'
+          VF3 full pose capture
+          =====================
+          
+          Purpose
+          -------
+          Capture the live 18 attachment rows, the 23-bone output matrices,
+          pose inputs, joint-chain records, and the retail attachment callback
+          execution. This is a targeted pose capture, not another loader test.
+          
+          Capture
+          -------
+          1. Extract this ZIP into a writable folder and keep all files together.
+          2. Double-click run-trace-pose.cmd.
+          3. Load the Dreamcast version of Virtua Fighter 3 (not the Naomi probe ROM).
+          4. Start from a cold boot; do not resume from a savestate.
+          5. Use the same Akira-versus-Jacky matchup as the previous captures.
+          6. Confirm into Round 1, let the fight run for 5-10 seconds, then close Flycast normally.
+          
+          Output
+          ------
+          - vf3-pose-trace.bin
+          - vf3-pose-trace.bin.diag.txt
+          
+          The profile records only the watched fighter/pose memory windows and
+          selected SH-4 PC snapshots. It does not include the game image or
+          raw model/motion assets. Keep the two output files together in one ZIP.
+          '@
+          $poseReadme | Set-Content -Encoding ascii (Join-Path $package "POSE_CAPTURE_README.txt")
           $buildInfo = @"
           VF3 Flycast trace build
           Upstream repository: https://github.com/flyinghead/flycast
@@ -97,6 +169,7 @@ jobs:
           Instrumentation: expanded PC probes (FA12/FA13), guest memory access records (FA20), GD-ROM DMA blocks (FA21), REIOS HLE sector transfers and data fingerprints (FA22), and GD-ROM hook diagnostics
           Default watch profile: VF3_WATCH_INPUT.txt (four controller-path PCs)
           Loader capture launcher: run-trace-loader.cmd (GDFS/MT PCs plus watched memory ranges)
+          Full pose capture launcher: run-trace-pose.cmd (18 attachment rows, 23-bone matrices, pose inputs and callback PCs)
           Controller probes: selected-port reader, controller merge, player action update, packet lookup
           "@
           $buildInfo | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
