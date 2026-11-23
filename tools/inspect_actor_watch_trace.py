@@ -173,7 +173,7 @@ def main() -> int:
                   + " ".join(values))
 
     for actor_base in ACTORS:
-        dump_matrix(f"ACTOR 0x{actor_base:08X} ATTACHMENT MATRICES +0x180",
+        dump_matrix(f"ACTOR 0x{actor_base:08X} ATTACHMENT SLOT RECORDS +0x180 (raw 64-byte records)",
                     actor_base + 0x180, 18, 0x40, events[norm(actor_base)])
     for name, (base, size, data) in extra.items():
         if "23-bone matrices" in name:
