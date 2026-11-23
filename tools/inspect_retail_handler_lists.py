@@ -115,7 +115,8 @@ def main() -> int:
             print(f"    +0x{i*4:02x}: {raw:08x}" +
                   (f" -> {canon:08x}" if is_ptr else ""))
     print("ACTOR_RECORD_POINTER_REFERENCES:")
-    actor_record_targets = (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60)
+    actor_record_targets = (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60,
+                           0x0C03006C, 0x0C030D6C, 0x0C03186C)
     pointer_literals: dict[int, list[int]] = {}
     for target in actor_record_targets:
         needle = struct.pack("<I", target)
@@ -154,11 +155,11 @@ def main() -> int:
         mnemonic = f"{decoded[0]} {decoded[1]}".strip() if decoded else "unknown"
         value = u32(image, literal)
         code_refs.append((pc, opcode, reg, literal, value, mnemonic))
-    print("MODEL_MOTION_RECORD_PC_RELATIVE_LOADS:")
+    print("ACTOR_RESOURCE_PC_RELATIVE_POINTER_LOADS:")
     for pc, opcode, reg, literal, value, mnemonic in code_refs:
         print(f"  pc=0x{pc:08x} op=0x{opcode:04x} {mnemonic}; "
               f"literal=0x{literal:08x} -> value=0x{value:08x}")
-    print("MODEL_MOTION_RECORD_REFERENCE_CODE:")
+    print("ACTOR_RESOURCE_POINTER_REFERENCE_CODE:")
     adapter_dump = args.sh4_tools / "adapter_dump.py"
     for pc, opcode, reg, literal, value, mnemonic in code_refs:
         print(f"  ---- reference PC 0x{pc:08x} -> record 0x{value:08x}")
@@ -241,6 +242,19 @@ def main() -> int:
                 break
         if count == 0:
             print("    <unreadable>")
+
+    print("CALLBACK_TRANSLATED_BODIES:")
+    adapter_dump = args.sh4_tools / "adapter_dump.py"
+    for addr in sorted(set(callbacks_seen)):
+        print(f"  ---- callback 0x{addr:08x}")
+        try:
+            result = subprocess.run(
+                [sys.executable, str(adapter_dump), f"0x{addr:08x}", "--max", "128"],
+                check=False, capture_output=True, text=True, timeout=45)
+            body = result.stdout.strip() or result.stderr.strip()
+            print(body if body else f"  <adapter dump exit {result.returncode}>")
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"  <adapter dump unavailable: {exc}>")
     return 0
 
 if __name__ == "__main__":
