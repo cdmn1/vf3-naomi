@@ -20,6 +20,8 @@ TABLES = {
     "0x0C10EB60 actor-B motion record": (0x0C10EB60, 32),
     "0x0C11D4E8 actor-A model record": (0x0C11D4E8, 204),
     "0x0C11D1B8 actor-B model record": (0x0C11D1B8, 204),
+    "0x0C0AB9A0 node handler table": (0x0C0AB9A0, 64),
+    "0x0C0B1CF8 matrix callback helpers": (0x0C0B1CF8, 7),
     "0x0C0B1C20 mode_table_ptr": (0x0C0B1C20, 1),
     "0x0C0B1C24 kind_table_ptr": (0x0C0B1C24, 1),
     "0x0C0B1CF8 callback_targets": (0x0C0B1CF8, 7),
@@ -112,6 +114,20 @@ def main() -> int:
             canon = canonical(raw) if is_ptr else raw
             print(f"    +0x{i*4:02x}: {raw:08x}" +
                   (f" -> {canon:08x}" if is_ptr else ""))
+    print("ACTOR_RECORD_POINTER_REFERENCES:")
+    for target in (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60):
+        needle = struct.pack("<I", target)
+        refs = []
+        start = 0
+        while True:
+            found = image.find(needle, start)
+            if found < 0:
+                break
+            refs.append(0x8C010000 + found)
+            start = found + 1
+        print(f"  0x{target:08x}: " +
+              (", ".join(f"0x{x:08x}" for x in refs[:32]) if refs else "no literal references") +
+              (f" (+{len(refs)-32} more)" if len(refs) > 32 else ""))
     bone_table = 0x0C119670
     bone_off = image_offset(bone_table, len(image))
     advances = image[bone_off:bone_off + 23]
