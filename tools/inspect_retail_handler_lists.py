@@ -6,7 +6,7 @@ Only filenames, hashes and derived address tables are emitted; game binaries
 are never uploaded or committed.
 """
 from __future__ import annotations
-import argparse, csv, hashlib, struct, sys, zipfile
+import argparse, csv, hashlib, struct, subprocess, sys, zipfile
 from pathlib import Path
 
 IMAGE_BASE = 0x8C010000
@@ -21,16 +21,16 @@ TABLES = {
     "0x0C11D4E8 actor-A model record": (0x0C11D4E8, 204),
     "0x0C11D1B8 actor-B model record": (0x0C11D1B8, 204),
     "0x0C0AB9A0 node handler table": (0x0C0AB9A0, 64),
-    "0x0C0B1CF8 matrix callback helpers": (0x0C0B1CF8, 7),
     "0x0C0B1C20 mode_table_ptr": (0x0C0B1C20, 1),
     "0x0C0B1C24 kind_table_ptr": (0x0C0B1C24, 1),
-    "0x0C0B1CF8 callback_targets": (0x0C0B1CF8, 7),
+    "0x0C0B1CF0..1D14 callback control/helpers": (0x0C0B1CF0, 10),
     "0x0C0941CC..1E4 selector_targets": (0x0C0941CC, 7),
     "0x0C08D95C..96C descriptor_targets": (0x0C08D95C, 5),
 }
 HALFWORDS = {
     "0x0C0B1C16..1E": (0x0C0B1C16, 5),
     "0x0C0941CC..1D6": (0x0C0941CC, 6),
+    "0x0C0B1CEA..1CF2 callback constants": (0x0C0B1CEA, 5),
 }
 
 def canonical(addr: int) -> int:
@@ -115,7 +115,9 @@ def main() -> int:
             print(f"    +0x{i*4:02x}: {raw:08x}" +
                   (f" -> {canon:08x}" if is_ptr else ""))
     print("ACTOR_RECORD_POINTER_REFERENCES:")
-    for target in (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60):
+    actor_record_targets = (0x0C11D4E8, 0x0C11D1B8, 0x0C10E548, 0x0C10EB60)
+    pointer_literals: dict[int, list[int]] = {}
+    for target in actor_record_targets:
         needle = struct.pack("<I", target)
         refs = []
         start = 0
@@ -125,9 +127,63 @@ def main() -> int:
                 break
             refs.append(0x8C010000 + found)
             start = found + 1
+        pointer_literals[target] = refs
         print(f"  0x{target:08x}: " +
               (", ".join(f"0x{x:08x}" for x in refs[:32]) if refs else "no literal references") +
               (f" (+{len(refs)-32} more)" if len(refs) > 32 else ""))
+
+    # Resolve the SH-4 PC-relative MOV.L instructions that load those literal
+    # pool words. This identifies the actual code sites which consume the
+    # model/motion records, rather than merely listing where their pointers sit.
+    literal_to_value = {
+        literal: target
+        for target, literals in pointer_literals.items()
+        for literal in literals
+    }
+    code_refs = []
+    for off in range(0, len(image) - 1, 2):
+        opcode = struct.unpack_from("<H", image, off)[0]
+        if (opcode & 0xF000) != 0xD000:  # MOV.L @(disp,PC),Rn
+            continue
+        pc = IMAGE_BASE + off
+        literal = ((pc + 4) & ~3) + ((opcode & 0xFF) * 4)
+        if literal not in literal_to_value:
+            continue
+        reg = (opcode >> 8) & 0x0F
+        decoded = sh4.decode(opcode, pc)
+        mnemonic = f"{decoded[0]} {decoded[1]}".strip() if decoded else "unknown"
+        value = u32(image, literal)
+        code_refs.append((pc, opcode, reg, literal, value, mnemonic))
+    print("MODEL_MOTION_RECORD_PC_RELATIVE_LOADS:")
+    for pc, opcode, reg, literal, value, mnemonic in code_refs:
+        print(f"  pc=0x{pc:08x} op=0x{opcode:04x} {mnemonic}; "
+              f"literal=0x{literal:08x} -> value=0x{value:08x}")
+    print("MODEL_MOTION_RECORD_REFERENCE_CODE:")
+    adapter_dump = args.sh4_tools / "adapter_dump.py"
+    for pc, opcode, reg, literal, value, mnemonic in code_refs:
+        print(f"  ---- reference PC 0x{pc:08x} -> record 0x{value:08x}")
+        try:
+            result = subprocess.run(
+                [sys.executable, str(adapter_dump), f"0x{pc:08x}", "--max", "96"],
+                check=False, capture_output=True, text=True, timeout=30)
+            body = result.stdout.strip() or result.stderr.strip()
+            print(body if body else f"  <adapter dump exit {result.returncode}>")
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"  <adapter dump unavailable: {exc}>")
+
+    # The two actor model records are each 204 words. Show a neutral 17 x
+    # 12-float chunking for comparison with the 23-bone/18-joint path; this
+    # grouping is descriptive only and does not assign bone semantics.
+    print("MODEL_RECORD_17X12_FLOAT_CHUNKS (four float3 values per chunk):")
+    for label, base in (("Akira", 0x0C11D4E8), ("Jacky", 0x0C11D1B8)):
+        print(f"  {label}:")
+        for record in range(17):
+            vals = [struct.unpack_from(
+                "<f", image, image_offset(base + record * 48 + word * 4, len(image)))[0]
+                for word in range(12)]
+            vecs = [vals[i:i + 3] for i in range(0, 12, 3)]
+            fmt = " ".join("(" + ",".join(f"{v:+.4f}" for v in vec) + ")" for vec in vecs)
+            print(f"    {record:02d}: {fmt}")
     bone_table = 0x0C119670
     bone_off = image_offset(bone_table, len(image))
     advances = image[bone_off:bone_off + 23]
