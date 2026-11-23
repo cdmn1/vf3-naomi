@@ -38,6 +38,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("memory_csv", type=Path)
     ap.add_argument("--version", required=True)
+    ap.add_argument("--pc-csv", type=Path, help="optional matching decoded PC-probe CSV")
     args = ap.parse_args()
 
     bases = {norm(x): x for x in ACTORS}
@@ -49,6 +50,7 @@ def main() -> int:
             addr = norm(int(row["address"], 0))
             event = {
                 "word": int(row["word_index"], 0),
+                "pc": int(row["pc"], 0),
                 "access": row["access"],
                 "width": int(row["width"], 0),
                 "value": int(row["value"], 0),
@@ -64,6 +66,17 @@ def main() -> int:
                     if base <= addr < base + size:
                         words[addr - base].append(event)
                         break
+
+    pc_rows = []
+    if args.pc_csv:
+        with args.pc_csv.open(newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                parsed = {"word": int(row["word_index"], 0),
+                          "pc": int(row["pc"], 0)}
+                for reg in ("r4", "r5", "r6", "r7", "r9", "r12", "r13", "r14", "r15"):
+                    value = row.get(reg, "")
+                    parsed[reg] = int(value, 0) if value else None
+                pc_rows.append(parsed)
 
     print(f"=== {args.version} RETAINED ACTOR WATCHES (0x{ACTOR_BYTES:X}-byte windows) ===")
     for base in bases:
@@ -105,6 +118,33 @@ def main() -> int:
             writes = sum(r["access"] == "W" for r in rows)
             print(f"    +0x{off:03X}: 0x{latest['value'] & 0xFFFFFFFF:08X} "
                   f"(R{reads}/W{writes}, n={len(rows)})")
+    if pc_rows:
+        watched_pcs = {
+            0x8C09EAF2: "pose_orchestration",
+            0x8C091DE6: "pose_blend",
+            0x8C091C20: "joint_chain",
+            0x8C091438: "bone_pose",
+            0x8C0B16C0: "fighter_refresh call-site",
+            0x8C0B17E2: "fighter_refresh chain-A call-site",
+            0x8C0B17FC: "fighter_refresh chain-B call-site",
+            0x8C0B1860: "fighter_refresh scene-link call-site",
+            0x8C0B188E: "fighter_refresh handler-list call-site",
+            0x8C0B1A46: "scene_link",
+            0x8C0B1B2E: "handler_list",
+        }
+        print("=== POSE PC PROBE HITS (last 30 per entry) ===")
+        for pc, label in watched_pcs.items():
+            hits = [r for r in pc_rows if r["pc"] == pc]
+            if not hits:
+                continue
+            print(f"  {label} 0x{pc:08X}: hits={len(hits)}")
+            for r in hits[-30:]:
+                regs = " ".join(
+                    f"{name.upper()}={('?' if r[name] is None else f'0x{r[name]:08X}')}"
+                    for name in ("r14", "r4", "r5", "r6", "r7", "r9", "r12", "r13")
+                )
+                print(f"    event={r['word']} {regs}")
+
     def dump_matrix(label: str, base: int, rows_n: int, stride: int,
                     data: dict[int, list[dict]]) -> None:
         print(f"=== {label} ===")
@@ -124,8 +164,13 @@ def main() -> int:
                 values.append(f"{raw:08X}")
                 indices.append(latest["word"])
             span = max(indices) - min(indices) if indices else -1
+            writers = Counter(e["pc"] for col in range(16)
+                              for e in data.get(row * stride + col * 4, [])
+                              if e["width"] == 4 and e["access"] == "W")
+            writer_text = ",".join(f"0x{pc:08X}:{n}" for pc,n in writers.most_common(4))
             print(f"  row {row:02d} base=0x{base + row * stride:08X} "
-                  f"missing={missing} last_event_span={span}: " + " ".join(values))
+                  f"missing={missing} last_event_span={span} writers=[{writer_text}]: "
+                  + " ".join(values))
 
     for actor_base in ACTORS:
         dump_matrix(f"ACTOR 0x{actor_base:08X} ATTACHMENT MATRICES +0x180",
