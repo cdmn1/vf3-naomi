@@ -5,37 +5,30 @@ This does not assume a savestate exists. It collects only memory events already
 present in the retained v71/v72 Flycast traces and reports observed actor words.
 """
 from __future__ import annotations
-import argparse, csv
+import argparse, csv, struct
 from collections import Counter, defaultdict
 from pathlib import Path
 
 ACTORS = (0x0C1FEFE4, 0x0C20138C)
-ACTOR_BYTES = 0x200
+ACTOR_BYTES = 0x600
 SELECTOR_OFFSET = 0x6C
 SELECTOR_COUNT = 18
 EXTRA_WINDOWS = {
-    "watch-A +0x54 pointer 0x0C03006C": (0x0C03006C, 0x100),
-    "watch-B +0x54 pointer 0x0C030D6C": (0x0C030D6C, 0x100),
-    "watch-A +0x58 pointer 0x0C10E548": (0x0C10E548, 0x100),
-    "watch-B +0x58 pointer 0x0C10EB60": (0x0C10EB60, 0x100),
-    "watch-A attachment rows 2-17": (0x0C1FF1E4, 0x400),
-    "watch-B attachment rows 2-17": (0x0C20158C, 0x400),
-    "watch-A aim block +0x640": (0x0C1FF624, 0x100),
-    "watch-B aim block +0x640": (0x0C2019CC, 0x100),
-    "watch-A aim block +0x740": (0x0C1FF724, 0x100),
-    "watch-B aim block +0x740": (0x0C201ACC, 0x100),
+    "watch-A aim blocks +0x640/+0x740": (0x0C1FF624, 0x200),
+    "watch-B aim blocks +0x640/+0x740": (0x0C2019CC, 0x200),
     "watch-A 23-bone matrices +0x7C0": (0x0C1FF7A4, 0x5C0),
     "watch-B 23-bone matrices +0x7C0": (0x0C201B4C, 0x5C0),
     "watch-A MT channels +0x1D58": (0x0C200D3C, 0xFC),
     "watch-B MT channels +0x1D58": (0x0C2030E4, 0xFC),
     "watch-A pose fields +0x1F50": (0x0C200F34, 0x54),
     "watch-B pose fields +0x1F50": (0x0C2032DC, 0x54),
-    "watch-A pose offsets +0x208C": (0x0C201070, 0x0C),
-    "watch-B pose offsets +0x208C": (0x0C203418, 0x0C),
-    "watch-A arg +0x22E4": (0x0C2012C8, 0x18),
-    "watch-B arg +0x22E4": (0x0C203670, 0x18),
+    "watch-A pose inputs and joint chains +0x208C": (0x0C201070, 0x26C),
+    "watch-B pose inputs and joint chains +0x208C": (0x0C203418, 0x26C),
     "watch-A aim selector +0x420B": (0x0C2031EF, 0x10),
     "watch-B aim selector +0x420B": (0x0C205597, 0x10),
+    "global pose flags 0x0C29BCCC": (0x0C29BCCC, 0x4),
+    "watch-A model resource object": (0x0C03006C, 0x100),
+    "watch-B model resource object": (0x0C030D6C, 0x100),
 }
 
 def norm(x: int) -> int:
@@ -112,6 +105,48 @@ def main() -> int:
             writes = sum(r["access"] == "W" for r in rows)
             print(f"    +0x{off:03X}: 0x{latest['value'] & 0xFFFFFFFF:08X} "
                   f"(R{reads}/W{writes}, n={len(rows)})")
+    def dump_matrix(label: str, base: int, rows_n: int, stride: int,
+                    data: dict[int, list[dict]]) -> None:
+        print(f"=== {label} ===")
+        for row in range(rows_n):
+            values = []
+            indices = []
+            missing = 0
+            for col in range(16):
+                off = row * stride + col * 4
+                samples = [e for e in data.get(off, []) if e["width"] == 4]
+                if not samples:
+                    values.append("????????")
+                    missing += 1
+                    continue
+                latest = max(samples, key=lambda e: e["word"])
+                raw = latest["value"] & 0xFFFFFFFF
+                values.append(f"{raw:08X}")
+                indices.append(latest["word"])
+            span = max(indices) - min(indices) if indices else -1
+            print(f"  row {row:02d} base=0x{base + row * stride:08X} "
+                  f"missing={missing} last_event_span={span}: " + " ".join(values))
+
+    for actor_base in ACTORS:
+        dump_matrix(f"ACTOR 0x{actor_base:08X} ATTACHMENT MATRICES +0x180",
+                    actor_base + 0x180, 18, 0x40, events[norm(actor_base)])
+    for name, (base, size, data) in extra.items():
+        if "23-bone matrices" in name:
+            dump_matrix(name, base, 23, 0x40, data)
+
+    print("=== JOINT-CHAIN POSE RECORDS ===")
+    for actor_base in ACTORS:
+        base = norm(actor_base + 0x208C)
+        data = extra["watch-A pose inputs and joint chains +0x208C"][2] if actor_base == ACTORS[0] else extra["watch-B pose inputs and joint chains +0x208C"][2]
+        for rec_name, off in (("chain-A", 0x20C8 - 0x208C), ("chain-B", 0x217C - 0x208C)):
+            print(f"  actor=0x{actor_base:08X} {rec_name} at +0x{off+0x208C:04X}")
+            for pos in range(off, off + 0xAC, 4):
+                samples = [e for e in data.get(pos, []) if e["width"] == 4]
+                if samples:
+                    latest = max(samples, key=lambda e: e["word"])
+                    print(f"    +0x{pos+0x208C:04X}: 0x{latest['value'] & 0xFFFFFFFF:08X} "
+                          f"({latest['access']} @ {latest['word']})")
+
     print("=== DEREFERENCED +0x54 / +0x58 WINDOWS ===")
     for name, (base, size, words) in extra.items():
         count = sum(len(v) for v in words.values())
