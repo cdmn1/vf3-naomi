@@ -16,6 +16,7 @@ MAX_HANDLERS = 64
 TABLES = {
     "0x0C10F940 mode_dispatch_table": (0x0C10F940, 32),
     "0x0C10F6D0 mode_selector_table": (0x0C10F6D0, 32),
+    "0x0C0F5C28 actor-kind attachment descriptor table": (0x0C0F5C28, 32),
     "0x0C10E548 actor-A motion record": (0x0C10E548, 32),
     "0x0C10EB60 actor-B motion record": (0x0C10EB60, 32),
     "0x0C11D4E8 actor-A model record": (0x0C11D4E8, 204),
