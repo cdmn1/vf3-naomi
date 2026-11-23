@@ -61,6 +61,7 @@ jobs:
             test -n "$trace"
             python3 tools/loader_trace_decode.py "$trace" --prefix "$work/decoded"
             python3 tools/inspect_actor_watch_trace.py "$work/decoded.memory.csv" \
+              --pc-csv "$work/decoded.pc.csv" \
               --version "v${version}" >> ACTOR_WATCH_REPORT.txt
           done
 
