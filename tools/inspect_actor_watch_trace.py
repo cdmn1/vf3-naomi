@@ -13,6 +13,12 @@ ACTORS = (0x0C1FEFE4, 0x0C20138C)
 ACTOR_BYTES = 0x200
 SELECTOR_OFFSET = 0x6C
 SELECTOR_COUNT = 18
+EXTRA_WINDOWS = {
+    "watch-A +0x54 pointer 0x0C03006C": (0x0C03006C, 0x100),
+    "watch-B +0x54 pointer 0x0C030D6C": (0x0C030D6C, 0x100),
+    "watch-A +0x58 pointer 0x0C10E548": (0x0C10E548, 0x100),
+    "watch-B +0x58 pointer 0x0C10EB60": (0x0C10EB60, 0x100),
+}
 
 def norm(x: int) -> int:
     return x & 0x1FFFFFFF
@@ -25,18 +31,28 @@ def main() -> int:
 
     bases = {norm(x): x for x in ACTORS}
     events = {base: defaultdict(list) for base in bases}
+    extra = {name: (norm(base), size, defaultdict(list))
+             for name, (base, size) in EXTRA_WINDOWS.items()}
     with args.memory_csv.open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             addr = norm(int(row["address"], 0))
+            event = {
+                "word": int(row["word_index"], 0),
+                "access": row["access"],
+                "width": int(row["width"], 0),
+                "value": int(row["value"], 0),
+            }
+            matched = False
             for base in bases:
                 if base <= addr < base + ACTOR_BYTES:
-                    events[base][addr - base].append({
-                        "word": int(row["word_index"], 0),
-                        "access": row["access"],
-                        "width": int(row["width"], 0),
-                        "value": int(row["value"], 0),
-                    })
+                    events[base][addr - base].append(event)
+                    matched = True
                     break
+            if not matched:
+                for _name, (base, size, words) in extra.items():
+                    if base <= addr < base + size:
+                        words[addr - base].append(event)
+                        break
 
     print(f"=== {args.version} RETAINED ACTOR WATCHES ===")
     for base in bases:
@@ -78,6 +94,22 @@ def main() -> int:
             writes = sum(r["access"] == "W" for r in rows)
             print(f"    +0x{off:03X}: 0x{latest['value'] & 0xFFFFFFFF:08X} "
                   f"(R{reads}/W{writes}, n={len(rows)})")
+    print("=== DEREFERENCED +0x54 / +0x58 WINDOWS ===")
+    for name, (base, size, words) in extra.items():
+        count = sum(len(v) for v in words.values())
+        print(f"{name}: base=0x{base:08X} bytes=0x{size:X} "
+              f"events={count} unique_addresses={len(words)}")
+        for off in sorted(words):
+            rows = [r for r in words[off] if r["width"] == 4]
+            if not rows:
+                continue
+            latest = max(rows, key=lambda r: r["word"])
+            reads = sum(r["access"] == "R" for r in rows)
+            writes = sum(r["access"] == "W" for r in rows)
+            vals = Counter(r["value"] & 0xFFFFFFFF for r in rows)
+            common = ",".join(f"0x{v:08X}({n})" for v,n in vals.most_common(3))
+            print(f"  +0x{off:03X}: last=0x{latest['value'] & 0xFFFFFFFF:08X} "
+                  f"R{reads}/W{writes} values={common}")
     return 0
 
 if __name__ == "__main__":
