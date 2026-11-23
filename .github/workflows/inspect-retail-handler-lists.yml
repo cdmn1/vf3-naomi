@@ -1,0 +1,52 @@
+name: Inspect retail VF3 attachment handler lists
+
+on:
+  push:
+    branches: [akira-native-row0-experiment]
+    paths:
+      - "tools/inspect_retail_handler_lists.py"
+      - ".github/workflows/inspect-retail-handler-lists.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out Naomi reconstruction
+        uses: actions/checkout@v4
+
+      - name: Check out VF3 decomp reference
+        uses: actions/checkout@v4
+        with:
+          repository: celsowm/vf3-decomp
+          ref: 8519b155203ba0a222e0a177cb65fb5279824b3e
+          path: vf3-decomp
+          fetch-depth: 1
+
+      - name: Download existing shared VF3 asset archive
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            --output vf3-assets.zip
+          test -s vf3-assets.zip
+
+      - name: Decode the 18 retail handler lists
+        run: |
+          set -euo pipefail
+          python3 tools/inspect_retail_handler_lists.py vf3-assets.zip \
+            --readable-status vf3-decomp/docs/readable_status.csv \
+            | tee HANDLER_LIST_AUDIT.txt
+          rm -f vf3-assets.zip
+
+      - name: Upload derived address report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-retail-attachment-handler-list-audit
+          path: HANDLER_LIST_AUDIT.txt
+          if-no-files-found: error
