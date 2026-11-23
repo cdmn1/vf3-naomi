@@ -37,15 +37,18 @@ extern const uint8_t vf3_rob_aki_tex[];
 extern const uint32_t vf3_rob_aki_tex_size;
 
 typedef struct {
-    uint8_t source; /* 1 = MKAO_AKI, 2 = ROB_AKI, 0 = empty */
+    uint8_t source; /* 1 = MKAO_AKI, 2 = ROB_AKI, 0 = suppressed */
     uint8_t slot;
     uint8_t mesh_count;
 } AkiraPart;
 
+/* Retail's final relink_body pass omits rows 14 and 17. These were only
+ * provisional root-relative wrap candidates in this standalone renderer;
+ * suppress them until their first-pass scene-link transforms are ported. */
 static const AkiraPart parts[AKIRA_PART_COUNT] = {
     {2,50,3}, {1,3,7}, {2,51,1}, {2,52,1}, {2,53,2}, {0,0,0},
     {2,54,1}, {2,55,1}, {2,56,2}, {0,0,0}, {2,57,1}, {2,58,1},
-    {2,59,1}, {2,60,3}, {2,36,2}, {2,61,1}, {2,62,3}, {2,35,2}
+    {2,59,1}, {2,60,3}, {0,36,2}, {2,61,1}, {2,62,3}, {0,35,2}
 };
 
 static PolScene head_scene, body_scene;
@@ -401,7 +404,7 @@ static void draw_screen(void)
                  (unsigned long)motion_phase, (unsigned long)motion_frame);
         draw_text(16, 238, motion_line);
     }
-    draw_text(16, 438, "REAL MT MOTION - NATIVE ROOT / INFERRED BODY");
+    draw_text(16, 438, "REAL MT MOTION - NATIVE ROOT / HIDDEN WRAPS ");
     pvr_list_finish();
     pvr_scene_finish();
 }
