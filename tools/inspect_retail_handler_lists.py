@@ -28,6 +28,7 @@ TABLES = {
     "0x0C0B1C20 mode_table_ptr": (0x0C0B1C20, 1),
     "0x0C0B1C24 kind_table_ptr": (0x0C0B1C24, 1),
     "0x0C0B1CF0..1D14 callback control/helpers": (0x0C0B1CF0, 10),
+    "0x0C0A9C10 actor-init lookup table": (0x0C0A9C10, 8),
     "0x0C0941CC..1E4 selector_targets": (0x0C0941CC, 7),
     "0x0C08D95C..96C descriptor_targets": (0x0C08D95C, 5),
 }
@@ -35,6 +36,10 @@ HALFWORDS = {
     "0x0C0B1C16..1E": (0x0C0B1C16, 5),
     "0x0C0941CC..1D6": (0x0C0941CC, 6),
     "0x0C0B1CEA..1CF2 callback constants": (0x0C0B1CEA, 5),
+    "0x0C0A9906..9912 actor-init offsets": (0x0C0A9906, 7),
+    "0x0C0A99CC..99D2 actor-init offsets": (0x0C0A99CC, 4),
+    "0x0C0A9B04..9B16 actor-init offsets": (0x0C0A9B04, 10),
+    "0x0C0A9C04..9C16 actor-init offsets": (0x0C0A9C04, 10),
 }
 
 def canonical(addr: int) -> int:
