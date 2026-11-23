@@ -38,9 +38,23 @@ be embedded as Naomi runtime pose data.
 - The pose orchestration selects a fighter-kind record from actor byte
   `+97`; the kind-0 aim-record selection is record 0 for the four retained
   orchestration specimens.
-- The retail orchestration writes intermediate blocks at actor
-  `+0x200`, `+0x300`, `+0x480` and `+0x540`, then produces the
-  attachment matrix table consumed by the draw path.
+- The retail pose orchestration writes intermediate blocks at actor
+  `+0x200`, `+0x300`, `+0x480` and `+0x540`, and copies its recovered
+  root matrix into attachment row 0 at `+0x180`. It does **not**, by itself,
+  explain the producers for the other 17 attachment rows.
+- The per-frame `fighter_refresh` path (0x8C0B1550) walks all 18 slots,
+  resolves each slot's scene link (0x8C0B1A46), and invokes the per-slot
+  handler-list dispatcher (0x8C0B1B2E). A later pass loads the row matrix and
+  dispatches its model drawing. The scene-link path consumes the row matrix
+  as its base transform while traversing linked nodes; it must not be
+  conflated with the separate 23-bone `bone_pose` pass.
+- The handler-list table at image address `0x0C10F7A8` has now been read
+  from the existing shared retail asset archive. Its non-empty lists are:
+  selector 0: `0x8C0B1B6C`; selector 1:
+  `0x8C08D898`, `0x8C0940C8`, `0x8C0B1B7C`, `0x8C0B1C92`;
+  selector 14: `0x8C0869BC`; selector 17: `0x8C0B1C8E`.
+  All other selector lists are empty. These are callback entry addresses,
+  not yet proof of which callback writes which attachment row.
 
 ## Important upstream discovery: the full native pose pipeline exists
 
@@ -74,29 +88,33 @@ native fight-state update that would populate the retail actor structure.
 It currently calls the inferred `vf3_native_motion_pose_fields()` with zero
 fields, which creates the approximate bind mannequin shown in v55.
 
-The actual remaining gap is integration, not inventing the aim-frame math:
-the Naomi target does not yet compile or invoke the upstream native
-pose-orchestration family, and it does not yet have the per-frame actor state
-that family consumes. The orchestration expects a populated actor/work region,
-the fighter-kind record table, the kind-code table, and its matrix-stack
-context. Supplying guessed values would create another synthetic pose, not a
-retail pose.
+The actual remaining gap is the complete live attachment producer path and
+its inputs. The Naomi target does not yet compile or invoke the upstream
+native pose-orchestration family, and it does not yet have the per-frame actor
+state that family consumes. The orchestration expects a populated actor/work
+region, the fighter-kind record table, the kind-code table, and its
+matrix-stack context. The remaining attachment rows also depend on the
+per-slot refresh/handler/scene-link path above. Supplying guessed values would
+create another synthetic pose, not a retail pose.
 
 ## Next implementation gates
 
 1. Integrate the pinned native pose-orchestration source family into a
    Naomi-compatible build, with its dependencies explicit and no SDL/guest
    emulator runtime dependency.
-2. Add a Naomi SH-4 conformance probe using deterministic synthetic fixtures
-   from the upstream differential tests. Compare its caller-visible outputs
-   against known reference values. This validates the native code on Naomi
-   without pretending the fixture is a live fighter.
-3. Recover and supply the required live actor state and motion channels from
-   the actual VF3 runtime path. Do not substitute guessed constants.
-4. Reconstruct and compare all populated attachment rows against independent
+2. The Naomi SH-4 conformance probe using deterministic synthetic fixtures is
+   already present; retain it as a separate proof of the native math, not as
+   evidence of a live fighter.
+3. Trace the seven recovered retail handler callbacks and the static tables
+   they dispatch through. Establish which paths create or refresh attachment
+   rows, rather than assuming the callbacks are all matrix writers.
+4. Recover and supply the required live actor state, scene-link records and
+   motion channels from the actual VF3 runtime path. Do not substitute guessed
+   constants.
+5. Reconstruct and compare all populated attachment rows against independent
    retail captures across multiple poses; only then replace the inferred bind
    rig in the visible renderer.
-5. Keep texture upload and live motion playback as separate milestones after
+6. Keep texture upload and live motion playback as separate milestones after
    the geometry/attachment path is sound.
 
 The 23-row table at actor `+0x7c0` must remain separate unless a proven
