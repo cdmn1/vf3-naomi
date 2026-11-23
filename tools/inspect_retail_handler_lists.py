@@ -240,15 +240,23 @@ def main() -> int:
         if not terminated:
             print("  WARNING: no zero terminator within 64 entries")
     print(f"TOTAL_CALLBACKS={total}")
-    print("CALLBACK_ENTRY_DISASSEMBLY (mnemonics only; up to 8 instructions):")
+    print("CALLBACK_RAW_DISASSEMBLY (linear sweep, up to 256 instructions; literal loads annotated):")
     for addr in sorted(set(callbacks_seen)):
         print(f"  0x{addr:08x}:")
         count = 0
-        for rec in sh4.disasm(image, IMAGE_BASE, addr, 8):
-            print(f"    0x{rec['addr']:08x}: {rec['text']}")
+        terminal = False
+        for rec in sh4.disasm(image, IMAGE_BASE, addr, 256):
+            literal = ""
+            if "lit_addr" in rec:
+                literal = f" ; literal 0x{rec['lit_addr']:08x}=0x{rec['lit_val']:08x}"
+            print(f"    0x{rec['addr']:08x}: {rec['word']:04x} {rec['text']}{literal}")
             count += 1
-            if rec["text"].startswith("rts"):
+            # Include the delay-slot instruction after a return or tail jump.
+            if terminal and rec.get("delay"):
                 break
+            mnemonic = rec["text"].split(" ", 1)[0]
+            if mnemonic in ("rts", "rte", "jmp"):
+                terminal = True
         if count == 0:
             print("    <unreadable>")
 
