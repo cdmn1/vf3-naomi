@@ -117,12 +117,15 @@ def main() -> int:
     advances = image[bone_off:bone_off + 23]
     cumulative = 0
     print(f"BONE_POSE_ADVANCE_TABLE=0x{bone_table:08x} bytes={advances.hex()}")
-    print("BONE_TO_JOINT_OFFSETS:")
+    print("BONE_TO_ATTACHMENT_ROW_MAP (current record is used before advance):")
     for i, advance in enumerate(advances):
+        current_offset = 0x180 + cumulative
+        current_row = ((current_offset - 0x180) // 0x40
+                       if (current_offset - 0x180) % 0x40 == 0 else "non-64-byte")
         cumulative += advance
-        joint_offset = 0x180 + cumulative
-        print(f"  bone {i:02d}: advance=0x{advance:02x} joint_object_offset=0x{joint_offset:04x} "
-              f"attachment_row={(joint_offset - 0x180) // 0x40 if (joint_offset - 0x180) % 0x40 == 0 else 'non-64-byte'}")
+        next_offset = 0x180 + cumulative
+        print(f"  bone {i:02d}: current_joint=0x{current_offset:04x} attachment_row={current_row} "
+              f"advance=0x{advance:02x} next_joint=0x{next_offset:04x}")
     print("STATIC_HALFWORD_CONSTANTS:")
     for label, (base, count) in HALFWORDS.items():
         vals = [u16(image, base + i * 2) for i in range(count)]
