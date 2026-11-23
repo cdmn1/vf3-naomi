@@ -64,6 +64,18 @@ row:   00 01 03 03 04 04 05 07 07 08 08 09 11 12 12 13 13 14 15 15 16 16 17
 
 This yields 15 distinct attachment rows used by the 23-bone routine. Rows 2, 6 and 10 are not referenced by this table; rows 5 and 9 are referenced even though their selector entries are empty in the retained Akira capture.
 
+## Joint-chain pose-record hypothesis
+
+The two records passed to `0x8C091C20` are at actor offsets `+0x20C8` and `+0x217C`. Their layout is compatible with the independently recovered pose-blend object:
+
+- 26-halfword input A at `+0x00`
+- 26-halfword input B at `+0x34`
+- 26-halfword blended output at `+0x68`
+- blend weight at `+0x9C`
+- blend step at `+0xA0`
+
+The joint-chain routine reads five 10-byte angle entries from `+0x68), then reads two pointers at `+0xA4` and `+0xA8). This makes it plausible that the two actor records are pose-blend objects extended with pointers to model-specific part tables. This is a structural hypothesis, not yet a proven producer/consumer mapping; the full-pose watch now includes PC entry `0x8C091DE6` to test it.
+
 ## Remaining gap
 
 The model record and row-1 relationship are now grounded, but the remaining 17 attachment transforms still need to be traced through the actor's pose inputs and joint-chain setup. In particular, the two five-link pose records at actor offsets `+0x20C8` and `+0x217C`, the full attachment matrix table at `+0x180`, and the 23-bone output at `+0x7C0` were not present in the earlier 512-byte actor captures.
