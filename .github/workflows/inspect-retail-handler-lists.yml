@@ -7,6 +7,7 @@ on:
       - "tools/inspect_retail_handler_lists.py"
       - "tools/inspect_actor_watch_trace.py"
       - "tools/loader_trace_decode.py"
+      - "VF3-Flycast-Trace/VF3-Pose-Capture/**"
       - ".github/workflows/inspect-retail-handler-lists.yml"
   workflow_dispatch:
 
@@ -76,6 +77,40 @@ jobs:
               --pc-csv "$work/decoded.pc.csv" \
               --version "v${version}" >> ACTOR_WATCH_REPORT.txt
           done
+
+      - name: Decode the new full-pose capture when supplied
+        run: |
+          set -euo pipefail
+          pose_dir="VF3-Flycast-Trace/VF3-Pose-Capture"
+          work="/tmp/vf3-pose-full"
+          mkdir -p "$work"
+          if [ -d "$pose_dir" ]; then
+            if [ -f "$pose_dir/vf3-pose-trace.bin" ]; then
+              cp "$pose_dir/vf3-pose-trace.bin" "$work/"
+            else
+              pose_zip="$(find "$pose_dir" -maxdepth 1 -type f -name '*.zip' -print -quit || true)"
+              if [ -n "$pose_zip" ]; then
+                unzip -oq "$pose_zip" -d "$work"
+              fi
+            fi
+            trace="$(find "$work" -type f -name 'vf3-pose-trace.bin' -print -quit)"
+            if [ -n "$trace" ]; then
+              python3 tools/loader_trace_decode.py "$trace" --prefix "$work/decoded"
+              python3 tools/inspect_actor_watch_trace.py "$work/decoded.memory.csv" \
+                --pc-csv "$work/decoded.pc.csv" \
+                --version "full-pose capture" >> ACTOR_WATCH_REPORT.txt
+              for diag in "$pose_dir"/*.diag.txt; do
+                if [ -f "$diag" ]; then
+                  echo "=== POSE CAPTURE DIAGNOSTICS: $(basename "$diag") ===" >> ACTOR_WATCH_REPORT.txt
+                  cat "$diag" >> ACTOR_WATCH_REPORT.txt
+                fi
+              done
+            else
+              echo "No vf3-pose-trace.bin found in $pose_dir" >> ACTOR_WATCH_REPORT.txt
+            fi
+          else
+            echo "No full-pose capture supplied yet" >> ACTOR_WATCH_REPORT.txt
+          fi
 
       - name: Upload derived address report only
         uses: actions/upload-artifact@v4
