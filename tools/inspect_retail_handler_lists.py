@@ -112,6 +112,17 @@ def main() -> int:
             canon = canonical(raw) if is_ptr else raw
             print(f"    +0x{i*4:02x}: {raw:08x}" +
                   (f" -> {canon:08x}" if is_ptr else ""))
+    bone_table = 0x0C119670
+    bone_off = image_offset(bone_table, len(image))
+    advances = image[bone_off:bone_off + 23]
+    cumulative = 0
+    print(f"BONE_POSE_ADVANCE_TABLE=0x{bone_table:08x} bytes={advances.hex()}")
+    print("BONE_TO_JOINT_OFFSETS:")
+    for i, advance in enumerate(advances):
+        cumulative += advance
+        joint_offset = 0x180 + cumulative
+        print(f"  bone {i:02d}: advance=0x{advance:02x} joint_object_offset=0x{joint_offset:04x} "
+              f"attachment_row={(joint_offset - 0x180) // 0x40 if (joint_offset - 0x180) % 0x40 == 0 else 'non-64-byte'}")
     print("STATIC_HALFWORD_CONSTANTS:")
     for label, (base, count) in HALFWORDS.items():
         vals = [u16(image, base + i * 2) for i in range(count)]
