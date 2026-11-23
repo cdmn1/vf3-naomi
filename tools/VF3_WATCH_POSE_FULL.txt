@@ -17,6 +17,11 @@ pc 0x8C091438
 pc 0x8C0B1A46
 pc 0x8C0B1B2E
 pc 0x8C0B1B7C
+pc 0x8C0B16C0
+pc 0x8C0B17E2
+pc 0x8C0B17FC
+pc 0x8C0B1860
+pc 0x8C0B188E
 
 # Actor A and B: base through attachment table (18 x 64-byte rows at +0x180)
 mem 0x0C1FEFE4 0x600
