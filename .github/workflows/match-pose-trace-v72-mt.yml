@@ -1,0 +1,136 @@
+name: Match v72 retail MT channels to MTAKIPAI
+
+on:
+  push:
+    branches: [akira-native-row0-experiment]
+    paths:
+      - ".github/workflows/match-pose-trace-v72-mt.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  match:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out VF3 Naomi experiment branch
+        uses: actions/checkout@v4
+
+      - name: Check out pinned VF3 decomp source
+        uses: actions/checkout@v4
+        with:
+          repository: celsowm/vf3-decomp
+          ref: 208e2e2402743123a4ba79c1733f479bec9f4906
+          path: vf3-decomp
+          fetch-depth: 1
+
+      - name: Download full v72 trace event artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vf3-pose-trace-v72-full-events
+          path: trace-artifact
+          run-id: 45500135481
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore MTAKIPAI asset cache
+        id: mtakipai-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mt-asset/MTAKIPAI.BIN
+          key: vf3-mt-asset-mtakipai-dropbox-v1
+
+      - name: Download MTAKIPAI.BIN on cache miss
+        if: steps.mtakipai-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mt-asset
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
+            --output mt-asset/MTAKIPAI.BIN
+
+      - name: Validate MTAKIPAI asset
+        run: |
+          set -euo pipefail
+          test "$(stat -c '%s' mt-asset/MTAKIPAI.BIN)" -eq 1572408
+          echo "57753c0622fa53c10ba70ef5f6eb3d1e3ee47632461ad0b48bbc77958934c554  mt-asset/MTAKIPAI.BIN" | sha256sum --check
+
+      - name: Extract representative retail 42-channel frames
+        run: |
+          python3 - <<'PY'
+          import csv, gzip
+          from pathlib import Path
+
+          source = Path("trace-artifact/pose-v72-full-events/memory_accesses.csv.gz")
+          out = Path("mt-trace-targets")
+          out.mkdir(exist_ok=True)
+          groups = (100, 400, 700)
+          actors = {
+              "A": (0x0C200D3C, 0x0C200E00),
+              "B": (0x0C2030E4, 0x0C2031A8),
+          }
+          counts = {name: 0 for name in actors}
+          selected = {name: {g: [] for g in groups} for name in actors}
+          with gzip.open(source, "rt", newline="") as fp:
+              for row in csv.DictReader(fp):
+                  if row["pc"] != "0x0C09D59A" or row["access"] != "R":
+                      continue
+                  address = int(row["address"], 16)
+                  for name, (lo, hi) in actors.items():
+                      if lo <= address < hi:
+                          ordinal = counts[name]
+                          group, index = divmod(ordinal, 42)
+                          if group in selected[name]:
+                              if address != lo + index * 4:
+                                  raise SystemExit(
+                                      f"{name} group {group} channel {index}: "
+                                      f"unexpected address {address:#x}"
+                                  )
+                              selected[name][group].append(row["value"])
+                          counts[name] += 1
+                          break
+                  if all(counts[name] >= 42 * (max(groups) + 1) for name in actors):
+                      break
+
+          for name in actors:
+              for group in groups:
+                  values = selected[name][group]
+                  if len(values) != 42:
+                      raise SystemExit(f"missing {name} group {group}: {len(values)}/42")
+                  path = out / f"{name}_{group}.txt"
+                  path.write_text("\n".join(f"{int(v,16):08X}" for v in values) + "\n")
+                  print(f"{path}: 42 channels, reads {counts[name]}")
+          PY
+
+      - name: Compile pinned native MT evaluator matcher
+        run: |
+          gcc -std=c99 -O2 -Wall -Wextra \
+            -I vf3-decomp/src/media -I vf3-decomp/src/native \
+            tests/naomi_vf3_runtime/mt_trace_match.c \
+            vf3-decomp/src/media/mt.c \
+            vf3-decomp/src/native/motion.c \
+            vf3-decomp/src/native/matrix.c \
+            -lm -o mt-trace-match
+
+      - name: Match retail channel samples against MTAKIPAI motions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mt-trace-match-artifact
+          for target in mt-trace-targets/*.txt; do
+            echo "===== $target =====" | tee -a mt-trace-match-artifact/MATCH_REPORT.txt
+            ./mt-trace-match mt-asset/MTAKIPAI.BIN "$target" | tee -a mt-trace-match-artifact/MATCH_REPORT.txt
+          done
+          cp mt-trace-targets/*.txt mt-trace-match-artifact/
+
+      - name: Upload MT trace match report
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-v72-mtakipai-channel-match
+          path: mt-trace-match-artifact/
+          if-no-files-found: error
+          retention-days: 14
