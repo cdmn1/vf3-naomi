@@ -5,6 +5,7 @@ on:
     branches: [akira-native-row0-experiment]
     paths:
       - ".github/workflows/match-pose-trace-v72-mt.yml"
+      - "tools/mt-trace-match-trigger.txt"
   workflow_dispatch:
 
 permissions:
