@@ -149,7 +149,9 @@ This confirms the exact channel-to-pose-field relationship already implemented b
 
 The 21 preceding floats at actor +`0x1D04` through +`0x1D58` are the seven SEG_A vectors consumed by `seven_pass`. They were **outside the v72 memory-watch ranges**, so their values are not present in this decoded trace. The same MT evaluator produces the full 63-channel block; its first 21 values can supply those seven vectors. `seven_pass` transforms them into SEG_B at actor +`0x1EFC`; the v72 watch captured the +`0x1F14` anchor output, but not the complete SEG_B block.
 
-The captured stream does not expose the `mt_play` task header/phase directly. Matching the 42-float sample to a specific MTAKIPAI motion slot and Q8 phase remains a separate asset-timeline task.
+The captured stream does not expose the `mt_play` task header/phase directly. A host-side scan of all 760 valid MTAKIPAI motion IDs (cycle 60, coarse phase scan) found motion 1744 as the best fit for actor A's three sampled updates. Rechecking the top candidates across cycle values 24–240 still left residual RMSE 686–727 and only 17–24 exact float bits out of 42; the best cycle also varied between samples. **Motion 1744 is therefore a lead, not a confirmed match**, and the current evaluator must not be wired to it as though it were proven.
+
+The next capture is now narrowly specified in `tools/VF3_WATCH_POSE_FULL.txt` (v73 additions): it records the `0x8C09D690` MT-player entry registers, the candidate task cycle/header fields, the seven SEG_A vectors at actor +`0x1D04`, the complete SEG_B block at +`0x1EFC`, and both caller R5 argument blocks at actor +`0x100C`/+ `0x115C`. The v72 PC snapshots established those R5 addresses for both actors. This single targeted capture should provide the missing runtime inputs needed to replay the native pose chain without guessing.
 
 ## 4. Initialization and residual writes
 
