@@ -127,6 +127,15 @@ This is a separate all-row translation pass; it is not either matrix_copy or mat
 
 These stores touch only rows 5 and 9, on both actors. The relevant `0x8C03B62E` snapshots have PR `0x0C09D50E`; in the ordered trace, a row-5 matrix_store sequence is followed immediately by the three writes at `0x0C09D514`, `0x0C09D51E`, and `0x0C09D526` to that same row's translation slots. This is a caller-side follow-up, not a third matrix writer.
 
+## Actor-kind values in this capture
+
+The watched actor header includes the retail kind byte at actor +`0x61`:
+
+- Actor A (`0x0C1FEFE4`): kind `0`, identified as **Akira** by the pinned native `pose_data.c` record.
+- Actor B (`0x0C20138C`): kind `6`. The current native pose-data port has verified records for kinds 0 (Akira) and 7 (Jacky), so kind 6 is not yet covered by that port.
+
+The MTAKIPAI comparison below should therefore be judged primarily against actor A, not treated as a universal match for both fighters.
+
 ## 4. Motion channels to the 42 pose halfwords
 
 The same full trace also validates the retail motion-channel conversion:
