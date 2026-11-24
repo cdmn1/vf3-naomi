@@ -1,0 +1,42 @@
+name: Import VF3 pose-trace analysis release assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/import-pose-trace-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download published v72 analysis assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pose-trace-analysis-v72
+          BASE="https://github.com/cdmn1/vf3-naomi/releases/download/pose-trace-analysis-2026-11-24"
+          curl --fail --location --retry 3 "$BASE/trace_intake_findings.md" -o pose-trace-analysis-v72/trace_intake_findings.md
+          curl --fail --location --retry 3 "$BASE/attachment_matrix_writes.csv.gz" -o pose-trace-analysis-v72/attachment_matrix_writes.csv.gz
+          curl --fail --location --retry 3 "$BASE/relevant_pc_snapshots.csv.gz" -o pose-trace-analysis-v72/relevant_pc_snapshots.csv.gz
+      - name: Verify release asset hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > pose-trace-analysis-v72/SHA256SUMS <<'EOF'
+          fbf1500a187a6add15cd3060101bbf313daa0be6d43508b56647e9d569f9aa98  pose-trace-analysis-v72/trace_intake_findings.md
+          76bf4258d126cdb3a1acb129b9cd58ccc12aab6c4639c46147e09dd806c0bce3  pose-trace-analysis-v72/attachment_matrix_writes.csv.gz
+          f252550b856ab295755a393e42865a1d0e43e720bafd99e91ececd488673c1a6  pose-trace-analysis-v72/relevant_pc_snapshots.csv.gz
+          EOF
+          sha256sum --check pose-trace-analysis-v72/SHA256SUMS
+      - name: Upload verified trace-analysis files
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-pose-trace-analysis-v72
+          path: pose-trace-analysis-v72/
+          if-no-files-found: error
+          retention-days: 14
