@@ -127,6 +127,21 @@ This is a separate all-row translation pass; it is not either matrix_copy or mat
 
 These stores touch only rows 5 and 9, on both actors. The relevant `0x8C03B62E` snapshots have PR `0x0C09D50E`; in the ordered trace, a row-5 matrix_store sequence is followed immediately by the three writes at `0x0C09D514`, `0x0C09D51E`, and `0x0C09D526` to that same row's translation slots. This is a caller-side follow-up, not a third matrix writer.
 
+## 4. Motion channels to the 42 pose halfwords
+
+The same full trace also validates the retail motion-channel conversion:
+
+- PC `0x0C09D7FC` writes the 42-float angle block at actor +`0x1D58` through +`0x1E00` (exclusive): 32,760 writes for actor A and 33,054 for actor B. Those are exactly 42 channels × 780 and 787 updates respectively.
+- PC `0x0C09D41C` reads and PC `0x0C09D422` rewrites 14 values per update. Every paired output is exactly the input float bit pattern XOR `0x80000000`: **21,938/21,938 exact sign-flip pairs**. These are the third components of the 14 angle triples, matching the second loop of upstream `vf3_mt_flip`.
+- PC `0x0C09D59A` reads the 42 float channels in order; PC `0x0C09D5A4` writes the 42 halfwords at actor +`0x1F50` through +`0x1FA4` (exclusive). Across both actors this gives **65,814 float-to-halfword pairs** (32,760 + 33,054).
+- Every one of those 65,814 pairs matches truncation toward zero followed by signed 16-bit storage: **zero mismatches**.
+
+This confirms the exact channel-to-pose-field relationship already implemented by the pinned upstream native motion evaluator: the 42 angle channels at actor +`0x1D58` map in order to the 42 halfword pose fields at actor +`0x1F50`. No channel-to-field permutation or skeleton guess is needed for this stage.
+
+The 21 preceding floats at actor +`0x1D04` through +`0x1D58` are the seven SEG_A vectors consumed by `seven_pass`. They were **outside the v72 memory-watch ranges**, so their values are not present in this decoded trace. The same MT evaluator produces the full 63-channel block; its first 21 values can supply those seven vectors. `seven_pass` transforms them into SEG_B at actor +`0x1EFC`; the v72 watch captured the +`0x1F14` anchor output, but not the complete SEG_B block.
+
+The captured stream does not expose the `mt_play` task header/phase directly. Matching the 42-float sample to a specific MTAKIPAI motion slot and Q8 phase remains a separate asset-timeline task.
+
 ## 4. Initialization and residual writes
 
 - `0x0C02002C` clears all 18 × 16 words for both actors: 288 zero writes per actor.
