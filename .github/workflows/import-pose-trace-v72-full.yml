@@ -23,6 +23,14 @@ jobs:
           path: trace-source
           fetch-depth: 1
 
+      - name: Check out the pose watch profile from the experiment branch
+        uses: actions/checkout@v4
+        with:
+          repository: cdmn1/vf3-naomi
+          ref: akira-native-row0-experiment
+          path: trace-tools
+          fetch-depth: 1
+
       - name: Install 7z
         run: |
           sudo apt-get update
@@ -53,7 +61,7 @@ jobs:
           from pathlib import Path
 
           trace = Path(__import__("os").environ["TRACE"])
-          watch = Path("trace-source/tools/VF3_WATCH_POSE_FULL.txt")
+          watch = Path("trace-tools/tools/VF3_WATCH_POSE_FULL.txt")
           out = Path("pose-v72-full-events")
           out.mkdir(exist_ok=True)
 
