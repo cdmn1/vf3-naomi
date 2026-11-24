@@ -24,19 +24,32 @@ be embedded as Naomi runtime pose data.
 
 ## Recovered inputs and outputs
 
-- The MT evaluator and conversion to the 42 halfword pose fields at actor
-  `+0x1f50` are independently validated. The 42 fields form 14 turn triples.
+- The MT evaluator's 42 halfword pose-field conversion at actor `+0x1f50`
+  is now validated against retail trace data: 65,814 channel-to-halfword pairs
+  across 1,567 updates, with zero mismatches for truncation toward zero and
+  signed 16-bit storage. The 42 float channels at `+0x1d58` map in order to
+  the 42 halfwords at `+0x1f50`, forming 14 turn triples.
+- The trace also confirms the sign-bit flip of the third component in each of
+  the 14 angle triples: 21,938/21,938 pairs match the upstream `vf3_mt_flip`
+  behavior exactly.
 - The v72 retail trace now resolves the complete 18-row **producer-function
   grouping**: row 0 is copied by top-level pose orchestration; row 1 by
   facing_update; rows 2–5 and 6–9 by the two aim_frame calls; row 10 by
   aim_midpoints; row 11 by matrix_basis; and rows 12–14 and 15–17 by the two
   aim_frame_b calls. The exact direct writers and caller PRs are documented in
   [VF3_POSE_TRACE_V72_FINDINGS.md](VF3_POSE_TRACE_V72_FINDINGS.md).
-- This does not yet supply semantic parent/joint names or prove the complete
-  motion-channel-to-attachment mapping. The old multi-track relationships
-  (rows 2/0, 5/4, 6/0 and 9/8 following pose groups 3, 5, 6 and 8 in Z-Y-X
-  order) remain useful partial evidence; most bind transforms in
-  `src/native/motion_pose.c` are still inferred.
+- This resolves the motion-channel-to-pose-field conversion, but not the
+  semantic parent/joint names or the complete pose-field-to-attachment
+  transform mapping. The old multi-track relationships (rows 2/0, 5/4, 6/0
+  and 9/8 following pose groups 3, 5, 6 and 8 in Z-Y-X order) remain useful
+  partial evidence; most bind transforms in `src/native/motion_pose.c` are
+  still inferred.
+- The first 21 MT outputs are seven SEG_A vectors at actor `+0x1d04`; they
+  feed `seven_pass` and produce SEG_B at `+0x1efc`. The v72 watch profile
+  captured the 42 angle channels and the +`0x1f14` anchor, but omitted the
+  first 21 vectors and the full SEG_B block. The existing 63-channel MT
+  evaluator can supply the missing first 21 values once the live motion slot
+  and phase are matched.
 - The root attachment row has a recovered producer:
   `vf3_native_motion_row0()` / `vf3_native_motion_pose_actor()`. Differential
   replay matches four retained guest specimens within 2e-4. Inputs include
@@ -91,20 +104,23 @@ actor state in the standalone Naomi renderer.
 ## Why the current Naomi image is still a mannequin
 
 The current Naomi target is a standalone POL renderer. It parses the assets,
-selects the correct parts and submits them to PowerVR, but it does not run the
-native fight-state update that would populate the retail actor structure.
-It currently calls the inferred `vf3_native_motion_pose_fields()` with zero
-fields, which creates the approximate bind mannequin shown in v55.
+selects the correct parts and submits them to PowerVR. The current Akira build
+uses the real MTAKIPAI motion 1050 data and the recovered native row-0 root
+transform, so it is beyond the earlier zero-pose mannequin. However, rows 1–17
+still use the inferred bind/attachment rig; the renderer does not yet invoke
+the complete upstream pose-orchestration family for each live frame.
 
-The actual remaining gap is **live retail actor-state input and draw-path
-integration**, not discovering another matrix writer. The Naomi Akira renderer
-still calls the inferred `vf3_native_motion_pose_actor()` path; it does not yet
-invoke the full upstream pose-orchestration family with the actor/work region,
-fighter-kind record table, kind-code table and matrix-stack context populated
-from a real frame. The v72 trace maps the 18 attachment-row producers, while
-the per-slot refresh/handler/scene-link path remains a separate task for
-relinking and drawing the populated matrices. Supplying guessed values would
-create another synthetic pose, not a retail pose.
+The actual remaining gap is **feeding real actor/work state into the full
+native pose pipeline and replacing the inferred rows 1–17**. The v72 trace
+maps all 18 retail row producers and validates the 42-channel-to-42-halfword
+conversion, but the trace watch did not include the first 21 SEG_A vectors at
+actor +`0x1d04` or the complete SEG_B block at +`0x1efc`. The existing MT
+asset evaluator can produce those first 21 values; the remaining work is to
+match the captured actor's motion slot/phase, reconstruct the required actor
+and global inputs, and call the full native orchestration in the renderer.
+The per-slot refresh/handler/scene-link path remains a separate draw/relink
+task. Do not substitute guessed values or captured matrices as runtime pose
+data.
 
 ## Next implementation gates
 
