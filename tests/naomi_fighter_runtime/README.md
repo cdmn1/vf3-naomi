@@ -18,7 +18,9 @@ The pinned upstream VF3 source already contains the complete plain-C native
 pose-orchestration family and host differential tests. The v72 retail trace
 now maps all 18 attachment rows to their exact producer groups: pose
 orchestration, facing update, two aim-frame passes, aim midpoints, matrix basis
-and two aim-frame-B passes. The trace findings are in
+and two aim-frame-B passes. It also validates all 65,814 float-to-halfword
+pose conversions and all 21,938 observed angle sign flips with zero
+mismatches. The trace findings are in
 [`docs/VF3_POSE_TRACE_V72_FINDINGS.md`](../../docs/VF3_POSE_TRACE_V72_FINDINGS.md).
 
 This Naomi renderer still calls the inferred motion-pose builder; it does not
