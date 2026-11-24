@@ -1,4 +1,4 @@
-/* Exhaustive coarse/refined match of retail 42-float pose channels to an MT asset. */
+/* Match retail 42-float pose-channel samples to the MTAKIPAI MT asset. */
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,19 +9,17 @@
 
 #define TARGET_COUNT 42u
 #define CHANNEL_START 21u
-#define TEST_CYCLE 60u
-#define PHASE_LIMIT (TEST_CYCLE * 256u)
-#define COARSE_STEP 0x10u
 #define MOTION_ID_LIMIT 2960u
+#define COARSE_STEP 0x10u
 #define TOP_COUNT 12u
+static const uint32_t cycles[] = {24u, 30u, 36u, 40u, 45u, 48u,
+                                  60u, 72u, 90u, 120u, 180u, 240u};
 
-typedef union {
-    float f;
-    uint32_t u;
-} FloatBits;
+typedef union { float f; uint32_t u; } FloatBits;
 
 typedef struct {
     uint32_t motion_id;
+    uint32_t cycle;
     uint32_t phase;
     unsigned exact;
     double rmse;
@@ -67,13 +65,15 @@ static int read_target(const char *path, uint32_t target[TARGET_COUNT])
 }
 
 static Candidate score_phase(const vf3_native_motion_stream *stream,
-                             uint32_t motion_id, uint32_t phase,
+                             uint32_t motion_id, uint32_t cycle,
+                             uint32_t phase,
                              const uint32_t target[TARGET_COUNT])
 {
     float values[VF3_NATIVE_MOTION_CHANNELS];
     Candidate c;
     double sum_sq = 0.0;
     c.motion_id = motion_id;
+    c.cycle = cycle;
     c.phase = phase;
     c.exact = 0;
     c.max_abs = 0.0;
@@ -112,66 +112,84 @@ static void insert_top(Candidate top[TOP_COUNT], unsigned *count,
     top[pos] = *candidate;
 }
 
-static void match_all(const MtFile *file, const uint32_t target[TARGET_COUNT])
+static Candidate scan_motion_cycle(const MtFile *file, uint32_t motion_id,
+                                   uint32_t cycle,
+                                   const uint32_t target[TARGET_COUNT])
 {
-    Candidate top[TOP_COUNT];
-    unsigned top_count = 0;
-    unsigned valid_motions = 0;
-    vf3_native_motion_stream stream;
     MtMotionView view;
+    vf3_native_motion_stream stream;
+    Candidate best = {motion_id, cycle, 0, 0, HUGE_VAL, HUGE_VAL};
+    uint32_t limit = cycle * 256u;
+    if (vf3_native_motion_load(file, motion_id, cycle, &view, &stream) != 0)
+        return best;
 
-    for (uint32_t motion_id = 1; motion_id <= MOTION_ID_LIMIT; ++motion_id) {
-        Candidate best;
-        int rc = vf3_native_motion_load(file, motion_id, TEST_CYCLE,
-                                       &view, &stream);
-        if (rc != 0) continue;
-        ++valid_motions;
-        best.rmse = HUGE_VAL;
-        best.exact = 0;
-        best.motion_id = motion_id;
-        best.phase = 0;
-        best.max_abs = HUGE_VAL;
-        for (uint32_t phase = 0; phase < PHASE_LIMIT; phase += COARSE_STEP) {
-            Candidate current = score_phase(&stream, motion_id, phase, target);
-            if (better(&current, &best)) best = current;
-        }
-        insert_top(top, &top_count, &best);
+    for (uint32_t phase = 0; phase < limit; phase += COARSE_STEP) {
+        Candidate current = score_phase(&stream, motion_id, cycle,
+                                        phase, target);
+        if (better(&current, &best)) best = current;
     }
 
-    printf("VALID_MOTIONS=%u COARSE_PHASE_STEP=0x%X\n",
-           valid_motions, COARSE_STEP);
-
-    for (unsigned i = 0; i < top_count; ++i) {
-        Candidate best = top[i];
+    if (best.rmse < HUGE_VAL) {
         uint32_t start = best.phase > COARSE_STEP
                        ? best.phase - COARSE_STEP : 0;
         uint32_t end = best.phase + COARSE_STEP;
-        if (end >= PHASE_LIMIT) end = PHASE_LIMIT - 1;
-        if (vf3_native_motion_load(file, best.motion_id, TEST_CYCLE,
-                                   &view, &stream) != 0)
-            continue;
+        if (end >= limit) end = limit - 1;
         for (uint32_t phase = start; phase <= end; ++phase) {
-            Candidate current = score_phase(&stream, best.motion_id,
+            Candidate current = score_phase(&stream, motion_id, cycle,
                                             phase, target);
             if (better(&current, &best)) best = current;
         }
-        top[i] = best;
+    }
+    return best;
+}
+
+static void match_all(const MtFile *file,
+                      const uint32_t target[TARGET_COUNT])
+{
+    Candidate coarse_top[TOP_COUNT];
+    unsigned coarse_count = 0;
+    unsigned valid_motions = 0;
+    MtMotionView view;
+    vf3_native_motion_stream stream;
+
+    /* Find likely motion IDs using the established 60-frame cycle first. */
+    for (uint32_t motion_id = 1; motion_id <= MOTION_ID_LIMIT; ++motion_id) {
+        Candidate best = {motion_id, 60u, 0, 0, HUGE_VAL, HUGE_VAL};
+        if (vf3_native_motion_load(file, motion_id, 60u,
+                                   &view, &stream) != 0)
+            continue;
+        ++valid_motions;
+        for (uint32_t phase = 0; phase < 60u * 256u; phase += COARSE_STEP) {
+            Candidate current = score_phase(&stream, motion_id, 60u,
+                                            phase, target);
+            if (better(&current, &best)) best = current;
+        }
+        insert_top(coarse_top, &coarse_count, &best);
     }
 
-    /* Re-sort after phase refinement. */
-    for (unsigned i = 0; i < top_count; ++i)
-        for (unsigned j = i + 1; j < top_count; ++j)
-            if (better(&top[j], &top[i])) {
-                Candidate tmp = top[i];
-                top[i] = top[j];
-                top[j] = tmp;
-            }
+    printf("VALID_MOTIONS=%u COARSE_CYCLE=60 COARSE_PHASE_STEP=0x%X\n",
+           valid_motions, COARSE_STEP);
 
-    for (unsigned i = 0; i < top_count; ++i) {
-        printf("RANK=%u MOTION=%u PHASE=0x%04X EXACT_BITS=%u/42 "
+    /* Re-test the strongest IDs with multiple possible retail cycle values. */
+    Candidate final_top[TOP_COUNT];
+    unsigned final_count = 0;
+    for (unsigned i = 0; i < coarse_count; ++i) {
+        Candidate best_for_motion = coarse_top[i];
+        for (unsigned ci = 0; ci < sizeof(cycles) / sizeof(cycles[0]); ++ci) {
+            Candidate current = scan_motion_cycle(file,
+                coarse_top[i].motion_id, cycles[ci], target);
+            if (better(&current, &best_for_motion))
+                best_for_motion = current;
+        }
+        insert_top(final_top, &final_count, &best_for_motion);
+    }
+
+    for (unsigned i = 0; i < final_count; ++i) {
+        printf("RANK=%u MOTION=%u CYCLE=%u PHASE=0x%04X EXACT_BITS=%u/42 "
                "RMSE=%.9g MAX_ABS=%.9g\n",
-               i + 1, top[i].motion_id, (unsigned)top[i].phase,
-               top[i].exact, top[i].rmse, top[i].max_abs);
+               i + 1, final_top[i].motion_id, final_top[i].cycle,
+               (unsigned)final_top[i].phase, final_top[i].exact,
+               final_top[i].rmse, final_top[i].max_abs);
     }
 }
 
