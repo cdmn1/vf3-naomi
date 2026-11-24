@@ -110,7 +110,7 @@ jobs:
         run: |
           gcc -std=c99 -O2 -Wall -Wextra \
             -I vf3-decomp/src/media -I vf3-decomp/src/native \
-            tests/naomi_vf3_runtime/mt_trace_match.c \
+            tools/mt_trace_match.c \
             vf3-decomp/src/media/mt.c \
             vf3-decomp/src/native/motion.c \
             vf3-decomp/src/native/matrix.c \
