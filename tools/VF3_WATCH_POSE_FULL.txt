@@ -11,6 +11,7 @@ pc 0x8C09E060
 pc 0x8C09E6B2
 pc 0x8C09F432
 pc 0x8C09F500
+pc 0x8C09D690
 pc 0x8C091C20
 pc 0x8C091DE6
 pc 0x8C091438
@@ -46,27 +47,39 @@ mem 0x0C2019CC 0x200
 mem 0x0C1FF7A4 0x5C0
 mem 0x0C201B4C 0x5C0
 
-# Evaluated MT channels and 42 halfword pose fields
+# v73: full MT output split - 7 SEG_A vectors, then 42 angle channels
+# mt_play entry snapshots at 0x8C09D690 expose task, output pointer and phase
+mem 0x0C200CE8 0x54
+mem 0x0C203090 0x54
 mem 0x0C200D3C 0xFC
 mem 0x0C2030E4 0xFC
 mem 0x0C200F34 0x54
 mem 0x0C2032DC 0x54
 
-# Translation input vectors at actor +0x1488 and anchor outputs at +0x1F14
+# Candidate mt_play cycle/header fields (task is expected at actor +0x54)
+mem 0x0C2009E4 0x60
+mem 0x0C202D8C 0x60
+
+# Translation input vectors at actor +0x1488 and complete seven_pass SEG_B
 mem 0x0C20046C 0x0C
 mem 0x0C202814 0x0C
-mem 0x0C200EF8 0x0C
-mem 0x0C2032A0 0x0C
+mem 0x0C200EE0 0x54
+mem 0x0C203288 0x54
 
 # Global state used by attachment handlers and the scene matrix stack
 mem 0x0C29B864 0x40
 mem 0x0C29BB84 0x100
 mem 0x0C2A5F60 0x40
 
-# Actor offsets, pose arguments, and the two 5-link joint-chain records
+# Actor offsets and the two 5-link joint-chain records
 # (includes +0x20C8, +0x217C, +0x22E4 and +0x22E8)
 mem 0x0C201070 0x26C
 mem 0x0C203418 0x26C
+
+# v73: caller R5 argument blocks used by pose_orchestration at +0x100C/+0x115C
+# v72 PC snapshots confirmed both pointers for each actor; each block is 0x100 bytes
+mem 0x0C1FFFF0 0x250
+mem 0x0C202398 0x250
 
 # Kind-code selector at actor +0x420B
 mem 0x0C2031EF 0x10
