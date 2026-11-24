@@ -26,10 +26,17 @@ be embedded as Naomi runtime pose data.
 
 - The MT evaluator and conversion to the 42 halfword pose fields at actor
   `+0x1f50` are independently validated. The 42 fields form 14 turn triples.
-- Four row/group relationships are supported by multi-track comparison:
-  attachment rows 2/0, 5/4, 6/0 and 9/8 follow pose groups 3, 5, 6 and 8 in
-  Z-Y-X order. Other row/group assignments and most bind transforms in
-  `src/native/motion_pose.c` remain explicitly inferred.
+- The v72 retail trace now resolves the complete 18-row **producer-function
+  grouping**: row 0 is copied by top-level pose orchestration; row 1 by
+  facing_update; rows 2–5 and 6–9 by the two aim_frame calls; row 10 by
+  aim_midpoints; row 11 by matrix_basis; and rows 12–14 and 15–17 by the two
+  aim_frame_b calls. The exact direct writers and caller PRs are documented in
+  [VF3_POSE_TRACE_V72_FINDINGS.md](VF3_POSE_TRACE_V72_FINDINGS.md).
+- This does not yet supply semantic parent/joint names or prove the complete
+  motion-channel-to-attachment mapping. The old multi-track relationships
+  (rows 2/0, 5/4, 6/0 and 9/8 following pose groups 3, 5, 6 and 8 in Z-Y-X
+  order) remain useful partial evidence; most bind transforms in
+  `src/native/motion_pose.c` are still inferred.
 - The root attachment row has a recovered producer:
   `vf3_native_motion_row0()` / `vf3_native_motion_pose_actor()`. Differential
   replay matches four retained guest specimens within 2e-4. Inputs include
@@ -40,8 +47,9 @@ be embedded as Naomi runtime pose data.
   orchestration specimens.
 - The retail pose orchestration writes intermediate blocks at actor
   `+0x200`, `+0x300`, `+0x480` and `+0x540`, and copies its recovered
-  root matrix into attachment row 0 at `+0x180`. It does **not**, by itself,
-  explain the producers for the other 17 attachment rows.
+  root matrix into attachment row 0 at `+0x180`. The v72 trace now maps the
+  remaining rows to the exact native callees listed above; the trace does not
+  yet prove the semantic parent/joint meaning of every row.
 - The per-frame `fighter_refresh` path (0x8C0B1550) walks all 18 slots,
   resolves each slot's scene link (0x8C0B1A46), and invokes the per-slot
   handler-list dispatcher (0x8C0B1B2E). A later pass loads the row matrix and
@@ -88,13 +96,14 @@ native fight-state update that would populate the retail actor structure.
 It currently calls the inferred `vf3_native_motion_pose_fields()` with zero
 fields, which creates the approximate bind mannequin shown in v55.
 
-The actual remaining gap is the complete live attachment producer path and
-its inputs. The Naomi target does not yet compile or invoke the upstream
-native pose-orchestration family, and it does not yet have the per-frame actor
-state that family consumes. The orchestration expects a populated actor/work
-region, the fighter-kind record table, the kind-code table, and its
-matrix-stack context. The remaining attachment rows also depend on the
-per-slot refresh/handler/scene-link path above. Supplying guessed values would
+The actual remaining gap is **live retail actor-state input and draw-path
+integration**, not discovering another matrix writer. The Naomi Akira renderer
+still calls the inferred `vf3_native_motion_pose_actor()` path; it does not yet
+invoke the full upstream pose-orchestration family with the actor/work region,
+fighter-kind record table, kind-code table and matrix-stack context populated
+from a real frame. The v72 trace maps the 18 attachment-row producers, while
+the per-slot refresh/handler/scene-link path remains a separate task for
+relinking and drawing the populated matrices. Supplying guessed values would
 create another synthetic pose, not a retail pose.
 
 ## Next implementation gates
@@ -105,12 +114,13 @@ create another synthetic pose, not a retail pose.
 2. The Naomi SH-4 conformance probe using deterministic synthetic fixtures is
    already present; retain it as a separate proof of the native math, not as
    evidence of a live fighter.
-3. Trace the seven recovered retail handler callbacks and the static tables
-   they dispatch through. Establish which paths create or refresh attachment
-   rows, rather than assuming the callbacks are all matrix writers.
-4. Recover and supply the required live actor state, scene-link records and
-   motion channels from the actual VF3 runtime path. Do not substitute guessed
-   constants.
+3. Use the v72 caller map to wire the already-recovered native pose
+   orchestration into the Naomi renderer; keep matrix_copy/matrix_store and
+   the all-row translation pass distinct.
+4. Recover the live actor/work state and motion inputs needed by that
+   orchestration from the full v72 memory trace before requesting another
+   Flycast capture. Keep the per-slot handler/scene-link/relink path separate
+   from the 18-row matrix producer.
 5. Reconstruct and compare all populated attachment rows against independent
    retail captures across multiple poses; only then replace the inferred bind
    rig in the visible renderer.
