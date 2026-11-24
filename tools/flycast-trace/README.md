@@ -26,3 +26,8 @@ It deliberately does not claim to implement the separate `VF3_FULL` oracle snaps
 The Windows package includes both launchers and both watch profiles. For the next storage investigation, run `run-trace-loader.cmd`, load the **Dreamcast** VF3 image (not the Naomi probe ROM), navigate through character selection and confirm into Round 1, then close Flycast normally. The loader trace is written beside the executable as `vf3-loader-trace-loader.bin`; its `.diag.txt` companion records watched-PC hit counts. This profile includes broad memory watches, so a large trace file is expected. The separate `run-trace.cmd` remains available for the compact controller-path capture.
 
 The binary is not ready for user use until the GitHub Actions build succeeds, the ZIP has been inspected, and a short launch/trace smoke test passes.
+
+
+## Pose capture profile v73
+
+The full pose watch profile now includes the MT-player entry snapshot at `0x8C09D690`, candidate MT task cycle/header fields, the complete SEG_A and SEG_B vector blocks, and both caller argument blocks identified from the v72 R5 snapshots. Use the same two-character selection and matchup as the v72 capture.
