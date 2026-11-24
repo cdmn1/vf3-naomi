@@ -56,6 +56,24 @@ The PR value in the immediately following PC snapshot groups the recurring copie
 
 The row-0 PR is especially useful: `0x0C09EBAC` is the `CONT_COPY` continuation in the pinned upstream `pose_orchestration.c`. So row 0's copy is directly tied to the already-recovered top-level pose-orchestration path, not an inferred skeleton parent.
 
+The PRs resolve against the pinned upstream caller sources, so the row map can now be stated at the function level:
+
+| Attachment row(s) | Retail caller / output block |
+|---|---|
+| 0 | top-level `pose_orchestration` |
+| 1 | `facing_update` |
+| 2, 3, 4, 5 | first `aim_frame` call, output block actor +0x200 |
+| 6, 7, 8, 9 | second `aim_frame` call, output block actor +0x300 |
+| 10 | `aim_midpoints` |
+| 11 | `matrix_basis` |
+| 12, 13, 14 | first `aim_frame_b` call, output block actor +0x480 |
+| 15, 16, 17 | second `aim_frame_b` call, output block actor +0x540 |
+
+This is a complete 18-row caller map. It follows directly from the trace PR groups and the call continuations in the pinned upstream sources: `facing_update.c`, `aim_frame.c`, `aim_midpoints.c`, `matrix_basis.c`, `aim_frame_b.c`, and `pose_orchestration.c`. In particular, the two `aim_frame` calls account for rows 2–9, and the two `aim_frame_b` calls account for rows 12–17. No parent-bone fitting is needed to establish this producer grouping.
+
+The extra PR `0x0C09D50E` on rows 5 and 9 is the internal return from `matrix_store` inside `store_keep_translation` (`0x8C09D4E6`). The three subsequent stores at `0x0C09D514/51E/526` restore those rows' translation components. This explains why those rows have an additional translation-only writer without implying another attachment producer.
+
+
 ## 2. Direct writer B: matrix_store at 0x8C03B620
 
 Raw write PCs: `0x0C03B62C` through `0x0C03B64A`, every two bytes.
