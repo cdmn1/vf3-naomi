@@ -80,11 +80,11 @@ static void match_motion(const MtFile *file, uint32_t motion_id,
         rc = vf3_native_motion_eval(&stream, (int32_t)phase, values);
         if (rc != 0) continue;
         for (unsigned i = 0; i < TARGET_COUNT; ++i) {
-            FloatBits actual;
+            FloatBits actual, expected;
             double delta;
             actual.f = values[CHANNEL_START + i];
-            delta = (double)actual.f -
-                    (double)(FloatBits){ .u = target[i] }.f;
+            expected.u = target[i];
+            delta = (double)actual.f - (double)expected.f;
             if (actual.u == target[i]) ++exact;
             if (fabs(delta) > max_abs) max_abs = fabs(delta);
             sum_sq += delta * delta;
