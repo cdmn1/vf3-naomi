@@ -1,1 +1,1 @@
-Trigger exhaustive MT motion scan.
+Trigger MT cycle-length scan.
