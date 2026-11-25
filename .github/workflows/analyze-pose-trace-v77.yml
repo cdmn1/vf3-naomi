@@ -1,6 +1,11 @@
 name: Analyze VF3 pose trace v77
 
 on:
+  push:
+    branches: [akira-native-row0-experiment]
+    paths:
+      - "tools/trigger-v77-analysis.txt"
+      - ".github/workflows/analyze-pose-trace-v77.yml"
   workflow_dispatch:
 
 permissions:
