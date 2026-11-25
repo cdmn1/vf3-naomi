@@ -1,1 +1,1 @@
-Re-run v77 analysis with corrected PC alias filter and import syntax.
+Run v77 trace decoder with corrected Python source newline.
