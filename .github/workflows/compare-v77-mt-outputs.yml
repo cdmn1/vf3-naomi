@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/compare-v77-mt-outputs.yml"
       - "tools/mt_v77_compare.c"
+      - "tools/mt_v77_scan_rows.c"
   workflow_dispatch:
 
 permissions:
@@ -72,6 +73,26 @@ jobs:
             analysis/v77-mt-targets.csv \
             0x0C1FEFE4 0x41A 60 \
             | tee out/MT_V77_MTAKIJAC_AKIRA_41A.txt
+
+      - name: Build exhaustive MT row scanner
+        run: |
+          set -euo pipefail
+          gcc -O2 -std=gnu11 \
+            -Iupstream/src/media -Iupstream/src/native \
+            tools/mt_v77_scan_rows.c \
+            upstream/src/media/mt.c \
+            upstream/src/native/motion.c \
+            upstream/src/native/matrix.c \
+            -lm -o out/mt_v77_scan_rows
+
+      - name: Scan every MTAKIJAC row against the captured Akira outputs
+        run: |
+          set -euo pipefail
+          out/mt_v77_scan_rows \
+            mt-asset/MTAKIJAC.BIN \
+            analysis/v77-mt-targets.csv \
+            0x0C1FEFE4 0x41A 60 \
+            | tee out/MT_V77_MTAKIJAC_ALL_ROWS_AKIRA_41A.txt
 
       - name: Upload comparison report
         uses: actions/upload-artifact@v4
