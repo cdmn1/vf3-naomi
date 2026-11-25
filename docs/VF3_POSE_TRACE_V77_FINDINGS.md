@@ -28,7 +28,7 @@ The pinned upstream implementation at `208e2e2402743123a4ba79c1733f479bec9f4906`
 - `task + 0x1A00`: 16-bit cycle length
 - `task + 0x1D00`: pointer to the runtime motion header
 
-The v77 snapshots at `0x0C09D690` agree with that calling convention. R4 identifies the two actor bases, R6 contains the phase, and the R3 value at entry matches the cycle value written to `actor + 0x1A00`.
+The v77 snapshots at `0x0C09D690` agree with that calling convention. R4 identifies the two actor bases, R6 contains the phase, and the R3 value at entry matches the cycle value written to `actor + 0x1A00` in **all 1,326 calls** (zero mismatches). R5 is usually `0x0C31F9D8` (624 entries for each actor), with a small number of alternate output-pointer contexts.
 
 | Actor base | Entry snapshots | Motion ID / cycle / entry count |
 |---|---:|---|
