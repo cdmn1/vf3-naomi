@@ -37,7 +37,7 @@ The v77 snapshots at `0x0C09D690` agree with that calling convention. R4 identif
 
 These motion IDs were obtained by correlating each evaluator entry with the latest preceding 16-bit read of `actor + 0x3C`; they are not guesses from pose similarity. The cycle values were independently correlated with writes to `actor + 0x1A00`.
 
-Actor A's dominant motion is therefore **ID `0x41A`, cycle 60**. The upstream pinned `docs/re/mt_fields.md` identifies row `0x41A` in `MTAKIJAC.BIN`. This supersedes the earlier v72 candidate motion `1744`: that candidate was not the active motion ID shown by the v77 runtime trace.
+Actor A's dominant motion is therefore **ID `0x41A`, cycle 60**. The upstream pinned `docs/re/mt_fields.md` identifies row `0x41A` in `MTAKIJAC.BIN`, with source stream offsets `0x997F4`, `0x99810`, and `0x99820` (9 count bytes, 13 key-time bytes, 404 tuple bytes). This supersedes the earlier v72 candidate motion 1744: that candidate was not the active motion ID shown by the v77 runtime trace.
 
 Actor B uses several motion IDs during the capture. Its pack/character mapping is not established by this trace alone.
 
@@ -63,19 +63,32 @@ The downstream 42-halfword pose conversion writes are also present: PC `0x0C09D5
 
 This is a strong runtime confirmation of the 63-channel evaluator and its 7+14 sign-flip post-pass, not merely a successful synthetic test.
 
+## Exact per-call output targets recovered
+
+The successful final correlation artifact was inspected independently. A new extractor, `tools/extract_v77_mt_targets.py`, assigns every watched output write to the preceding evaluator call for the same actor, retains the final value after the sign-flip stores, and exports all 63 channels as IEEE-754 bit patterns.
+
+Results:
+
+- Actor A: 634 complete 63-channel outputs; 25 evaluator entries had no writes to this actor output block.
+- Actor B: 643 complete 63-channel outputs; 24 evaluator entries had no writes to this actor output block.
+- Every complete call has exactly 63 distinct channel words.
+- Every complete call has exactly 21 final post-sign-flip writes (7 + 14).
+- Total: **1,277 complete per-call target rows**, each carrying actor, motion ID, cycle, exact Q8 phase, R5 context, and all 63 channel bit patterns.
+
+This gives us the guest's actual final evaluator outputs at exact phases. It is a much stronger comparison target than a handful of manually selected screenshots or guessed motion samples.
+
 ## Downstream seven-vector output
 
 The 21-float SEG_B blocks at actor offsets `+0x1EFC` each contain 23,436 writes. Three component-writer PCs (`0x0C03B45C`, `0x0C03B45E`, and `0x0C03B460`) each contribute 7,805 writes per actor, i.e. seven values per component writer across 1,115 updates, plus 21 initialization clears. This gives us a concrete output stream to correlate with the seven-vector transform stage already identified in v72.
 
-## Remaining gap
+## Remaining gap and next input
 
-The v77 watch profile captured the 63-float output beginning at actor `+0x1D04), but did **not** include the four-byte runtime header pointer at actor `+0x1D00). The missing addresses are:
+The v77 capture already supplies the motion IDs, cycles, exact phases, and final 63-channel outputs. The pinned upstream source documentation identifies the source row for Actor A's dominant `0x41A` motion, but the `cdmn1/vf3-naomi` repository does not contain the actual `MTAKIJAC.BIN` game-data file. The repository contains trace data and derived reports, not the retail MT pack bytes. Therefore an exact native-evaluator-versus-game-output comparison cannot yet be run from the repository alone.
 
-- actor A: `0x0C200CE4`
-- actor B: `0x0C20308C`
+The next comparison should use the user's own extracted `MTAKIJAC.BIN` file against the 549 complete Actor A calls whose active ID is `0x41A`, cycle 60. If those 63 float bit patterns match at the captured phases, it validates the native source-row decoder/evaluator against the live game output for that motion. Actor B's pack should be identified separately from its runtime model/character mapping and motion IDs.
 
-The source evaluator reads this pointer to reach the 63 opcode bytes and the count/time/tuple streams. The capture already gives us motion IDs, cycles, phases, and the complete evaluated output; the missing header pointer is the remaining direct link from those outputs back to the exact mounted MT record. The next step should be a narrowly scoped comparison against the appropriate MT pack using the recovered IDs and phase/cycle pairs. If that does not resolve the mounted header, only these two four-byte pointer locations need to be added to a follow-up watch—no broad repeat of the v77 capture.
+The v77 watch profile did not include the four-byte runtime header pointer at actor `+0x1D00` (Actor A: `0x0C200CE4`; Actor B: `0x0C20308C`). That pointer is **not needed to start the source-row output comparison** because the trace already gives the motion ID, cycle, phase, and final channel values. Only add those two addresses to a tiny follow-up watch if a successful asset comparison still leaves the mounted-header identity unresolved. Do not repeat the broad v77 capture.
 
 ## Reproducible analysis outputs
 
-The v77 streaming analysis is generated by `tools/analyze_pose_trace_stream.py` and `.github/workflows/analyze-pose-trace-v77.yml`. It emits the PC snapshots and watched-memory event stream as compressed CSV artifacts. The trace itself is not copied into the repository.
+The v77 streaming analysis is generated by `tools/analyze_pose_trace_stream.py`, `tools/analyze_pose_trace_correlation.py`, and `tools/extract_v77_mt_targets.py` through `.github/workflows/analyze-pose-trace-v77.yml`. The workflow artifact includes compressed PC snapshots, watched-memory records, correlated MT calls, and the exact 63-channel target CSV. The trace itself is not copied into the repository.
