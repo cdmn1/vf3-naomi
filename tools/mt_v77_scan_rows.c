@@ -56,6 +56,42 @@ static int cmp_score(const void *a, const void *b)
     return x->id < y->id ? -1 : x->id > y->id;
 }
 
+
+static void print_detail(const MtFile *file, const Target *targets,
+                         size_t target_count, uint32_t id)
+{
+    MtMotionView view;
+    vf3_native_motion_stream stream;
+    uint64_t exact[VF3_NATIVE_MOTION_CHANNELS] = {0};
+    double sq[VF3_NATIVE_MOTION_CHANNELS] = {0};
+    double max_abs[VF3_NATIVE_MOTION_CHANNELS] = {0};
+    if (vf3_native_motion_load(file, id, targets[0].cycle, &view, &stream) != 0)
+        return;
+    printf("DETAIL_ID=0x%03X SOURCE_OFFSETS=%08X,%08X,%08X COUNTS=%zu TIMES=%zu TUPLES=%zu\n",
+           id, view.source_offsets[0], view.source_offsets[1],
+           view.source_offsets[2], view.counts_size, view.times_size,
+           view.tuples_size);
+    for (size_t row = 0; row < target_count; ++row) {
+        float actual[VF3_NATIVE_MOTION_CHANNELS];
+        if (vf3_native_motion_eval(&stream, (int32_t)targets[row].phase, actual) != 0)
+            continue;
+        for (unsigned ch = 0; ch < VF3_NATIVE_MOTION_CHANNELS; ++ch) {
+            FloatBits got;
+            got.f = actual[ch];
+            const uint32_t want = targets[row].words[ch];
+            const double delta = (double)got.f - (double)((FloatBits){.u = want}).f;
+            const double ad = fabs(delta);
+            if (got.u == want) ++exact[ch];
+            sq[ch] += delta * delta;
+            if (ad > max_abs[ch]) max_abs[ch] = ad;
+        }
+    }
+    for (unsigned ch = 0; ch < VF3_NATIVE_MOTION_CHANNELS; ++ch)
+        printf("DETAIL_CHANNEL %02u exact=%llu/%zu rmse=%.9g max_abs=%.9g\n",
+               ch, (unsigned long long)exact[ch], target_count,
+               sqrt(sq[ch] / (double)target_count), max_abs[ch]);
+}
+
 int main(int argc, char **argv)
 {
     uint8_t *asset = NULL;
@@ -164,6 +200,9 @@ int main(int argc, char **argv)
                (unsigned long long)s->exact, (unsigned long long)s->total,
                sqrt(s->sum_sq / (double)s->total), s->max_abs);
     }
+    if (score_count) print_detail(&file, targets, target_count, scores[0].id);
+    if (scores[0].id != motion_filter)
+        print_detail(&file, targets, target_count, motion_filter);
     for (size_t i = 0; i < score_count; ++i) {
         if (scores[i].id == motion_filter) {
             printf("REQUESTED_ID_RANK=%zu ID=0x%03X EXACT_CALLS=%llu/%zu EXACT_CHANNELS=%llu/%llu RMSE=%.9g MAX_ABS=%.9g\n",
