@@ -1,1 +1,1 @@
-Run v77 trace decoder with corrected Python source newline.
+Re-run v77 trace analysis with PC alias matching for both record formats.
