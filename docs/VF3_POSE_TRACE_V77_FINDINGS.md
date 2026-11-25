@@ -104,17 +104,33 @@ This rules out the simple explanation that MTAKIPAI was merely the wrong candida
 
 Successful MTAKIJAC run: [45616786094](https://github.com/cdmn1/vf3-naomi/actions/runs/45616786094). Artifact: `vf3-v77-mt-output-comparison` (includes `MT_V77_MTAKIJAC_AKIRA_41A.txt` and the MTAKIJAC SHA-256).
 
+
+### Exhaustive MTAKIJAC row scan and pointer-contract audit
+
+A follow-up scanner tested every one-based motion row in the same 1,491,008-byte MTAKIJAC asset against all 549 complete Actor A captures at the recorded Q8 phases and runtime cycle 60. Of 2,960 possible row IDs, **737 rows loaded and evaluated successfully across all 549 calls**.
+
+- The documented runtime ID \`0x41A\` ranks **96th** by aggregate RMSE: 15,519/34,587 exact channel words, RMSE 11,161.8685, max absolute difference 178,676.625.
+- The best numerical fit is row \`0x638\`: 21,511/34,587 exact channel words, RMSE 643.544542, max absolute difference 3,640.88892. It still has **0/549 exact full calls**.
+- Row \`0x638\` is not a credible live-motion identification: its parsed source has zero count bytes, zero key-time bytes, and only 132 tuple bytes, so it is a static/non-keyframed row. It matches 44 channels bit-exactly across the capture; the remaining discrepancies are concentrated in a small set of channels, with small residual differences in channels 1 and 3–17. This is a useful baseline similarity, not proof that the runtime selected row \`0x638\`.
+- Row \`0x41A\` parses at source offsets \`0x997F4\`, \`0x99810\`, \`0x99820\`, with 9 count bytes, 13 key-time bytes, and 404 tuple bytes, consistent with the pinned upstream \`docs/re/mt_fields.md\`.
+
+The all-row result confirms that simply trying another row in MTAKIJAC does not produce a complete match. It does **not** distinguish between a different mounted pack, runtime stream assembly/remapping, or a remaining mismatch in the native comparison contract.
+
+The pointer audit also clarified a limitation in the v77 capture: R5 is a \`float **\`, and the CSV field \`out_pp_pointer_r5\` records the address in R5, not the float-buffer pointer stored at that address. The evaluator's actual 63-float writes are independently captured at the actor-relative output addresses and are what the comparator uses; however, the contents of the R5 pointer slots were not watched. Likewise, the runtime MT header pointer at actor \`+0x1D00\` was not captured.
+
+A deliberately small follow-up watch profile now exists at [VF3-MT-POINTER-WATCH.txt](../tree/akira-native-row0-experiment/VF3-Flycast-Trace/VF3-MT-POINTER-WATCH.txt). It watches only the evaluator entry, the two actor \`+0x1D00\` header-pointer words, and the seven distinct R5 pointer-slot addresses observed in v77. It does not repeat the broad pose capture. Those values will let us verify the output-pointer indirection and identify the live MT header before deciding whether a second, address-specific stream capture is needed.
+
+Successful exhaustive scan and per-channel detail: [45618821680](https://github.com/cdmn1/vf3-naomi/actions/runs/45618821680). Artifact: \`vf3-v77-mt-output-comparison\`, including \`MT_V77_MTAKIJAC_ALL_ROWS_AKIRA_41A.txt\`.
+
 ## Downstream seven-vector output
 
 The 21-float SEG_B blocks at actor offsets `+0x1EFC` each contain 23,436 writes. Three component-writer PCs (`0x0C03B45C`, `0x0C03B45E`, and `0x0C03B460`) each contribute 7,805 writes per actor, i.e. seven values per component writer across 1,115 updates, plus 21 initialization clears. This gives us a concrete output stream to correlate with the seven-vector transform stage already identified in v72.
 
 ## Remaining gap and next input
 
-The exact candidate to test next is `MTAKIJAC.BIN`, because the pinned upstream notes identify row `0x41A` there. I located that file in Dropbox at `/Vf3-naomi/MTAKIJAC.BIN` (1,491,008 bytes). Its current Dropbox link has audience `no_one` (private), so the GitHub Actions runner cannot download it. The Dropbox connector can identify the file, but the private file content is not available as raw bytes to the comparison runner.
+The remaining missing evidence is the exact runtime MT header and the pointer stored through R5 for each evaluator call. The all-row comparison is exhausted for MTAKIJAC: no candidate row gives an exact 63-channel match. The small follow-up watch profile described above is the next step; it captures only the two header-pointer words and the seven R5 pointer slots, alongside the evaluator-entry registers.
 
-To finish the comparison, I need an accessible copy of that one file: either a temporary Dropbox anyone-with-the-link download URL, or the file placed in a private repository/storage location the runner can read. I will not make the file public or change its sharing settings without your approval. Once the bytes are available, the existing comparator can test the 549 captured Actor A calls directly.
-
-The v77 watch profile did not include the four-byte runtime header pointer at actor `+0x1D00` (Actor A: `0x0C200CE4`; Actor B: `0x0C20308C`). That pointer is **not needed to start the source-row output comparison** because the trace already gives the motion ID, cycle, phase, and final channel values. Only add those two addresses to a tiny follow-up watch if a successful asset comparison still leaves the mounted-header identity unresolved. Do not repeat the broad v77 capture.
+Do not repeat the broad v77 pose capture. Once the focused watch identifies the live header address and the actual output-buffer pointers, we can decide whether a second tiny watch of the referenced header/stream memory is necessary. This should establish whether the runtime is using a different pack/row or whether the native source-row comparison is missing a runtime assembly/remapping step.
 
 ## Reproducible analysis outputs
 
