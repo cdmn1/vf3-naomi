@@ -52,6 +52,7 @@ jobs:
           set -euo pipefail
           python tools/analyze_pose_trace_stream.py "$TRACE" tools/VF3_WATCH_POSE_FULL.txt out
           python tools/analyze_pose_trace_correlation.py out/v77-pc-snapshots.csv.gz out/v77-watched-memory.csv.gz out
+          python tools/extract_v77_mt_targets.py out/v77-mt-play-calls.csv.gz out/v77-watched-memory.csv.gz out/v77-mt-targets.csv
           sha256sum "$TRACE" > out/TRACE-SHA256.txt
           cat out/REPORT.txt >> "$GITHUB_STEP_SUMMARY"
           cat out/MT_CALL_SUMMARY.txt >> "$GITHUB_STEP_SUMMARY"
