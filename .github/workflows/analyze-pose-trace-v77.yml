@@ -1,0 +1,57 @@
+name: Analyze VF3 pose trace v77
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-v77:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out analysis tools
+        uses: actions/checkout@v4
+        with:
+          ref: akira-native-row0-experiment
+
+      - name: Install 7-Zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
+      - name: Download and extract v77 capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capture out
+          curl -fL --retry 3 \
+            "https://raw.githubusercontent.com/cdmn1/vf3-naomi/main/VF3-Flycast-Trace/VF3-Flycast-Trace-v77/vf3-pose-trace.7z" \
+            -o capture/vf3-pose-trace.7z
+          echo "Archive SHA-256:"
+          sha256sum capture/vf3-pose-trace.7z
+          7z l capture/vf3-pose-trace.7z
+          7z x -y capture/vf3-pose-trace.7z -ocapture/extracted
+          find capture/extracted -type f -printf '%p %s bytes\n' | tee out/ARCHIVE-CONTENTS.txt
+          TRACE="$(find capture/extracted -type f -name '*.bin' | head -n 1)"
+          test -n "$TRACE"
+          echo "TRACE=$TRACE" >> "$GITHUB_ENV"
+          cp "VF3-Flycast-Trace/VF3-Flycast-Trace-v77/vf3-pose-trace.bin.diag.txt" out/
+          cp tools/VF3_WATCH_POSE_FULL.txt out/
+
+      - name: Stream decode watched pose records
+        run: |
+          set -euo pipefail
+          python tools/analyze_pose_trace_stream.py "$TRACE" tools/VF3_WATCH_POSE_FULL.txt out
+          sha256sum "$TRACE" > out/TRACE-SHA256.txt
+          cat out/REPORT.txt >> "$GITHUB_STEP_SUMMARY"
+          cat out/ARCHIVE-CONTENTS.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload v77 analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-pose-trace-v77-analysis
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
