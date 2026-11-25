@@ -1,0 +1,82 @@
+name: Compare v77 MT outputs against extracted asset
+
+on:
+  push:
+    branches: [akira-native-row0-experiment]
+    paths:
+      - ".github/workflows/compare-v77-mt-outputs.yml"
+      - "tools/mt_v77_compare.c"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compare-v77:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out comparison tool
+        uses: actions/checkout@v4
+        with:
+          ref: akira-native-row0-experiment
+
+      - name: Download the completed v77 analysis artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p analysis out mt-asset
+          gh run download 45613565203 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name vf3-pose-trace-v77-analysis \
+            --dir analysis
+          test -s analysis/v77-mt-targets.csv
+
+      - name: Download the existing MTAKIPAI reference asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
+            --output mt-asset/MTAKIPAI.BIN
+          test "$(stat -c '%s' mt-asset/MTAKIPAI.BIN)" -eq 1572408
+          sha256sum mt-asset/MTAKIPAI.BIN | tee out/MTAKIPAI-SHA256.txt
+
+      - name: Check out the pinned native MT implementation
+        run: |
+          set -euo pipefail
+          git init upstream
+          git -C upstream remote add origin https://github.com/celsowm/vf3-decomp.git
+          git -C upstream fetch --depth 1 origin 208e2e2402743123a4ba79c1733f479bec9f4906
+          git -C upstream checkout --detach FETCH_HEAD
+
+      - name: Build exact native evaluator comparator
+        run: |
+          set -euo pipefail
+          gcc -O2 -std=gnu11 \
+            -Iupstream/src/media -Iupstream/src/native \
+            tools/mt_v77_compare.c \
+            upstream/src/media/mt.c \
+            upstream/src/native/motion.c \
+            upstream/src/native/matrix.c \
+            -lm -o out/mt_v77_compare
+
+      - name: Compare Akira motion 0x41A at captured phases
+        run: |
+          set -euo pipefail
+          out/mt_v77_compare \
+            mt-asset/MTAKIPAI.BIN \
+            analysis/v77-mt-targets.csv \
+            0x0C1FEFE4 0x41A 60 \
+            | tee out/MT_V77_MTAKIPAI_AKIRA_41A.txt
+
+      - name: Upload comparison report
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-v77-mt-output-comparison
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
