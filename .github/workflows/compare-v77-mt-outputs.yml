@@ -34,16 +34,16 @@ jobs:
             --dir analysis
           test -s analysis/v77-mt-targets.csv
 
-      - name: Download the existing MTAKIPAI reference asset
+      - name: Download MTAKIJAC reference asset
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-all-errors \
             --user-agent "Mozilla/5.0" \
-            "https://www.dropbox.com/scl/fi/0zx1fzg08s0edpdz1l4xu/MTAKIPAI.BIN?rlkey=j62dxghwbvkn1kc999an4c5kx&st=t9d392vh&dl=1" \
-            --output mt-asset/MTAKIPAI.BIN
-          test "$(stat -c '%s' mt-asset/MTAKIPAI.BIN)" -eq 1572408
-          sha256sum mt-asset/MTAKIPAI.BIN | tee out/MTAKIPAI-SHA256.txt
+            "https://www.dropbox.com/scl/fi/44gl7r760wpk3xp9iagvd/MTAKIJAC.BIN?rlkey=87h2cbuzbtw3csvvuovadm9tk&dl=1" \
+            --output mt-asset/MTAKIJAC.BIN
+          test "$(stat -c '%s' mt-asset/MTAKIJAC.BIN)" -eq 1491008
+          sha256sum mt-asset/MTAKIJAC.BIN | tee out/MTAKIPAI-SHA256.txt
 
       - name: Check out the pinned native MT implementation
         run: |
@@ -64,14 +64,14 @@ jobs:
             upstream/src/native/matrix.c \
             -lm -o out/mt_v77_compare
 
-      - name: Compare Akira motion 0x41A at captured phases
+      - name: Compare Akira motion 0x41A against MTAKIJAC at captured phases
         run: |
           set -euo pipefail
           out/mt_v77_compare \
-            mt-asset/MTAKIPAI.BIN \
+            mt-asset/MTAKIJAC.BIN \
             analysis/v77-mt-targets.csv \
             0x0C1FEFE4 0x41A 60 \
-            | tee out/MT_V77_MTAKIPAI_AKIRA_41A.txt
+            | tee out/MT_V77_MTAKIJAC_AKIRA_41A.txt
 
       - name: Upload comparison report
         uses: actions/upload-artifact@v4
