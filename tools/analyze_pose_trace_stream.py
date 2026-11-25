@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Stream-decode the v77 VF3 pose trace without loading the 514 MB stream into RAM."""
-import csv, gzip, mmap, re, struct, sys\nfrom bisect import bisect_right
+import csv, gzip, mmap, re, struct, sys
+from bisect import bisect_right
 from collections import Counter
 from pathlib import Path
 
