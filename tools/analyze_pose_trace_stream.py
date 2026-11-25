@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stream-decode the v77 VF3 pose trace without loading the 514 MB stream into RAM."""
-import csv, gzip, mmap, re, struct, sys
+import csv, gzip, mmap, re, struct, sys\nfrom bisect import bisect_right
 from collections import Counter
 from pathlib import Path
 
@@ -20,8 +20,11 @@ for line in WATCH.read_text().splitlines():
     if m:
         a,n=(int(x,16) for x in m.groups())
         ranges.append((a,a+n))
+ranges.sort()
+range_starts=[lo for lo,hi in ranges]
 def watched(a):
-    return any(lo <= a < hi for lo,hi in ranges)
+    pos=bisect_right(range_starts,a)-1
+    return pos>=0 and a<ranges[pos][1]
 
 pc_counts=Counter(); mem_counts=Counter(); widths=Counter(); unknown=Counter()
 pc_path=OUT/"v77-pc-snapshots.csv.gz"
