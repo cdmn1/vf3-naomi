@@ -1,0 +1,20 @@
+# Focused MT evaluator pointer watch for VF3 v77 follow-up.
+# Use with the patched Flycast interpreter via VF3_WATCH=<this file>.
+# This is deliberately small: no broad actor, pose, or RAM ranges.
+#
+# Capture evaluator-entry registers so R4/R5/R6 can be correlated.
+pc 0x8C09D690
+
+# Runtime MT header pointers: actor + 0x1D00.
+mem 0x0C200CE4 0x4
+mem 0x0C20308C 0x4
+
+# R5 is float **. These are the seven distinct pointer-slot addresses
+# observed in v77. Watch their contents to recover *out_pp for each call.
+mem 0x0C31F9AC 0x4
+mem 0x0C31F9B0 0x4
+mem 0x0C31F9B4 0x4
+mem 0x0C31F9C8 0x4
+mem 0x0C31F9D4 0x4
+mem 0x0C31F9D8 0x4
+mem 0x0C31F9FC 0x4
