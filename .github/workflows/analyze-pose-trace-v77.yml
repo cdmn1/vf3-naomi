@@ -42,7 +42,9 @@ jobs:
           TRACE="$(find capture/extracted -type f -name '*.bin' | head -n 1)"
           test -n "$TRACE"
           echo "TRACE=$TRACE" >> "$GITHUB_ENV"
-          cp "VF3-Flycast-Trace/VF3-Flycast-Trace-v77/vf3-pose-trace.bin.diag.txt" out/
+          curl -fL --retry 3 \
+            "https://raw.githubusercontent.com/cdmn1/vf3-naomi/main/VF3-Flycast-Trace/VF3-Flycast-Trace-v77/vf3-pose-trace.bin.diag.txt" \
+            -o out/vf3-pose-trace.bin.diag.txt
           cp tools/VF3_WATCH_POSE_FULL.txt out/
 
       - name: Stream decode watched pose records
