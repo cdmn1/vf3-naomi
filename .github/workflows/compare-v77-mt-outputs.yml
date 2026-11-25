@@ -43,7 +43,7 @@ jobs:
             "https://www.dropbox.com/scl/fi/44gl7r760wpk3xp9iagvd/MTAKIJAC.BIN?rlkey=87h2cbuzbtw3csvvuovadm9tk&dl=1" \
             --output mt-asset/MTAKIJAC.BIN
           test "$(stat -c '%s' mt-asset/MTAKIJAC.BIN)" -eq 1491008
-          sha256sum mt-asset/MTAKIJAC.BIN | tee out/MTAKIPAI-SHA256.txt
+          sha256sum mt-asset/MTAKIJAC.BIN | tee out/MTAKIJAC-SHA256.txt
 
       - name: Check out the pinned native MT implementation
         run: |
