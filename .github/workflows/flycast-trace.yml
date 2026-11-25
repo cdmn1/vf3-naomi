@@ -8,6 +8,7 @@ on:
       - "tools/VF3_WATCH_LOADER.txt"
       - "tools/VF3_WATCH_INPUT.txt"
       - "tools/VF3_WATCH_POSE_FULL.txt"
+      - "tools/VF3_WATCH_POSE_MT_POINTER.txt"
       - "tools/loader_trace_summary.py"
       - ".github/workflows/flycast-trace.yml"
   workflow_dispatch:
@@ -89,6 +90,7 @@ jobs:
           Copy-Item "tools/VF3_WATCH_LOADER.txt" $package
           Copy-Item "tools/VF3_WATCH_INPUT.txt" $package
           Copy-Item "tools/VF3_WATCH_POSE_FULL.txt" $package
+          Copy-Item "tools/VF3_WATCH_POSE_MT_POINTER.txt" $package
           $poseLauncher = @'
           @echo off
           setlocal
@@ -160,6 +162,70 @@ jobs:
           raw model/motion assets. Keep the two output files together in one ZIP.
           '@
           $poseReadme | Set-Content -Encoding ascii (Join-Path $package "POSE_CAPTURE_README.txt")
+
+          $mtPointerLauncher = @'
+          @echo off
+          setlocal
+          cd /d "%~dp0"
+          set "VF3_INTERPRETER=1"
+          set "VF3_WATCH=%~dp0VF3_WATCH_POSE_MT_POINTER.txt"
+          set "VF3_TRACE=%~dp0vf3-pose-mt-pointer-trace.bin"
+          set "VF3_DIAG=%VF3_TRACE%.diag.txt"
+          if exist "%VF3_TRACE%" del "%VF3_TRACE%"
+          if exist "%VF3_DIAG%" del "%VF3_DIAG%"
+          echo.
+          echo VF3 FOCUSED MT POINTER tracing is enabled.
+          echo Load the Dreamcast version of Virtua Fighter 3.
+          echo Start from a cold boot and repeat the exact same two-character
+          echo selection and matchup used for the v77 capture.
+          echo Confirm into Round 1, let the fight run for 5-10 seconds,
+          echo then close Flycast normally.
+          echo Do not use the Naomi probe ROM or a savestate.
+          echo.
+          echo Output:
+          echo %VF3_TRACE%
+          echo.
+          start "" /wait "%~dp0flycast.exe"
+          if exist "%VF3_TRACE%" (
+            echo.
+            echo Focused MT pointer trace created. Size:
+            for %%F in ("%VF3_TRACE%") do echo %%~zF bytes
+          ) else (
+            echo.
+            echo No focused MT pointer trace was created. Check that Flycast started correctly.
+          )
+          if exist "%VF3_DIAG%" (
+            echo.
+            echo Pose diagnostics created:
+            echo %VF3_DIAG%
+          ) else (
+            echo.
+            echo WARNING: pose diagnostics file was not created.
+          )
+          pause
+          '@
+          $mtPointerLauncher | Set-Content -Encoding ascii (Join-Path $package "run-trace-mt-pointer.cmd")
+          $mtPointerReadme = @'
+          VF3 focused MT pointer capture
+          ==============================
+
+          1. Extract this ZIP into a writable folder and keep all files together.
+          2. Double-click run-trace-mt-pointer.cmd.
+          3. Load the Dreamcast version of Virtua Fighter 3 (not the Naomi probe ROM).
+          4. Start from a cold boot; do not resume from a savestate.
+          5. Repeat the exact same two-character selection and matchup used for v77.
+          6. Confirm into Round 1, let the fight run for 5-10 seconds, then close Flycast normally.
+
+          Output:
+          - vf3-pose-mt-pointer-trace.bin
+          - vf3-pose-mt-pointer-trace.bin.diag.txt
+
+          This is the v77 full-pose watch profile plus only nine small pointer/header
+          watches. It records the MT header pointers and the actual destination
+          pointers behind the R5 float** arguments. It does not include the game
+          image or raw model/motion assets. Keep both output files together.
+          '@
+          $mtPointerReadme | Set-Content -Encoding ascii (Join-Path $package "MT_POINTER_CAPTURE_README.txt")
           $buildInfo = @"
           VF3 Flycast trace build
           Upstream repository: https://github.com/flyinghead/flycast
@@ -171,6 +237,7 @@ jobs:
           Default watch profile: VF3_WATCH_INPUT.txt (four controller-path PCs)
           Loader capture launcher: run-trace-loader.cmd (GDFS/MT PCs plus watched memory ranges)
           Full pose capture launcher: run-trace-pose.cmd (18 attachment rows, 23-bone matrices, MT task/phase, SEG_A/SEG_B, caller argument blocks and callback PCs)
+          Focused MT pointer launcher: run-trace-mt-pointer.cmd (full pose profile plus two MT header pointers and seven R5 output-pointer slots)
           Controller probes: selected-port reader, controller merge, player action update, packet lookup
           "@
           $buildInfo | Set-Content -Encoding utf8 (Join-Path $package "BUILD_INFO.txt")
