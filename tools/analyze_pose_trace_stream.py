@@ -61,7 +61,7 @@ with TRACE.open("rb") as f, mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as m
             close=struct.unpack_from("<Q",mm,(i+18)*8)[0]
             if (close&0xffff)!=PCX_CLOSE or ((close>>16)&0xffffffff)!=pc:
                 malformed+=1; i+=1; continue
-            if pc in pcs:
+            if pc in pcs or (pc | 0x80000000) in pcs:
                 pr=struct.unpack_from("<Q",mm,(i+1)*8)[0]&0xffffffff
                 regs=[struct.unpack_from("<Q",mm,(i+j)*8)[0]&0xffffffff for j in range(2,18)]
                 row={"event_index":events,"word_index":i,"pc":f"0x{pc:08X}","pr":f"0x{pr:08X}"}
