@@ -37,7 +37,7 @@ The v77 snapshots at `0x0C09D690` agree with that calling convention. R4 identif
 
 These motion IDs were obtained by correlating each evaluator entry with the latest preceding 16-bit read of `actor + 0x3C`; they are not guesses from pose similarity. The cycle values were independently correlated with writes to `actor + 0x1A00`.
 
-Actor A's dominant motion is therefore **ID `0x41A`, cycle 60**. The upstream pinned `docs/re/mt_fields.md` identifies row `0x41A` in `MTAKIJAC.BIN`, with source stream offsets `0x997F4`, `0x99810`, and `0x99820` (9 count bytes, 13 key-time bytes, 404 tuple bytes). This supersedes the earlier v72 candidate motion 1744: that candidate was not the active motion ID shown by the v77 runtime trace.
+Actor A's dominant motion is therefore **ID `0x41A`, cycle 60**. The upstream pinned `docs/re/mt_fields.md` identifies row `0x41A` in `MTAKIJAC.BIN`, with source stream offsets `0x997F4`, `0x99810`, and `0x99820` (9 count bytes, 13 key-time bytes, 404 tuple bytes). This establishes that the row exists in that pack; it does **not**, by itself, prove that MTAKIJAC was the pack mounted by this particular runtime.
 
 Actor B uses several motion IDs during the capture. Its pack/character mapping is not established by this trace alone.
 
@@ -77,15 +77,30 @@ Results:
 
 This gives us the guest's actual final evaluator outputs at exact phases. It is a much stronger comparison target than a handful of manually selected screenshots or guessed motion samples.
 
+## First native-versus-runtime comparison: MTAKIPAI
+
+A host comparator, `tools/mt_v77_compare.c`, now runs the pinned upstream MT parser/evaluator against every captured target for a selected actor/motion/cycle. It compares all 63 IEEE-754 channel words at the exact captured Q8 phase, including the guest's final sign-flip output.
+
+The first candidate tested was the already available `MTAKIPAI.BIN` (1,572,408 bytes). It contains motion ID `0x41A` and loads successfully for all **549 complete Actor A calls** with ID `0x41A`, cycle 60. However:
+
+- exact full-call matches: **0 / 549**
+- exact channel words: **15,519 / 34,587**
+- overall RMSE: **11,161.8685**
+- maximum absolute channel difference: **178,676.625**
+
+Therefore MTAKIPAI is **not an exact match** for the live Actor A output in this capture. This does not prove the native evaluator is wrong: the runtime may be using a different paired MT pack, and the same motion ID can exist in more than one pack. The result makes pack identity the immediate question, rather than another generic evaluator probe.
+
+Comparison workflow: `.github/workflows/compare-v77-mt-outputs.yml`. Successful run: [45614466600](https://github.com/cdmn1/vf3-naomi/actions/runs/45614466600). Artifact: `vf3-v77-mt-output-comparison`.
+
 ## Downstream seven-vector output
 
 The 21-float SEG_B blocks at actor offsets `+0x1EFC` each contain 23,436 writes. Three component-writer PCs (`0x0C03B45C`, `0x0C03B45E`, and `0x0C03B460`) each contribute 7,805 writes per actor, i.e. seven values per component writer across 1,115 updates, plus 21 initialization clears. This gives us a concrete output stream to correlate with the seven-vector transform stage already identified in v72.
 
 ## Remaining gap and next input
 
-The v77 capture already supplies the motion IDs, cycles, exact phases, and final 63-channel outputs. The pinned upstream source documentation identifies the source row for Actor A's dominant `0x41A` motion, but the `cdmn1/vf3-naomi` repository does not contain the actual `MTAKIJAC.BIN` game-data file. The repository contains trace data and derived reports, not the retail MT pack bytes. Therefore an exact native-evaluator-versus-game-output comparison cannot yet be run from the repository alone.
+The exact candidate to test next is `MTAKIJAC.BIN`, because the pinned upstream notes identify row `0x41A` there. I located that file in Dropbox at `/Vf3-naomi/MTAKIJAC.BIN` (1,491,008 bytes). Its current Dropbox link has audience `no_one` (private), so the GitHub Actions runner cannot download it. The Dropbox connector can identify the file, but the private file content is not available as raw bytes to the comparison runner.
 
-The next comparison should use the user's own extracted `MTAKIJAC.BIN` file against the 549 complete Actor A calls whose active ID is `0x41A`, cycle 60. If those 63 float bit patterns match at the captured phases, it validates the native source-row decoder/evaluator against the live game output for that motion. Actor B's pack should be identified separately from its runtime model/character mapping and motion IDs.
+To finish the comparison, I need an accessible copy of that one file: either a temporary Dropbox anyone-with-the-link download URL, or the file placed in a private repository/storage location the runner can read. I will not make the file public or change its sharing settings without your approval. Once the bytes are available, the existing comparator can test the 549 captured Actor A calls directly.
 
 The v77 watch profile did not include the four-byte runtime header pointer at actor `+0x1D00` (Actor A: `0x0C200CE4`; Actor B: `0x0C20308C`). That pointer is **not needed to start the source-row output comparison** because the trace already gives the motion ID, cycle, phase, and final channel values. Only add those two addresses to a tiny follow-up watch if a successful asset comparison still leaves the mounted-header identity unresolved. Do not repeat the broad v77 capture.
 
