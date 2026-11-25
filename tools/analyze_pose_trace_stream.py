@@ -49,7 +49,7 @@ with TRACE.open("rb") as f, mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as m
             close=struct.unpack_from("<Q",mm,(i+7)*8)[0]
             if (close&0xffff)!=PC_CLOSE or ((close>>16)&0xffffffff)!=pc:
                 malformed+=1; i+=1; continue
-            if pc in pcs:
+            if pc in pcs or (pc | 0x80000000) in pcs:
                 regs=[struct.unpack_from("<Q",mm,(i+j)*8)[0]&0xffffffff for j in range(1,7)]
                 row={"event_index":events,"word_index":i,"pc":f"0x{pc:08X}","pr":""}
                 for k,v in zip(("r13","r14","r4","r5","r6","r7"),regs): row[k]=f"0x{v:08X}"
