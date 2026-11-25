@@ -52,6 +52,9 @@ int main(int argc, char **argv)
     uint32_t actor_filter = 0, motion_filter = 0, cycle_filter = 0;
     uint64_t rows = 0, load_failures = 0, eval_failures = 0;
     uint64_t exact_calls = 0, exact_channels = 0, total_channels = 0;
+    uint64_t channel_exact[VF3_NATIVE_MOTION_CHANNELS] = {0};
+    double channel_sq[VF3_NATIVE_MOTION_CHANNELS] = {0};
+    double channel_max[VF3_NATIVE_MOTION_CHANNELS] = {0};
     double total_sq = 0.0, max_abs = 0.0;
 
     if (argc < 3 || argc > 6) {
@@ -137,7 +140,7 @@ int main(int argc, char **argv)
         for (unsigned ch = 0; ch < VF3_NATIVE_MOTION_CHANNELS; ++ch) {
             uint32_t expected_bits;
             FloatBits got;
-            double delta;
+            double delta, abs_delta;
             if (!parse_u32(fields[8 + ch], 16, &expected_bits)) {
                 fprintf(stderr, "bad target word at event %s channel %u\n",
                         fields[0], ch);
@@ -147,12 +150,16 @@ int main(int argc, char **argv)
             }
             got.f = actual[ch];
             delta = (double)got.f - (double)((FloatBits){.u = expected_bits}).f;
+            abs_delta = fabs(delta);
             if (got.u == expected_bits) {
                 ++exact;
                 ++exact_channels;
+                ++channel_exact[ch];
             }
-            if (fabs(delta) > call_max) call_max = fabs(delta);
+            if (abs_delta > call_max) call_max = abs_delta;
+            if (abs_delta > channel_max[ch]) channel_max[ch] = abs_delta;
             sum_sq += delta * delta;
+            channel_sq[ch] += delta * delta;
         }
         total_channels += VF3_NATIVE_MOTION_CHANNELS;
         total_sq += sum_sq;
@@ -175,9 +182,19 @@ int main(int argc, char **argv)
            (unsigned long long)(rows - load_failures - eval_failures),
            (unsigned long long)exact_channels,
            (unsigned long long)total_channels);
-    if (total_channels)
+    if (total_channels) {
         printf("OVERALL_RMSE=%.9g MAX_ABS=%.9g\n",
                sqrt(total_sq / (double)total_channels), max_abs);
+        printf("PER_CHANNEL_EXACT_MATCHES\n");
+        for (unsigned ch = 0; ch < VF3_NATIVE_MOTION_CHANNELS; ++ch) {
+            printf("CHANNEL %02u exact=%llu/%llu rmse=%.9g max_abs=%.9g\n",
+                   ch, (unsigned long long)channel_exact[ch],
+                   (unsigned long long)(total_channels / VF3_NATIVE_MOTION_CHANNELS),
+                   sqrt(channel_sq[ch] /
+                        (double)(total_channels / VF3_NATIVE_MOTION_CHANNELS)),
+                   channel_max[ch]);
+        }
+    }
     free(asset);
     return rows && !load_failures && !eval_failures ? 0 : 1;
 }
