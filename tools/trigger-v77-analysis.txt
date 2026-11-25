@@ -1,1 +1,1 @@
-Run the v77 pose trace analysis workflow.
+Re-run v77 analysis after normalizing SH-4 PC address aliases.
