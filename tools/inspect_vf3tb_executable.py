@@ -79,7 +79,8 @@ for ref in pc_refs[:100]:
     off, va, lit_off, value, label, reg = ref
     out.append(f"code file+0x{off:X} VA=0x{va:08X}: mov.l @(PC literal file+0x{lit_off:X}),r{reg} -> 0x{value:08X} [{label}]")
 if not pc_refs:
-    out.append("No matches under the SH-4 mov.l @(disp,PC),Rn decoding assumption.")out.extend(["", "PC-RELATIVE CALL REFERENCES TO BIOS SYSCALL STUBS (including P0 aliases):"])
+    out.append("No matches under the SH-4 mov.l @(disp,PC),Rn decoding assumption.")
+out.extend(["", "PC-RELATIVE CALL REFERENCES TO BIOS SYSCALL STUBS (including P0 aliases):"])
 for ref in stub_refs[:160]:
     off, va, lit_off, value, label, reg = ref
     out.append(f"code file+0x{off:X} VA=0x{va:08X}: mov.l literal file+0x{lit_off:X},r{reg} -> 0x{value:08X} [{label}]")
