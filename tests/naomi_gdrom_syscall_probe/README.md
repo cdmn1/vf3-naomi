@@ -30,3 +30,20 @@ a Naomi cabinet. The full combined image has not yet been run.
 
 No serial connection is required. No commercial game assets are committed
 to this repository or uploaded as GitHub Actions artifacts.
+
+
+## Data-integrity diagnostic fixture
+
+The map generator stores each entry's offset relative to the appended payload.
+The syscall bridge adds `VF3_ASSET_PAYLOAD_BASE` exactly once when programming
+the Naomi cartridge DMA offset. The generated `VF3_ASSET_TEST_OFFSET` is the
+corresponding absolute cartridge address used by the direct PIO reference read.
+
+CI also builds a self-contained diagnostic ROM with a deterministic 576-sector
+synthetic fixture at the cartridge offset named by its generated map. It uses
+the retail test FAD (548574) only to exercise the same lookup path; the fixture
+is not the retail executable and contains no commercial game data. Unlike the
+metadata-only asset-map base ROM, this diagnostic image physically contains
+the bytes that PIO and DMA read, so its two data-comparison lines are meaningful
+without the separate Dropbox payload. It is intended to isolate bridge address
+translation and transfer integrity before the real packed assets are available.
