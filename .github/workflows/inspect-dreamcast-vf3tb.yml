@@ -39,23 +39,31 @@ jobs:
           from pathlib import PurePosixPath
           records = []
           current = {}
-          for line in open("archive-listing.txt", encoding="utf-8", errors="replace"):
-              if not line.strip():
-                  if current:
-                      records.append(current)
-                      current = {}
-                  continue
-              if " = " in line:
-                  key, value = line.strip().split(" = ", 1)
-                  current[key] = value
+          with open("archive-listing.txt", encoding="utf-8", errors="replace") as listing:
+              for raw in listing:
+                  line = raw.rstrip("\\r\\n")
+                  if not line:
+                      if current:
+                          records.append(current)
+                          current = {}
+                      continue
+                  if line.startswith("Path = "):
+                      current["Path"] = line[len("Path = "):]
+                  elif line.startswith("Size = "):
+                      current["Size"] = line[len("Size = "):]
           if current:
               records.append(current)
+
           def find(name, size):
+              matches = []
               for record in records:
-                  path = record.get("Path", "")
-                  if PurePosixPath(path.replace("\\\\", "/")).name == name and record.get("Size") == str(size):
-                      return path
-              raise SystemExit(f"Missing {name} with size {size}")
+                  path = record.get("Path", "").replace("\\\\", "/")
+                  if PurePosixPath(path).name == name and record.get("Size") == str(size):
+                      matches.append(record["Path"])
+              if len(matches) != 1:
+                  raise SystemExit(f"Expected one {name} entry of {size} bytes; found {len(matches)}")
+              return matches[0]
+
           open("first_read.path", "w").write(find("1ST_READ.BIN", 1179648))
           open("reload.path", "w").write(find("RELOAD.BIN", 655360))
           PY
