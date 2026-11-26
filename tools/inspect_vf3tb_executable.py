@@ -64,8 +64,10 @@ stub_vas = {
 }
 stub_aliases = {value: label for value, label in stub_vas.items()}
 stub_aliases.update({value & 0x0FFFFFFF: label + " (P0 alias)" for value, label in stub_vas.items()})
+helper_aliases = {0x8C0431DA: "read-mode selector helper", 0x0C0431DA: "read-mode selector helper (P0 alias)"}
 pc_refs = []
 stub_refs = []
+helper_refs = []
 for offset in range(0, len(data) - 1, 2):
     insn = struct.unpack_from("<H", data, offset)[0]
     if (insn & 0xF000) != 0xD000:  # mov.l @(disp,PC),Rn
@@ -79,6 +81,8 @@ for offset in range(0, len(data) - 1, 2):
             pc_refs.append((offset, insn_va, literal_off, literal_value, string_vas[literal_value], (insn >> 8) & 0xF))
         if literal_value in stub_aliases:
             stub_refs.append((offset, insn_va, literal_off, literal_value, stub_aliases[literal_value], (insn >> 8) & 0xF))
+        if literal_value in helper_aliases:
+            helper_refs.append((offset, insn_va, literal_off, literal_value, helper_aliases[literal_value], (insn >> 8) & 0xF))
 for ref in pc_refs[:100]:
     off, va, lit_off, value, label, reg = ref
     out.append(f"code file+0x{off:X} VA=0x{va:08X}: mov.l @(PC literal file+0x{lit_off:X}),r{reg} -> 0x{value:08X} [{label}]")
@@ -110,7 +114,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C036080] + list(stub_vas) + [BASE + x[0] for x in strings]
+    targets = [0x8C036080, 0x8C0431DA] + list(stub_vas) + [BASE + x[0] for x in strings]
     out.extend(["", "GD-ROM SYSCALL HELPER REGION (0x8C043200-0x8C043500):"])
     for line in disassembly:
         match = re.match(r"^([0-9a-fA-F]+):", line)
@@ -143,7 +147,12 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         index = address_to_line.get(ref[1])
         if index is not None:
             out.append(f"--- {ref[4]} at VA 0x{ref[1]:08X} (literal 0x{ref[3]:08X}) ---")
-            out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + 12)])
+            out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + 12)])    out.extend(["", "SH-4 CALLSITE WINDOWS FOR READ-MODE SELECTOR HELPER:"])
+    for ref in helper_refs[:60]:
+        index = address_to_line.get(ref[1])
+        if index is not None:
+            out.append(f"--- {ref[4]} at VA 0x{ref[1]:08X} (literal 0x{ref[3]:08X}) ---")
+            out.extend(disassembly[max(0, index - 12):min(len(disassembly), index + 16)])
 else:
     out.extend(["", "SH-4 objdump unavailable; disassembly scan skipped."])
 
