@@ -132,14 +132,14 @@ Inspection workflow and report:
 Resolve code references to the P0 aliases of the `r7=0`, `r7=1`, and `r7=2` stubs; inspect the caller register setup and parameter blocks; identify the real DMAREAD FAD/count/destination values and the status-poll sequence. Only then implement the Naomi-side replacement at the narrowest verified boundary.
 ## Retail read-mode selection and DMA callsites
 
-A second pass through the same retail executable resolved the read-mode selector and proved that both transfer modes are present in the game code:
+A second pass through the same retail executable found a function-shaped read-mode routine beginning at `0x8C0431D8`. Its instruction sequence contains both transfer-mode branches:
 
-- At `0x8C0431DA`, the routine compares its incoming `r7` value with `1`.
+- At `0x8C0431D8`, the routine compares its incoming `r7` value with `1`.
 - When `r7 == 1`, it sets the request command to `0x11` (`DMAREAD`) and proceeds to the shared `REQ_CMD` stub.
 - When `r7 == 0`, it sets the request command to `0x10` (`PIOREAD`) and proceeds to the same `REQ_CMD` stub.
 - Other `r7` values take the error path (`-18`).
 
-This is direct evidence in the retail executable that the DMA and PIO paths are selectable. It closely matches the video notes: the game has a PIO mode and a DMA mode, and the mode selector is the first narrow place to preserve or force the DMA path. The caller that supplies this `r7` selector still needs to be traced before patching it.
+This is direct evidence that the executable contains a DMA/PIO selector: `r7 == 1` builds a DMAREAD request and `r7 == 0` builds a PIOREAD request. It closely matches the video notes. However, the current static scan found no direct PC-relative or raw pointer reference to `0x8C0431D8` inside `1ST_READ.BIN`. The routine may be reached through a runtime-loaded module/function table, or it may be unused code. Do not assume it is the active retail caller until that linkage is resolved.
 
 Retail code references found by scanning SH-4 PC-relative literal loads (P0 aliases are used for indirect calls):
 
@@ -155,7 +155,7 @@ Retail code references found by scanning SH-4 PC-relative literal loads (P0 alia
 | `0x8C0434D6` | `RESET` (`r7=9`) | Reset service is called |
 | `0x8C034A1A` | `G1_DMA_END` (`r7=5`) | DMA completion service is referenced |
 
-The helper at `0x8C0431DA` computes `r12 = r5 * 0x800` before building the request parameters. The DMA branch writes the command value `0x11`; the PIO branch writes `0x10` and forms a destination in the `0xA0000000` region. This suggests the DMA branch is the intended bulk-transfer route and the PIO branch is a fallback, but the full parameter semantics and caller-provided selector must be verified before implementation.
+The routine at `0x8C0431D8` computes `r12 = r5 * 0x800` before building the request parameters. The DMA branch writes the command value `0x11`; the PIO branch writes `0x10` and forms a destination in the `0xA0000000` region. In the DMA branch it calls `0x0C050E8A` or `0x0C050C60` with the destination (`r14`) and byte count (`r12`). Those helpers contain 32-byte cache-line loops using SH-4 `ocbp` and `ocbi` instructions respectively, confirming that the DMA destination is explicitly cache-maintained.
 
 ### Current implementation decision
 
