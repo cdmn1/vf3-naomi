@@ -15,6 +15,9 @@ def generate(map_path: Path, payload_base: int) -> str:
     if payload_base < 0 or payload_base % SECTOR:
         raise ValueError("payload base must be a non-negative 2048-byte boundary")
     entries = sorted(doc.get("entries", []), key=lambda x: x["fad"])
+    test_asset = next((e for e in entries if e["name"].upper() == "1ST_READ.BIN"), None)
+    if test_asset is None:
+        raise ValueError("1ST_READ.BIN is required as the runtime mapping smoke-test asset")
     previous_end = -1
     for e in entries:
         fad, sectors, offset = int(e["fad"]), int(e["sectors"]), int(e["payload_offset"])
@@ -30,6 +33,8 @@ def generate(map_path: Path, payload_base: int) -> str:
         "typedef struct { uint32_t fad_start, sectors, payload_offset; } vf3_asset_range;",
         f"#define VF3_ASSET_MAP_COUNT {len(entries)}u",
         f"#define VF3_ASSET_PAYLOAD_BASE {payload_base}u",
+        f"#define VF3_ASSET_TEST_FAD {int(test_asset['fad'])}u",
+        f"#define VF3_ASSET_TEST_OFFSET {payload_base + int(test_asset['payload_offset'])}u",
         "static const vf3_asset_range vf3_asset_map[VF3_ASSET_MAP_COUNT ? VF3_ASSET_MAP_COUNT : 1] = {",
     ]
     for e in entries:
