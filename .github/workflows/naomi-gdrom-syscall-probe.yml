@@ -301,6 +301,7 @@ jobs:
           cp "$ROM" vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin
           cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-assetmap-build/
           cp docs/GDROM_DISC_FILE_MAP.csv vf3-assetmap-build/
+          cp vf3-netdimm-306mb-map.json vf3-assetmap-build/
           mkdir -p vf3-assetmap-build/tools
           cp tools/pack_vf3_assets.py tools/append_vf3_assets_to_naomi_rom.py vf3-assetmap-build/tools/
           cp tools/build_vf3_netdimm_image.ps1 vf3-assetmap-build/
