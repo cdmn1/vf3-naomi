@@ -364,3 +364,45 @@ those requests to the disc manifest; it does **not** prove that the Naomi
 resident shim has been installed, that Holly DMA has serviced a retail request,
 or that the game boots on Naomi. The next blocking engineering task is the
 resident-shim / chainload handoff and its memory reservation.
+
+
+### KOS heap behaviour: reserve the extra 16 MiB, not just a guessed address
+
+The KOS source used by the Naomi builds confirms that a high resident section
+would be vulnerable to ordinary heap growth unless the allocator is constrained:
+
+- `startup.S` probes whether the 16 MiB and 32 MiB RAM windows are distinct,
+  selects the corresponding stack top, and stores that address in
+  `__arch_mem_top`. On 32 MiB Naomi this is `0x8E000000`.
+- `mm_init()` in `kernel/mm/mm.c` sets `sbrk_base` to the linker symbol
+  `end`, aligned to four bytes.
+- `mm_sbrk()` grows upward and rejects allocations only when they reach
+  `_arch_mem_top - THD_KERNEL_STACK_SIZE`.
+- The SH ELF linker script defines `end` immediately after `.bss`.
+
+Therefore, merely putting a shim at `0x8D000000` is not safe: KOS can
+allocate through that address on its way toward `0x8E000000`.
+
+The current design candidate is to reserve the entire Naomi-only upper RAM
+window, `0x8D000000–0x8E000000`, for the resident shim, its state and the
+FAD map, while capping the KOS `sbrk` ceiling below `0x8D000000`.
+This leaves the normal Dreamcast-visible 16 MiB address range available to
+the loader/game and keeps `_arch_mem_top` at the real 32 MiB top, so KOS's
+kernel stack and address-range checks are not falsely told that the machine
+has only 16 MiB.
+
+The resident handler must also be self-contained after the chainload: no
+calls into KOS/libc code that will be overwritten with `1ST_READ.BIN`, and
+no references to ordinary low-memory `.rodata` or asset-map storage. The
+handler, its helper routines, mutable state and generated FAD map must all
+land in loadable high-memory sections. The next build gate is to inspect the
+ELF program headers, section VMAs and relocations, and prove the KOS heap
+ceiling cannot overlap those sections before attempting the retail handoff.
+
+Source references (KOS commit
+`9926b70aeafc8398675caef98813f10d15d8a329`):
+[ startup.S ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/kernel/startup.S),
+[ mm.c ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/mm/mm.c),
+[ shlelf.xc ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/utils/ldscripts/shlelf.xc),
+and
+[ arch.h ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/arch/arch.h).
