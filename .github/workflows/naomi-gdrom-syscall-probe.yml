@@ -28,6 +28,15 @@ jobs:
       - name: Check out VF3 Naomi
         uses: actions/checkout@v4
 
+      - name: Run host-side GD-ROM service contract tests
+        run: |
+          set -euo pipefail
+          gcc -std=c99 -Wall -Wextra -Werror -DVF3_GD_HOST_TEST \
+            tests/naomi_gdrom_syscall_probe/gdrom_syscall.c \
+            tests/naomi_gdrom_syscall_probe/host_contract_test.c \
+            -o /tmp/vf3-gdrom-host-contract
+          /tmp/vf3-gdrom-host-contract
+
       - name: Check out KallistiOS
         uses: actions/checkout@v4
         with:
