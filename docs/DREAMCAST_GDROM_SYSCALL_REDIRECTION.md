@@ -130,3 +130,33 @@ Inspection workflow and report:
 ### Immediate next analysis
 
 Resolve code references to the P0 aliases of the `r7=0`, `r7=1`, and `r7=2` stubs; inspect the caller register setup and parameter blocks; identify the real DMAREAD FAD/count/destination values and the status-poll sequence. Only then implement the Naomi-side replacement at the narrowest verified boundary.
+## Retail read-mode selection and DMA callsites
+
+A second pass through the same retail executable resolved the read-mode selector and proved that both transfer modes are present in the game code:
+
+- At `0x8C0431DA`, the routine compares its incoming `r7` value with `1`.
+- When `r7 == 1`, it sets the request command to `0x11` (`DMAREAD`) and proceeds to the shared `REQ_CMD` stub.
+- When `r7 == 0`, it sets the request command to `0x10` (`PIOREAD`) and proceeds to the same `REQ_CMD` stub.
+- Other `r7` values take the error path (`-18`).
+
+This is direct evidence in the retail executable that the DMA and PIO paths are selectable. It closely matches the video notes: the game has a PIO mode and a DMA mode, and the mode selector is the first narrow place to preserve or force the DMA path. The caller that supplies this `r7` selector still needs to be traced before patching it.
+
+Retail code references found by scanning SH-4 PC-relative literal loads (P0 aliases are used for indirect calls):
+
+| Code address | Service stub | What is established |
+|---|---|---|
+| `0x8C043226` | `REQ_CMD` (`r7=0`) | Queues command `0x11` or `0x10`, with `r5` pointing at the parameter block |
+| `0x8C04329A` | `REQ_DMA_TRANS` (`r7=6`) | Called by the transfer helper with a two-word parameter block |
+| `0x8C0432E4` | `GET_CMD_STAT` (`r7=1`) | Status-poll helper is present and referenced |
+| `0x8C04340E` | `CHECK_DMA_TRANS` (`r7=7`) | DMA transfer-check helper is present and referenced |
+| `0x8C0434CA` | `EXEC_SERVER` (`r7=2`) | Server-execution service is called |
+| `0x8C0433BC` | `READ_ABORT` (`r7=8`) | Abort service is called |
+| `0x8C0433F2` | `GET_DRV_STAT` (`r7=4`) | Drive-status service is called |
+| `0x8C0434D6` | `RESET` (`r7=9`) | Reset service is called |
+| `0x8C034A1A` | `G1_DMA_END` (`r7=5`) | DMA completion service is referenced |
+
+The helper at `0x8C0431DA` computes `r12 = r5 * 0x800` before building the request parameters. The DMA branch writes the command value `0x11`; the PIO branch writes `0x10` and forms a destination in the `0xA0000000` region. This suggests the DMA branch is the intended bulk-transfer route and the PIO branch is a fallback, but the full parameter semantics and caller-provided selector must be verified before implementation.
+
+### Current implementation decision
+
+Do not replace the game’s loader or invent a separate read protocol. Preserve the retail syscall sequence and implement the narrow BIOS GD-ROM service contract on NAOMI. First resolve the caller of `0x8C0431DA` and confirm the DMA destination/length fields; then route the existing `DMAREAD` / `REQ_DMA_TRANS` / `CHECK_DMA_TRANS` flow to the NAOMI DMA backend. Keep the PIO branch available as a diagnostic fallback, not as the main transfer path.
