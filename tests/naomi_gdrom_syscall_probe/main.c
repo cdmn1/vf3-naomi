@@ -15,11 +15,17 @@
 #define WORDS 1024u
 #define TEST_FAD VF3_ASSET_TEST_FAD
 #define TEST_OFFSET VF3_ASSET_TEST_OFFSET
+#if VF3_ASSET_MAP_COUNT > 0
+/* 1ST_READ.BIN is 576 sectors; the 1 MiB DMA cap forces two chunks. */
+#define DMA_TEST_SECTORS 576u
+#else
+#define DMA_TEST_SECTORS 1u
+#endif
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
 static uint16_t pio_words[WORDS];
-static uint8_t dma_buffer[WORDS * 2u] __attribute__((aligned(32)));
+static uint8_t dma_buffer[DMA_TEST_SECTORS * VF3_GD_SECTOR_BYTES] __attribute__((aligned(32)));
 static uint8_t pio_bridge_buffer[WORDS * 2u] __attribute__((aligned(32)));
 static pvr_ptr_t font_texture;
 static int dma_pass, pio_bridge_pass, data_match, status_pass;
@@ -47,7 +53,7 @@ static int compare_uncached(const uint16_t *expected, const uint8_t *buffer)
 
 static void run_dma_syscall(void)
 {
-    uint32_t params[4] = { TEST_FAD, 1u, (uint32_t)(uintptr_t)dma_buffer, 0u };
+    uint32_t params[4] = { TEST_FAD, DMA_TEST_SECTORS, (uint32_t)(uintptr_t)dma_buffer, 0u };
     uint32_t remaining = 0xffffffffu, ext[4] = {0,0,0,0};
     uint32_t check = 0u;
     unsigned wait = 0;
@@ -63,7 +69,7 @@ static void run_dma_syscall(void)
     dma_status = vf3_gd_get_cmd_stat(dma_request, ext);
     dma_bytes = ext[2];
     dma_pass = check == 1u && dma_status == VF3_GDC_COMPLETE &&
-               remaining == 0u && dma_bytes == VF3_GD_SECTOR_BYTES;
+               remaining == 0u && dma_bytes == DMA_TEST_SECTORS * VF3_GD_SECTOR_BYTES;
     status_pass = dma_status == VF3_GDC_COMPLETE;
 }
 
