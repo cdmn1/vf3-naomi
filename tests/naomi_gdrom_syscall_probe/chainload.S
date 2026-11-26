@@ -3,6 +3,10 @@
     .global vf3_gd_chainload
     .type vf3_gd_chainload,@function
 vf3_gd_chainload:
+    /* Move to reserved high RAM before touching 0x8C010000: the old KOS
+       stack may itself be inside the low-memory image being replaced. */
+    mov.l .Lstack,r15
+
     /* Discard cached KOS lines covering the destination before overwriting
        the low-memory application image through the uncached P2 alias. */
     mov.l .Ldest_p1,r0
@@ -40,7 +44,6 @@ vf3_gd_chainload:
     stc sr,r0
     or #0xf0,r0
     ldc r0,sr
-    mov.l .Lstack,r15
     mov.l .Lentry,r0
     jmp @r0
     nop
