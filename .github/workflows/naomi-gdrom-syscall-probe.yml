@@ -391,7 +391,7 @@ jobs:
           # real 1ST_READ.BIN packed offset. No commercial game data is added.
           with rom.open("r+b") as f:
               f.seek(expected_size - 1)
-              f.write(b"\\0")
+              f.write(bytes([0]))
               f.seek(fixture_offset)
               fixture = bytes(((i * 37 + (i // 2048) * 11 + 0x5a) & 0xff) for i in range(576 * 2048))
               f.write(fixture)
