@@ -134,7 +134,8 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
     out.extend(["", "ALL INSTRUCTIONS REFERENCING THE BIOS SERVICE POINTER OR KNOWN STUB ADDRESSES:"])
     for line in disassembly:
         if re.search(r"8c0000bc|8c0430[0-9a-f]{2}", line, re.I):
-            out.append(line)    out.extend(["", "SERVICE-VECTOR STUB WINDOWS (every mov.l literal resolving to 0x8C0000BC):"])
+            out.append(line)
+    out.extend(["", "SERVICE-VECTOR STUB WINDOWS (every mov.l literal resolving to 0x8C0000BC):"])
     for index, line in enumerate(disassembly):
         if re.search(r"!\\s*8c0000bc\\b", line, re.I):
             out.append(f"--- service-vector trampoline at disassembly line {index + 1} ---")
