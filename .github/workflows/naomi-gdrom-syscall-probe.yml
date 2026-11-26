@@ -129,7 +129,7 @@ jobs:
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
-          set -euo pipefail
+          set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
