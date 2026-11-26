@@ -32,7 +32,7 @@ resident_shim.elf: gdrom_syscall_resident.o chainload.o
 		--section-start=.vf3_resident_text=0x8D000000 \
 		--section-start=.vf3_resident_rodata=0x8D010000 \
 		--section-start=.vf3_resident_data=0x8D020000 \
-		-o $@ $<
+		-o $@ gdrom_syscall_resident.o chainload.o
 
 resident_shim.bin: resident_shim.elf
 	$(SH_ELF_OBJCOPY) -O binary --gap-fill=0x00 \
