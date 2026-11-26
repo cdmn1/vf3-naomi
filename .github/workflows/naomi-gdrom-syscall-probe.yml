@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "tests/naomi_gdrom_syscall_probe/**"
+      - "tools/pack_vf3_assets.py"
+      - "tools/generate_vf3_asset_map_header.py"
+      - "docs/GDROM_DISC_FILE_MAP.csv"
+      - "tests/test_vf3_asset_packer.py"
+      - "tests/test_vf3_asset_map_header.py"
       - ".github/workflows/naomi-gdrom-syscall-probe.yml"
   workflow_dispatch:
 
@@ -173,4 +178,104 @@ jobs:
         with:
           name: vf3-naomi-gdrom-syscall-probe-v${{ github.run_number }}
           path: gdrom-syscall-artifact/*
+          if-no-files-found: error
+
+      - name: Download and pack the 306 MiB VF3tb asset set (omit MOVIE_A only)
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            --output vf3-assets.zip
+          mkdir vf3-assets
+          python3 - <<'PY'
+          import csv, pathlib, zipfile
+          with open("docs/GDROM_DISC_FILE_MAP.csv", newline="", encoding="utf-8") as f:
+              wanted = {r["asset_name"].upper() for r in csv.DictReader(f)}
+          out = pathlib.Path("vf3-assets")
+          seen = set()
+          with zipfile.ZipFile("vf3-assets.zip") as z:
+              for info in z.infolist():
+                  if info.is_dir():
+                      continue
+                  name = pathlib.PurePosixPath(info.filename.lstrip("/")).name
+                  key = name.upper()
+                  if key not in wanted:
+                      continue
+                  if key in seen:
+                      raise SystemExit(f"Duplicate asset in Dropbox ZIP: {name}")
+                  with z.open(info) as src, (out / name).open("wb") as dst:
+                      while True:
+                          block = src.read(1024 * 1024)
+                          if not block:
+                              break
+                          dst.write(block)
+                  seen.add(key)
+          missing = sorted(wanted - seen)
+          if missing:
+              raise SystemExit("Missing manifest assets: " + ", ".join(missing))
+          print(f"Extracted {len(seen)} VF3tb assets.")
+          PY
+          python3 -m unittest discover -s tests -p 'test_vf3_asset_packer.py' -v
+          python3 -m unittest discover -s tests -p 'test_vf3_asset_map_header.py' -v
+          python3 tools/pack_vf3_assets.py \
+            --assets vf3-assets \
+            --manifest docs/GDROM_DISC_FILE_MAP.csv \
+            --output vf3-netdimm-306mb.payload \
+            --map vf3-netdimm-306mb-map.json \
+            --exclude MOVIE_A.SFD
+
+      - name: Generate retail FAD map and compile map-aware SH-4 bridge
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -euo pipefail
+          # 0x02000000 is a temporary sector-aligned payload base for this
+          # compile-only check. The final combined ROM build will substitute
+          # the actual aligned end-of-ROM offset before its final link.
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-netdimm-306mb-map.json \
+            --payload-base 0x02000000 \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          grep -q '#define VF3_ASSET_MAP_COUNT 411u' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          grep -q 'MOVIE_B.SFD' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          if grep -q 'MOVIE_A.SFD' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h; then
+            echo "MOVIE_A.SFD unexpectedly appears in the runtime map" >&2
+            exit 1
+          fi
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_gdrom_syscall_probe clean all
+          test -s tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf
+          python3 - <<'PY'
+          import json, pathlib
+          d=json.loads(pathlib.Path("vf3-netdimm-306mb-map.json").read_text())
+          h=pathlib.Path("tests/naomi_gdrom_syscall_probe/vf3_asset_map.h").read_text()
+          assert d["packed_file_count"] == 411
+          assert "MOVIE_A.SFD" in d["excluded"]
+          assert any(e["name"] == "MOVIE_B.SFD" for e in d["entries"])
+          assert h.count("}, /* ") == 411
+          report = [
+              "VF3tb USA packed-asset bridge compile",
+              f"Files packed: {d['packed_file_count']}",
+              f"Raw asset bytes: {d['source_bytes']}",
+              f"Sector-aligned payload bytes: {d['payload_bytes']}",
+              f"Runtime FAD entries: {len(d['entries'])}",
+              "Excluded: MOVIE_A.SFD only",
+              "Included: MOVIE_B.SFD",
+              "Map-aware SH-4 bridge compile: PASS",
+              "Payload base in this compile check: 0x02000000 (temporary)",
+          ]
+          pathlib.Path("vf3-asset-map-build-report.txt").write_text("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload map-aware bridge build report (metadata only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-map-aware-bridge-v${{ github.run_number }}
+          path: |
+            vf3-asset-map-build-report.txt
+            vf3-netdimm-306mb-map.json
+            tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
           if-no-files-found: error
