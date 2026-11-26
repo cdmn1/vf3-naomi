@@ -107,5 +107,5 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
 else:
     out.extend(["", "SH-4 objdump unavailable; disassembly scan skipped."])
 
-Path("executable-inspection.txt").write_text("\\n".join(out) + "\\n")
+Path("executable-inspection.txt").write_text("\n".join(out) + "\n")
 print(Path("executable-inspection.txt").read_text())
