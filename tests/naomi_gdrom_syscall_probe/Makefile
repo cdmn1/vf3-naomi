@@ -18,7 +18,7 @@ $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
 RESIDENT_LDFLAGS = -Wl,--section-start=.vf3_resident_text=0x8D000000 \
 	-Wl,--section-start=.vf3_resident_rodata=0x8D010000 \
-	-Wl,--section-start=.vf3_resident_data=0x8D020000 \
+	-Wl,--section-start=.vf3_resident_data=0x8D020000
 
 $(TARGET): $(OBJS)
 	kos-cc $(RESIDENT_LDFLAGS) -o $(TARGET) $(OBJS)
