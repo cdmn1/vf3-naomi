@@ -94,3 +94,39 @@ Retain and reuse where relevant:
 ## Definition of the next meaningful milestone
 
 A versioned NAOMI ROM boots the **original Dreamcast VF3tb executable**, submits a real VF3 GD-ROM/GDFS read request, services it by DMA from the NetDIMM image into the requested guest RAM destination, and returns the completion/status expected by the game. A raw DMA probe pass, synthetic data transfer, or successful KallistiOS startup alone does not meet this milestone.
+## Direct verification against the retail 1ST_READ.BIN
+
+On 2026-11-26, GitHub Actions downloaded the already-shared `/Vf3-naomi/` folder, extracted `1ST_READ.BIN`, and verified the exact retail image:
+
+- Size: `1,179,648` bytes
+- SHA-256: `37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`
+
+A little-endian SH-4 disassembly of that exact image confirms a contiguous family of BIOS-service trampolines. Each loads the service-vector address `0x8C0000BC`, dereferences it, and jumps through the resulting pointer:
+
+| Stub address | `r6` | `r7` | Related REIOS model operation |
+|---|---:|---:|---|
+| `0x8C04308C` | 0 | 0 | `REQ_CMD` |
+| `0x8C0430A0` | 0 | 1 | `GET_CMD_STAT` |
+| `0x8C0430B4` | 0 | 2 | `EXEC_SERVER` |
+| `0x8C0430C8` | 0 | 3 | `INIT_SYSTEM` |
+| `0x8C0430DC` | 0 | 4 | `GET_DRV_STAT` |
+| `0x8C0430F0` | 0 | 5 | `G1_DMA_END` (model enum) |
+
+The first three stubs are the important initial read path. In particular, the retail binary itself proves the `r6=0` selector and the `r7=0/1/2` call wrappers; the command names and `0x11 = DMAREAD` interpretation come from the related project's `bios_syscall.h` / `gdrom_hle.h` model and still need to be checked against the callers in this executable.
+
+The executable contains repeated little-endian literals for `0x8C0000BC` at file offsets `0x3309C`, `0x330B0`, `0x330C4`, continuing in `0x14`-byte steps. The corresponding stubs set `r7` and dispatch through that service vector. There are also alternate stubs with `r6 = -1`; do not assume those belong to the GD-ROM path until their callers are identified.
+
+The image also contains the strings `GDFS Version 0.53`, `gdFs Build: Jan 26 1999`, `DMA incompleted.`, `DMA completed.`, and `NAOMI LIBRARY Ver 0.8 AM R&D`, plus embedded Naomi source-path strings (`nlrom.c`, `obj_load.c`, `rob_load.c`, `sound.c`, `stage.c`). Their presence is a useful lead, but the first static pass did not establish direct PC-relative references to those strings or prove that the Naomi-specific modules are the active game path.
+
+One caution: the related decomp notes label `0x8C0360C8` as `_gdFsDaPlaySct`; in the first disassembly window of this retail image, that address decodes as a `nop` within the surrounding code/data region. Do not use it as a proven hook point until the function boundary and call references are reconciled.
+
+Inspection workflow and report:
+
+- Workflow: `.github/workflows/inspect-dreamcast-vf3tb.yml`
+- Analyzer: `tools/inspect_vf3tb_executable.py`
+- Successful run: [GitHub Actions run 45846220320](https://github.com/cdmn1/vf3-naomi/actions/runs/45846220320)
+- Report artifact: `vf3tb-dreamcast-executable-inspection-v1`
+
+### Immediate next analysis
+
+Resolve code references to the P0 aliases of the `r7=0`, `r7=1`, and `r7=2` stubs; inspect the caller register setup and parameter blocks; identify the real DMAREAD FAD/count/destination values and the status-poll sequence. Only then implement the Naomi-side replacement at the narrowest verified boundary.
