@@ -4,6 +4,7 @@
 #include <string.h>
 #define VF3_RESIDENT_TEXT
 #define VF3_RESIDENT_DATA
+#define VF3_RESIDENT_RODATA
 static volatile uint8_t vf3_fake_mmio[0x10000];
 static uint8_t vf3_fake_guest[0x10000];
 static void *vf3_guest_pointer(uint32_t address)
@@ -18,6 +19,7 @@ static void *vf3_guest_pointer(uint32_t address)
 #else
 #define VF3_RESIDENT_TEXT __attribute__((section(".vf3_resident_text"), noinline, used))
 #define VF3_RESIDENT_DATA __attribute__((section(".vf3_resident_data"), used))
+#define VF3_RESIDENT_RODATA __attribute__((section(".vf3_resident_rodata"), used))
 #define GUEST_WORDS(a) ((volatile uint32_t *)(uintptr_t)(a))
 #endif
 #include "gdrom_syscall.h"
@@ -81,7 +83,7 @@ static VF3_RESIDENT_TEXT const vf3_asset_range *find_asset_range(uint32_t fad)
     }
     return 0;
 #else
-    static const vf3_asset_range probe_range VF3_RESIDENT_DATA = {
+    static const vf3_asset_range probe_range VF3_RESIDENT_RODATA = {
         VF3_GD_FAD_BASE, 0xffffffffu - VF3_GD_FAD_BASE, 0u
     };
     return fad >= probe_range.fad_start ? &probe_range : 0;
