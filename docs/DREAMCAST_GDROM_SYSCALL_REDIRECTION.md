@@ -455,3 +455,31 @@ after chainload. The Dreamcast trace showed no register values pointing into
 the upper 16 MiB during the captured character-select/Round 1 session; this
 is supporting evidence only, not proof that later gameplay never allocates
 there.
+
+
+### GET_CMD_STAT status and result-block ABI
+
+The retail wrapper's status translation at `0x8C0432DE` checks the service
+return values `-1, 0, 1, 2, 3` and `4`. The KOS Dreamcast syscall header
+defines these as:
+
+- `-1`: command failed
+- `0`: command/request not found or inactive
+- `1`: command processing
+- `2`: command completed
+- `3`: streaming/continue
+- `4`: GD syscall engine busy
+
+The bridge's internal values match the observed read path: failed `-1`,
+inactive `0`, processing `1`, completed `2`. It does not currently emulate
+streaming or the separate global-busy return because the captured retail
+DMAREAD path does not require them. `REQ_CMD` returns a nonzero request ID on
+acceptance and zero when it cannot accept a new request.
+
+The four-word `GET_CMD_STAT` extended result block is `err1, err2, size, ata`.
+For a successful transfer the bridge returns zero error fields, the completed
+byte count in word 2, and zero ATA status in word 3. This matches the retail
+wrapper's use of the third result word for the transfer size.
+
+Reference: KallistiOS
+[`kernel/arch/dreamcast/include/dc/syscalls.h`](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/dc/syscalls.h).
