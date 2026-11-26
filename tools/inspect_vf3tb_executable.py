@@ -90,7 +90,16 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C0360C8, 0x8C0430A0, 0x8C0430B4] + [BASE + x[0] for x in strings]
+    targets = [0x8C036080, 0x8C043080, 0x8C043090, 0x8C0430A0, 0x8C0430B4, 0x8C0430C8, 0x8C0430DC, 0x8C0430F0] + [BASE + x[0] for x in strings]
+    out.extend(["", "SYSCALL STUB REGION (0x8C043000-0x8C043200):"])
+    for index, line in enumerate(disassembly):
+        match = re.match(r"^([0-9a-fA-F]+):", line)
+        if match and 0x8C043000 <= int(match.group(1), 16) < 0x8C043200:
+            out.append(line)
+    out.extend(["", "ALL INSTRUCTIONS REFERENCING THE BIOS SERVICE POINTER OR KNOWN STUB ADDRESSES:"])
+    for line in disassembly:
+        if re.search(r"8c0000bc|8c043090|8c0430a0|8c0430b4|8c0430c8|8c0430dc|8c0430f0", line, re.I):
+            out.append(line)
     out.extend(["", "SH-4 DISASSEMBLY WINDOWS AROUND CANDIDATE FUNCTIONS / STRING DATA:"])
     for target in targets:
         if target not in address_to_line:
