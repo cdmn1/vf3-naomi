@@ -16,7 +16,7 @@ class ManifestMapTests(unittest.TestCase):
                 w.writerow(["1ST_READ.BIN",400,4096,"d"*40])
             d=mod.generate(p,{"MOVIE_A.SFD"})
             self.assertEqual(d["packed_file_count"],3)
-            self.assertEqual(d["payload_bytes"],8192)
+            self.assertEqual(d["payload_bytes"],10240)
             self.assertEqual([x["name"] for x in d["entries"]],["A.BIN","MOVIE_B.SFD","1ST_READ.BIN"])
             self.assertEqual([x["payload_offset"] for x in d["entries"]],[0,4096,6144])
             self.assertEqual(d["entries"][2]["fad"],550)
