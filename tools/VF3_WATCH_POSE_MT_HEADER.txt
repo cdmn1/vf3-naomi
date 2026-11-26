@@ -1,0 +1,114 @@
+# VF3 full pose capture
+# Use with patched Flycast interpreter and VF3_WATCH=<this file>.
+# Captures the two known actor contexts, all attachment matrices, pose inputs,
+# joint-chain records, bone matrices, and the pose-related PC entry snapshots.
+
+# Pose pipeline entry points (register snapshots)
+pc 0x8C09EAF2
+pc 0x8C09DA72
+pc 0x8C09D4B0
+pc 0x8C09E060
+pc 0x8C09E6B2
+pc 0x8C09F432
+pc 0x8C09F500
+pc 0x8C09D690
+pc 0x8C091C20
+pc 0x8C091DE6
+pc 0x8C091438
+pc 0x8C0B1A46
+pc 0x8C0B1B2E
+pc 0x8C0B1B6C
+pc 0x8C08D898
+pc 0x8C0940C8
+pc 0x8C0B1B7C
+pc 0x8C0B1C92
+pc 0x8C0869BC
+pc 0x8C0B1C8E
+pc 0x8C0A756C
+pc 0x8C0A7662
+pc 0x8C03B56C
+pc 0x8C03B62E
+pc 0x8C074854
+pc 0x8C0B16C0
+pc 0x8C0B17E2
+pc 0x8C0B17FC
+pc 0x8C0B1860
+pc 0x8C0B188E
+
+# Actor A and B: base through attachment table (18 x 64-byte rows at +0x180)
+mem 0x0C1FEFE4 0x600
+mem 0x0C20138C 0x600
+
+# Aim-frame output blocks at +0x640 and +0x740
+mem 0x0C1FF624 0x200
+mem 0x0C2019CC 0x200
+
+# 23-bone output matrix tables at +0x7C0
+mem 0x0C1FF7A4 0x5C0
+mem 0x0C201B4C 0x5C0
+
+# v73: full MT output split - 7 SEG_A vectors, then 42 angle channels
+# mt_play entry snapshots at 0x8C09D690 expose task, output pointer and phase
+mem 0x0C200CE8 0x54
+mem 0x0C203090 0x54
+mem 0x0C200D3C 0xFC
+mem 0x0C2030E4 0xFC
+mem 0x0C200F34 0x54
+mem 0x0C2032DC 0x54
+
+# Candidate mt_play cycle/header fields (task is expected at actor +0x54)
+mem 0x0C2009E4 0x60
+mem 0x0C202D8C 0x60
+
+# Translation input vectors at actor +0x1488 and complete seven_pass SEG_B
+mem 0x0C20046C 0x0C
+mem 0x0C202814 0x0C
+mem 0x0C200EE0 0x54
+mem 0x0C203288 0x54
+
+# Global state used by attachment handlers and the scene matrix stack
+mem 0x0C29B864 0x40
+mem 0x0C29BB84 0x100
+mem 0x0C2A5F60 0x40
+
+# Actor offsets and the two 5-link joint-chain records
+# (includes +0x20C8, +0x217C, +0x22E4 and +0x22E8)
+mem 0x0C201070 0x26C
+mem 0x0C203418 0x26C
+
+# v73: caller R5 argument blocks used by pose_orchestration at +0x100C/+0x115C
+# v72 PC snapshots confirmed both pointers for each actor; each block is 0x100 bytes
+mem 0x0C1FFFF0 0x250
+mem 0x0C202398 0x250
+
+# Kind-code selector at actor +0x420B
+mem 0x0C2031EF 0x10
+mem 0x0C205597 0x10
+
+# Global pose flags and model-resource objects
+mem 0x0C29BCCC 0x4
+mem 0x0C03006C 0x100
+mem 0x0C030D6C 0x100
+# v78 focused MT pointer capture additions.
+# Runtime MT header pointer at actor +0x1D00 (one 32-bit pointer each).
+mem 0x0C200CE4 0x4
+mem 0x0C20308C 0x4
+
+# R5 is float **. Watch each distinct pointer slot observed in v77 so
+# the actual 63-float destination pointer can be recovered per evaluator call.
+mem 0x0C31F9AC 0x4
+mem 0x0C31F9B0 0x4
+mem 0x0C31F9B4 0x4
+mem 0x0C31F9C8 0x4
+mem 0x0C31F9D4 0x4
+mem 0x0C31F9D8 0x4
+mem 0x0C31F9FC 0x4
+
+# v79: runtime MT header contents (76-byte headers found in v78).
+# Capture the three data pointers and 63 channel-opcode bytes.
+mem 0x0C226864 0x80
+mem 0x0C227064 0x80
+
+# v79: two additional R5 float** pointer slots observed in v78.
+mem 0x0C31F990 0x4
+mem 0x0C31F9C0 0x4
