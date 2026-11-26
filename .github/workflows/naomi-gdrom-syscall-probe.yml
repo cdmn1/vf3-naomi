@@ -376,7 +376,7 @@ jobs:
           SECOND_SIZE="$(stat -c '%s' "$ROM")"
           test "$FIRST_SIZE" = "$SECOND_SIZE"
           python3 - "$ROM" "$PAYLOAD_BASE" vf3-netdimm-306mb-map.json <<'PY'
-          import hashlib, json, pathlib, sys
+          import hashlib, json, os, pathlib, shutil, sys
           rom = pathlib.Path(sys.argv[1])
           base = int(sys.argv[2])
           doc = json.loads(pathlib.Path(sys.argv[3]).read_text())
@@ -398,8 +398,10 @@ jobs:
           assert rom.stat().st_size == expected_size
           out = pathlib.Path("vf3-manifestcheck-build")
           out.mkdir(exist_ok=True)
-          target = out / f"vf3-naomi-gdrom-manifestcheck-v{pathlib.os.environ['GITHUB_RUN_NUMBER']}.bin"
-          target.write_bytes(rom.read_bytes())
+          target = out / f"vf3-naomi-gdrom-manifestcheck-v{os.environ['GITHUB_RUN_NUMBER']}.bin"
+          shutil.copyfile(rom, target)
+          with target.open("rb") as f:
+              digest = hashlib.file_digest(f, "sha256").hexdigest()
           report = [
               "VF3 NAOMI GD-ROM full-manifest offset diagnostic",
               "Synthetic deterministic fixture; no commercial game assets.",
@@ -411,7 +413,7 @@ jobs:
               f"Payload base: 0x{base:08X}",
               "Fixture: 576 sectors (1,179,648 bytes)",
               f"Combined sparse image size: {expected_size} bytes ({expected_size/1048576:.2f} MiB)",
-              f"ROM SHA-256: {hashlib.sha256(target.read_bytes()).hexdigest()}",
+              f"ROM SHA-256: {digest}",
               "Expected: direct PIO / DMA and PIOREAD / DMA comparisons PASS",
           ]
           (out / "BUILD_INFO.txt").write_text("\\n".join(report) + "\\n")
