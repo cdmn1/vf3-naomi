@@ -198,15 +198,28 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
     }
 
     case VF3_GD_GET_CMD_STAT: {
-        uint32_t result[4] = {0, 0, gd.transferred_bytes, 0};
+        uint32_t result[4];
         uint32_t ret;
+        /* The DMA may complete during this poll. Snapshot the byte count
+           only afterwards, so the terminal status carries the final size. */
         poll_cart_dma();
         ret = gd.status;
+        result[0] = 0u;
+        result[1] = 0u;
+        result[2] = gd.transferred_bytes;
+        result[3] = 0u;
         if (r5) {
             words = GUEST_WORDS(r5);
-            for (unsigned i = 0; i < 4; ++i)
-                words[i] = result[i];
+            if (words)
+                for (unsigned i = 0; i < 4; ++i)
+                    words[i] = result[i];
         }
+        /* Idle and BUSY are visible regardless of request ID. Terminal
+           completion/error belongs only to the request being queried. */
+        if (ret == VF3_GDC_OK || ret == VF3_GDC_BUSY)
+            return ret;
+        if (r4 != gd.request_id)
+            return VF3_GDC_OK;
         if (ret == VF3_GDC_COMPLETE || ret == (uint32_t)VF3_GDC_ERR) {
             gd.status = VF3_GDC_OK;
             gd.request_id = 0xffffffffu;
@@ -243,15 +256,15 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
     case VF3_GD_REQ_PIO_TRANS:
         if (r4 != gd.request_id)
             return (uint32_t)-1;
-        if (r5)
+        if (r5 && GUEST_WORDS(r5))
             *GUEST_WORDS(r5) = remaining_sectors();
         return 0u;
 
     case VF3_GD_CHECK_DMA_TRANS:
     case VF3_GD_CHECK_PIO_TRANS:
         poll_cart_dma();
-        if (r5)
-            if (r5 && GUEST_WORDS(r5)) *GUEST_WORDS(r5) = remaining_sectors();
+        if (r5 && GUEST_WORDS(r5))
+            *GUEST_WORDS(r5) = remaining_sectors();
         return gd.status == VF3_GDC_BUSY ? 0u : 1u;
 
     case VF3_GD_READ_ABORT:
