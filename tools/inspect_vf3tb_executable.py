@@ -5,9 +5,10 @@ import hashlib
 import re
 import struct
 import subprocess
+import sys
 
 BASE = 0x8C010000
-path = Path("1ST_READ.BIN")
+path = Path(sys.argv[1] if len(sys.argv) > 1 else "1ST_READ.BIN")
 data = path.read_bytes()
 out = [
     "VF3tb RETAIL DREAMCAST EXECUTABLE INSPECTION",
@@ -113,13 +114,13 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         check=True, text=True, capture_output=True,
     )
     disassembly = result.stdout.splitlines()
-    Path("vf3tb-sh4-disassembly.txt").write_text(result.stdout)
+    Path(f"{path.stem.lower()}-sh4-disassembly.txt").write_text(result.stdout)
     address_to_line = {}
     for index, line in enumerate(disassembly):
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA, 0x8C050C60, 0x8C050E8A] + list(stub_vas) + [BASE + x[0] for x in strings]
+    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA, 0x8C050C60, 0x8C050E8A, 0x8C07C480, 0x8C085A88] + list(stub_vas) + [BASE + x[0] for x in strings]
     out.extend(["", "GD-ROM SYSCALL HELPER REGION (0x8C043200-0x8C043500):"])
     for line in disassembly:
         match = re.match(r"^([0-9a-fA-F]+):", line)
@@ -163,5 +164,6 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
 else:
     out.extend(["", "SH-4 objdump unavailable; disassembly scan skipped."])
 
-Path("executable-inspection.txt").write_text("\n".join(out) + "\n")
-print(Path("executable-inspection.txt").read_text())
+report_path = Path(f"{path.stem.lower()}-inspection.txt")
+report_path.write_text("\n".join(out) + "\n")
+print(report_path.read_text())
