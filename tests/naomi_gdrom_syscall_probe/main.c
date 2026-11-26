@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "gdrom_syscall.h"
+#include "vf3_asset_map.h"
 
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define NAOMI_ROM_OFFSETH 0x005f7000u
@@ -12,7 +13,8 @@
 #define FONT_W 12
 #define FONT_H 24
 #define WORDS 1024u
-#define TEST_FAD VF3_GD_FAD_BASE
+#define TEST_FAD VF3_ASSET_TEST_FAD
+#define TEST_OFFSET VF3_ASSET_TEST_OFFSET
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
@@ -25,8 +27,9 @@ static uint32_t old_service, dma_status, dma_bytes, dma_request, pio_request;
 
 static void read_cart_pio(void)
 {
-    REG16(NAOMI_ROM_OFFSETH) = 0x8000u;
-    REG16(NAOMI_ROM_OFFSETL) = 0u;
+    uint32_t word_offset = TEST_OFFSET >> 1;
+    REG16(NAOMI_ROM_OFFSETH) = (uint16_t)(0x8000u | ((word_offset >> 16) & 0x7fffu));
+    REG16(NAOMI_ROM_OFFSETL) = (uint16_t)word_offset;
     for (unsigned i = 0; i < WORDS; ++i)
         pio_words[i] = REG16(NAOMI_ROM_DATA);
 }
@@ -138,7 +141,8 @@ static void draw_screen(void)
     draw_text(32,260,line);
     snprintf(line,sizeof line,"OLD SERVICE VECTOR %08X",(unsigned)old_service);
     draw_text(32,296,line);
-    draw_text(32,340,"TEST FAD 45150 MAPS TO NETDIMM IMAGE OFFSET 0");
+    snprintf(line,sizeof line,"TEST FAD %u  CART OFFSET %08X",(unsigned)TEST_FAD,(unsigned)TEST_OFFSET);
+    draw_text(32,340,line);
     draw_text(32,376,"NO SERIAL CONNECTION REQUIRED");
     pvr_list_finish(); pvr_scene_finish();
 }
