@@ -25,7 +25,7 @@ gdrom_syscall_resident.o: gdrom_syscall.c gdrom_syscall.h vf3_asset_map.h
 	kos-cc -fno-jump-tables -c gdrom_syscall.c -o $@
 
 resident_shim.elf: gdrom_syscall_resident.o
-	$(SH_ELF_LD) -e vf3_gd_install \
+	$(SH_ELF_LD) -EL -e _vf3_gd_install \
 		--section-start=.vf3_resident_text=0x8D000000 \
 		--section-start=.vf3_resident_rodata=0x8D010000 \
 		--section-start=.vf3_resident_data=0x8D020000 \
