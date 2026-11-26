@@ -31,4 +31,10 @@ uint32_t vf3_gd_change_data_type(uint32_t type);
 uint32_t vf3_gd_set_pio_callback(uint32_t callback);
 uint32_t vf3_gd_req_pio_trans(uint32_t request_id, uint32_t *remaining);
 uint32_t vf3_gd_check_pio_trans(uint32_t request_id, uint32_t *remaining);
+#ifdef VF3_GD_HOST_TEST
+void vf3_gd_host_reset(void);
+volatile uint32_t *vf3_gd_host_words(uint32_t address);
+uint32_t vf3_gd_host_call(uint32_t r4, uint32_t r5, uint32_t r6, uint32_t r7);
+void vf3_gd_host_complete_dma(void);
+#endif
 #endif
