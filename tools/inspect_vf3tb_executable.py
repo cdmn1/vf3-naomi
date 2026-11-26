@@ -68,6 +68,11 @@ stub_vas = {
     0x8C043154: "CHANGE_DATA_TYPE (r7=10)", 0x8C043168: "SET_PIO_CALLBACK (r7=11)",
     0x8C04317C: "REQ_PIO_TRANS (r7=12)", 0x8C043190: "CHECK_PIO_TRANS (r7=13)",
 }
+if path.stem.lower() == "reload":
+    for number in range(14):
+        stub_vas[0x8C012BC0 + number * 0x14] = f"RELOAD service r7={number}"
+    stub_vas[0x8C012CD8] = "RELOAD service r6=-1,r7=0"
+    stub_vas[0x8C012CEC] = "RELOAD service r6=-1,r7=1"
 stub_aliases = {value: label for value, label in stub_vas.items()}
 stub_aliases.update({value & 0x0FFFFFFF: label + " (P0 alias)" for value, label in stub_vas.items()})
 helper_aliases = {0x8C0431D8: "read-mode selector helper", 0x0C0431D8: "read-mode selector helper (P0 alias)", 0x8C0431DA: "read-mode selector helper +2", 0x0C0431DA: "read-mode selector helper +2 (P0 alias)", 0x8C050E8A: "DMA buffer/cache preparation helper", 0x0C050E8A: "DMA buffer/cache preparation helper (P0 alias)", 0x8C050C60: "aligned DMA buffer preparation helper", 0x0C050C60: "aligned DMA buffer preparation helper (P0 alias)"}
