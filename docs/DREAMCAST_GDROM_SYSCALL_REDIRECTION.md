@@ -34,6 +34,15 @@ The first implementation should preserve the original request/completion contrac
 
 ### Stage A — establish the exact guest interface
 
+The related REIOS research gives us a concrete starting contract to verify against the retail executable (these are Dreamcast-side reference findings, not yet proven as the correct Naomi hook):
+
+- BIOS service pointer: guest RAM word at 0x8C0000BC points to the REIOS entry at 0x8C001006; the modeled syscall uses r6 = 0.
+- The retail loader's modeled stubs are at 0x8C0430A0 / 0x8C0430B4.
+- r7 = 0 is REQ_CMD: r4 carries the command, r5 points to four parameter words, and r0 returns a request ID.
+- Command 0x11 is DMAREAD. The current REIOS model interprets parameter words 0, 1 and 2 as FAD, sector count and guest destination address, respectively.
+- r7 = 2 is EXEC_SERVER. r7 = 1 is GET_CMD_STAT: r4 is the request ID, r5 points to four result words, and r0 returns the status. The model defines idle/OK=0, BUSY=1, COMPLETE=2, CONTINUE=3 and ERR=-1.
+- The GDFS sector-read endpoint at 0x8C0360C8 is a separate layer to distinguish from the BIOS service entry. The shim should hook the narrowest boundary that the actual executable uses, not blindly replace both.
+
 - Audit the retail executable's actual GD-ROM syscall entry path and the GDFS functions it invokes.
 - Identify the commands used during boot and gameplay, the request parameter layout, FAD/LBA convention, destination address, sector count, alignment, status polling and error behavior.
 - Distinguish BIOS GD-ROM syscalls from GDFS library calls such as _gdFsDaPlaySct. Do not assume the ABI of one is the ABI of the other.
