@@ -27,9 +27,10 @@ static uint32_t old_service, dma_status, dma_bytes, dma_request, pio_request;
 
 static void read_cart_pio(void)
 {
-    uint32_t word_offset = TEST_OFFSET >> 1;
-    REG16(NAOMI_ROM_OFFSETH) = (uint16_t)(0x8000u | ((word_offset >> 16) & 0x7fffu));
-    REG16(NAOMI_ROM_OFFSETL) = (uint16_t)word_offset;
+    /* Naomi cartridge PIO offsets are byte addresses; each data read
+       advances the internal address by two bytes when auto-increment is set. */
+    REG16(NAOMI_ROM_OFFSETH) = (uint16_t)(0x8000u | ((TEST_OFFSET >> 16) & 0x7fffu));
+    REG16(NAOMI_ROM_OFFSETL) = (uint16_t)TEST_OFFSET;
     for (unsigned i = 0; i < WORDS; ++i)
         pio_words[i] = REG16(NAOMI_ROM_DATA);
 }
