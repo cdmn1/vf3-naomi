@@ -1,0 +1,63 @@
+name: Build VF3tb compact NetDIMM asset package (omit MOVIE_A only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/vf3-asset-package.yml"
+      - "tools/pack_vf3_assets.py"
+      - "docs/GDROM_DISC_FILE_MAP.csv"
+      - "tests/test_vf3_asset_packer.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the existing extracted VF3tb asset folder
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            --output vf3-assets.zip
+          mkdir vf3-assets
+          unzip -q vf3-assets.zip -d vf3-assets
+          echo "Downloaded and extracted shared folder."
+      - name: Test packer
+        run: python3 -m unittest discover -s tests -p 'test_vf3_asset_packer.py' -v
+      - name: Create compact payload and FAD map (exclude MOVIE_A.SFD only)
+        run: |
+          set -euo pipefail
+          python3 tools/pack_vf3_assets.py \
+            --assets vf3-assets \
+            --manifest docs/GDROM_DISC_FILE_MAP.csv \
+            --output vf3-netdimm-306mb.payload \
+            --map vf3-netdimm-306mb-map.json \
+            --exclude MOVIE_A.SFD
+          python3 - <<'PY'
+          import json, pathlib
+          p=pathlib.Path("vf3-netdimm-306mb-map.json")
+          d=json.loads(p.read_text())
+          assert "MOVIE_A.SFD" in d["excluded"]
+          assert any(x["name"] == "MOVIE_B.SFD" for x in d["entries"]), "MOVIE_B.SFD must remain included"
+          assert d["packed_file_count"] == d["source_file_count"] - 1
+          assert pathlib.Path("vf3-netdimm-306mb.payload").stat().st_size == d["payload_bytes"]
+          with open("vf3-asset-package-report.txt","w") as f:
+            for k,v in d.items():
+              if k != "entries": f.write(f"{k}: {v}\n")
+            f.write("\nFAD mapping entries: " + str(len(d["entries"])) + "\n")
+          print(pathlib.Path("vf3-asset-package-report.txt").read_text())
+          PY
+      - name: Publish metadata report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-netdimm-306mb-asset-map-report-v${{ github.run_number }}
+          path: |
+            vf3-asset-package-report.txt
+            vf3-netdimm-306mb-map.json
+          if-no-files-found: error
