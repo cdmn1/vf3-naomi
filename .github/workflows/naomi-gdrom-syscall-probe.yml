@@ -177,17 +177,23 @@ jobs:
                   if len(parts) >= 3 and parts[-1] == name:
                       return int(parts[0], 16)
               raise SystemExit(f"Missing ELF symbol: {name}")
-          start = 0x8d000000
-          end = 0x8d030000
+          def section_address(name):
+              match = re.search(r"\\]\s+" + re.escape(name) + r"\\s+\\S+\\s+([0-9a-fA-F]+)", ph)
+              if not match:
+                  raise SystemExit(f"Missing ELF section: {name}\\n{ph}")
+              return int(match.group(1), 16)
+          text_addr = section_address(".vf3_resident_text")
+          rodata_addr = section_address(".vf3_resident_rodata")
+          data_addr = section_address(".vf3_resident_data")
           heap_end = symbol("_end")
-          install = symbol("vf3_gd_install")
-          assert start < install < end, (hex(start), hex(install), hex(end))
-          assert end < 0x8e000000, hex(end)
-          assert heap_end < start, (hex(heap_end), hex(start))
-          assert ".vf3_resident_text" in ph and ".vf3_resident_rodata" in ph and ".vf3_resident_data" in ph, ph
-          assert re.search(r"LOAD\s+\S+\s+0x8d000000\s+0x8d000000", ph, re.I), ph
-          print(f"Resident reserved window: 0x{start:08X}-0x{end:08X}")
-          print(f"vf3_gd_install: 0x{install:08X}")
+          assert text_addr == 0x8d000000, hex(text_addr)
+          assert rodata_addr == 0x8d010000, hex(rodata_addr)
+          assert data_addr == 0x8d020000, hex(data_addr)
+          assert heap_end < text_addr, (hex(heap_end), hex(text_addr))
+          assert re.search(r"LOAD\\s+\\S+\\s+0x8d000000\\s+0x8d000000", ph, re.I), ph
+          print(f"Resident text:   0x{text_addr:08X}")
+          print(f"Resident rodata: 0x{rodata_addr:08X}")
+          print(f"Resident data:   0x{data_addr:08X}")
           print(f"KOS _end / heap base: 0x{heap_end:08X}")
           print("Resident PT_LOAD and non-overlapping KOS heap: PASS")
           PY
