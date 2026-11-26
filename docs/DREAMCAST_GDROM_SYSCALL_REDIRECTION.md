@@ -280,3 +280,87 @@ This does not prove that `0x8C0431DA` itself was executed—the trace did not
 watch that exact PC—but it makes the BIOS-wrapper callsites the higher-priority
 runtime target. The new v73 profile watches those exact PCs. The GDFS endpoint
 watch remains as a cross-check rather than the assumed active path.
+
+
+## v73 retail read-path result (2026-11-26)
+
+The full v73 Flycast capture was decoded locally. The binary uses the documented
+FA12/FA13 expanded register snapshots (PR and R0-R15), FA20 memory records and
+FA22 REIOS HLE transfer records. The 800,509,904-byte trace was analysed
+without another capture or upload.
+
+### The retail DMA wrapper is now runtime-confirmed
+
+The exact retail wrapper entry `0x8C0431DA` was hit **77 times**. The
+`REQ_CMD` callsite `0x8C043226` and its return/delay-slot probe
+`0x8C04322E` were also hit 77 times. The entry registers confirm the
+disassembled ABI on every call:
+
+- `r4`: FAD;
+- `r5`: sector count;
+- `r6`: guest destination;
+- `r7=1`: DMA mode.
+
+At the request-submission boundary the captured state also shows command
+`0x11` (`DMAREAD`) and sector size `0x800` (2048 bytes). The 77 calls
+returned request IDs 3 through 79.
+
+This resolves the earlier uncertainty: the retail VF3 executable really does
+execute this wrapper and submit DMAREAD requests through REQ_CMD.
+
+### Why REQ_DMA_TRANS and CHECK_DMA_TRANS have zero hits
+
+The probes at `0x8C04329A` (`REQ_DMA_TRANS`) and
+`0x8C04340E` (`CHECK_DMA_TRANS`) had zero hits. This is not evidence that
+the DMA path was skipped. The observed wrapper's DMA branch submits command
+`0x11` through `REQ_CMD`; it does not use the separate REQ_DMA_TRANS /
+CHECK_DMA_TRANS helper sequence during this capture. The status/server path
+was active: `GET_CMD_STAT` probes recorded 717,817 hits and
+`EXEC_SERVER` probes recorded 720,168 hits. Those are instruction-hit counts,
+not counts of completed requests.
+
+### Every watched request is accounted for by the HLE data transfers
+
+The capture contains 2,240 FA22 REIOS HLE transfer records covering 11,003
+sectors. Their sector counts sum exactly to the 77 wrapper requests. Grouping
+the HLE records chronologically between consecutive wrapper entries gives an
+exact sector-count match for **all 77 of 77 requests**; there are no missing or
+extra HLE sectors within those request windows. The HLE layer splits the
+requests into chunks of at most five sectors. Each recorded HLE return value
+equals the number of sectors in that chunk, and all records use the direct
+guest-memory path (flags value 2).
+
+The broader GD-ROM hook diagnostic reports 2,243 sector-read calls and 11,021
+sectors, so three additional reads totalling 18 sectors occurred outside the
+77 watched wrapper calls. They are not attributed to the wrapper.
+
+### Correlation with the complete disc file map
+
+Using the 412-entry `GDROM_DISC_FILE_MAP.csv` (rather than the smaller
+232-entry GDFS asset index), **65 requests / 10,991 sectors** map exactly to
+65 indexed file extents. The remaining 12 requests are one-sector reads at
+FAD 45166, 45168 and 45170-45179; those FADs are outside the indexed file
+extents and are left unidentified.
+
+The exact file matches include the character/stage/motion/audio resources
+observed during the capture, including `MOTHEAD.BIN`, `MTAKIWOL.BIN`,
+`MTAKIPAI.BIN`, `ST0C.*`, `ST09.*`, `ROB_*.POL/TEX`,
+`MKAO_*.POL/TEX`, `CP_M_*.BIN`, `VO_*.BIN`, and the
+`BGM_*.BIN` files. The largest individual requests were 829 sectors for
+`MTAKIWOL.BIN` and 768 sectors for `MTAKIPAI.BIN`.
+
+### Engineering consequence and limits
+
+The retail request ABI, actual DMAREAD selection, request IDs, FAD ranges,
+sector counts and destinations are now established. We should stop spending
+iterations on locating the wrapper or proving which transfer mode it uses.
+The Naomi-side shim should reproduce the request/completion semantics of this
+observed REQ_CMD + DMAREAD + GET_CMD_STAT/EXEC_SERVER path, while servicing
+the bytes from the Naomi NetDIMM cartridge through Holly GD-DMA.
+
+This remains a Dreamcast-game Flycast capture using REIOS HLE for the actual
+sector copies. It proves the retail guest's request behaviour and correlates
+those requests to the disc manifest; it does **not** prove that the Naomi
+resident shim has been installed, that Holly DMA has serviced a retail request,
+or that the game boots on Naomi. The next blocking engineering task is the
+resident-shim / chainload handoff and its memory reservation.
