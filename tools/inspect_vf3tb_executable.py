@@ -128,7 +128,8 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         index = address_to_line.get(ref[1])
         if index is not None:
             out.append(f"--- {ref[5]}: {ref[4]} at VA 0x{ref[1]:08X} ---")
-            out.extend(disassembly[max(0, index - 5):min(len(disassembly), index + 9)])    out.extend(["", "SH-4 CALLSITE WINDOWS FOR BIOS SYSCALL STUBS:"])
+            out.extend(disassembly[max(0, index - 5):min(len(disassembly), index + 9)])
+    out.extend(["", "SH-4 CALLSITE WINDOWS FOR BIOS SYSCALL STUBS:"])
     for ref in stub_refs[:60]:
         index = address_to_line.get(ref[1])
         if index is not None:
