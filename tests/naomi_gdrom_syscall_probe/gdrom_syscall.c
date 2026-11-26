@@ -1,4 +1,20 @@
+#ifdef VF3_GD_HOST_TEST
+#include <stddef.h>
+static volatile uint8_t vf3_fake_mmio[0x10000];
+static uint8_t vf3_fake_guest[0x10000];
+static void *vf3_guest_pointer(uint32_t address)
+{
+    if (address < 0x0c000000u || address >= 0x0c010000u)
+        return 0;
+    return &vf3_fake_guest[address - 0x0c000000u];
+}
+#define REG16(a) (*(volatile uint16_t *)(void *)(vf3_fake_mmio + ((a) & 0xffffu)))
+#define REG32(a) (*(volatile uint32_t *)(void *)(vf3_fake_mmio + ((a) & 0xffffu)))
+#define GUEST_WORDS(a) ((volatile uint32_t *)vf3_guest_pointer(a))
+#else
 #include <kos.h>
+#define GUEST_WORDS(a) ((volatile uint32_t *)(uintptr_t)(a))
+#endif
 #include <stdint.h>
 #include <string.h>
 #include "gdrom_syscall.h"
@@ -29,11 +45,17 @@ static vf3_gd_state gd;
 
 static void invalidate_destination(uint32_t dest, uint32_t bytes)
 {
+#ifdef VF3_GD_HOST_TEST
+    (void)dest;
+    (void)bytes;
+    return;
+#else
     uint32_t physical = dest & 0x1fffffffu;
     uintptr_t p = (uintptr_t)(0x8c000000u | physical) & ~(uintptr_t)31u;
     uintptr_t end = ((uintptr_t)(0x8c000000u | physical) + bytes + 31u) & ~(uintptr_t)31u;
     for (; p < end; p += 32u)
         __asm__ volatile("ocbi @%0" : : "r"(p) : "memory");
+#endif
 }
 
 static const vf3_asset_range *find_asset_range(uint32_t fad)
@@ -145,7 +167,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
     switch (r7) {
     case VF3_GD_REQ_CMD: {
         uint32_t next = gd.next_request_id ? gd.next_request_id : 2u;
-        if (gd.status == VF3_GDC_BUSY)
+        if (gd.status != VF3_GDC_OK)
             return 0u;
         memset(&gd, 0, sizeof gd);
         gd.next_request_id = next + 1u;
@@ -153,7 +175,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
         gd.command = r4;
         gd.status = VF3_GDC_BUSY;
         if (r5) {
-            words = (volatile uint32_t *)(uintptr_t)r5;
+            words = GUEST_WORDS(r5);
             for (unsigned i = 0; i < 4; ++i)
                 gd.params[i] = words[i];
         }
@@ -208,7 +230,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
 
     case VF3_GD_GET_DRV_STAT:
         if (r4) {
-            words = (volatile uint32_t *)(uintptr_t)r4;
+            words = GUEST_WORDS(r4);
             words[0] = 1u;
             words[1] = 0x80u;
         }
@@ -219,7 +241,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
         if (r4 != gd.request_id)
             return (uint32_t)-1;
         if (r5)
-            *(volatile uint32_t *)(uintptr_t)r5 = remaining_sectors();
+            *GUEST_WORDS(r5) = remaining_sectors();
         return 0u;
 
     case VF3_GD_CHECK_DMA_TRANS:
@@ -276,3 +298,30 @@ uint32_t vf3_gd_last_bytes(void)
     poll_cart_dma();
     return gd.transferred_bytes;
 }
+
+#ifdef VF3_GD_HOST_TEST
+void vf3_gd_host_reset(void)
+{
+    memset((void *)vf3_fake_mmio, 0, sizeof vf3_fake_mmio);
+    memset(vf3_fake_guest, 0, sizeof vf3_fake_guest);
+    memset(&gd, 0, sizeof gd);
+    gd.next_request_id = 2u;
+    gd.request_id = 0xffffffffu;
+    gd.status = VF3_GDC_OK;
+}
+
+volatile uint32_t *vf3_gd_host_words(uint32_t address)
+{
+    return GUEST_WORDS(address);
+}
+
+uint32_t vf3_gd_host_call(uint32_t r4, uint32_t r5, uint32_t r6, uint32_t r7)
+{
+    return vf3_gd_syscall_handler(r4, r5, r6, r7);
+}
+
+void vf3_gd_host_complete_dma(void)
+{
+    REG32(SB_GDST) = 0u;
+}
+#endif
