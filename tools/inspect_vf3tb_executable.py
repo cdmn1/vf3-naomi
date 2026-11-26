@@ -69,7 +69,7 @@ stub_vas = {
 }
 stub_aliases = {value: label for value, label in stub_vas.items()}
 stub_aliases.update({value & 0x0FFFFFFF: label + " (P0 alias)" for value, label in stub_vas.items()})
-helper_aliases = {0x8C0431D8: "read-mode selector helper", 0x0C0431D8: "read-mode selector helper (P0 alias)", 0x8C0431DA: "read-mode selector helper +2", 0x0C0431DA: "read-mode selector helper +2 (P0 alias)"}
+helper_aliases = {0x8C0431D8: "read-mode selector helper", 0x0C0431D8: "read-mode selector helper (P0 alias)", 0x8C0431DA: "read-mode selector helper +2", 0x0C0431DA: "read-mode selector helper +2 (P0 alias)", 0x8C050E8A: "DMA buffer/cache preparation helper", 0x0C050E8A: "DMA buffer/cache preparation helper (P0 alias)"}
 pc_refs = []
 stub_refs = []
 helper_refs = []
@@ -119,7 +119,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA] + list(stub_vas) + [BASE + x[0] for x in strings]
+    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA, 0x8C050E8A] + list(stub_vas) + [BASE + x[0] for x in strings]
     out.extend(["", "GD-ROM SYSCALL HELPER REGION (0x8C043200-0x8C043500):"])
     for line in disassembly:
         match = re.match(r"^([0-9a-fA-F]+):", line)
