@@ -262,7 +262,7 @@ jobs:
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
-          set -euo pipefail
+          set -eo pipefail
           BUILD_VERSION="datacheck-v${GITHUB_RUN_NUMBER}"
           ROM="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-${BUILD_VERSION}.bin"
           python3 - <<'PY'
