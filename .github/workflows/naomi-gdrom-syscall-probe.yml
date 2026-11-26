@@ -228,7 +228,7 @@ jobs:
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
-          set -euo pipefail
+          set -eo pipefail
           # 0x02000000 is a temporary sector-aligned payload base for this
           # compile-only check. The final combined ROM build will substitute
           # the actual aligned end-of-ROM offset before its final link.
