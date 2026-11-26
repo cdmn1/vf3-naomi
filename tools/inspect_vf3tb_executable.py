@@ -140,7 +140,8 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
             continue
         index = address_to_line[target]
         out.append(f"--- around VA 0x{target:08X} ---")
-        out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + 16)])
+        after = 120 if target == 0x8C050E8A else 32 if target == 0x8C0431D8 else 16
+        out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + after)])
     out.extend(["", "SH-4 DISASSEMBLY WINDOWS AROUND CODE REFERENCES TO NAOMI STRINGS:"])
     for ref in pc_refs[:30]:
         index = address_to_line.get(ref[1])
