@@ -265,3 +265,18 @@ It is not yet safe to assume that range is unused: the Naomi-specific game
 code may allocate from the extra RAM. The bootloader must reserve the shim
 region or constrain the game's allocator before relying on it. KOS source
 reference: [KallistiOS arch.h, 32-MiB memory definitions](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/arch/arch.h).
+
+### Existing v66 trace: prioritize the BIOS wrapper over the GDFS endpoint
+
+The checked-in v66 Flycast diagnostic provides useful runtime context without
+requiring another capture. It executed 1,055,753,246 SH-4 instructions and
+recorded 2,139 GD-ROM sector-read calls, including 2,136 REIOS HLE transfers
+covering 10,491 sectors. Its normalized executed-PC histogram records
+36,263,675 instructions in page `0x0C043000`, which contains the retail
+`0x8C0431DA` read wrapper and the nearby BIOS-service helpers. In that same
+capture, the `0x8C0360C8` GDFS endpoint watchpoint had zero hits.
+
+This does not prove that `0x8C0431DA` itself was executed—the trace did not
+watch that exact PC—but it makes the BIOS-wrapper callsites the higher-priority
+runtime target. The new v73 profile watches those exact PCs. The GDFS endpoint
+watch remains as a cross-check rather than the assumed active path.
