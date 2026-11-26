@@ -32,7 +32,10 @@ resident_shim.elf: gdrom_syscall_resident.o
 		-o $@ $<
 
 resident_shim.bin: resident_shim.elf
-	$(SH_ELF_OBJCOPY) -O binary --gap-fill=0x00 $< $@
+	$(SH_ELF_OBJCOPY) -O binary --gap-fill=0x00 \
+		--only-section=.vf3_resident_text \
+		--only-section=.vf3_resident_rodata \
+		--only-section=.vf3_resident_data $< $@
 
 resident_shim_blob.o: resident_shim.bin
 	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh $< $@
