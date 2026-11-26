@@ -490,3 +490,49 @@ manifest-check image after fixing the diagnostic report formatting. It
 revalidated the same 321,617,920-byte image size and `0x13198000` cartridge
 offset; v62 ROM SHA-256:
 `d6c61f3f9c455d769587058d572e6444556e3e08485d2f5722584d7d616b773a`.
+
+
+### Runtime resident-bridge confirmation (user Flycast result, 2026-11-26)
+
+The user ran `vf3-naomi-gdrom-manifestcheck-v62` in Flycast and reported all
+checks passing:
+
+- BIOS service vector installed.
+- DMAREAD / Holly DMA passed.
+- PIOREAD translated to DMA passed.
+- Direct PIO / DMA data comparison passed.
+- PIOREAD / DMA data comparison passed.
+- GET_CMD_STAT completion passed with status `00000000` and exactly
+  1,179,648 bytes.
+- Test FAD 548574 mapped to absolute cartridge offset `0x13198000`.
+- The ROM displayed resident range `0x8D000000–0x8D030000`.
+
+This is the first user-confirmed Flycast runtime proof that the separately
+linked resident image was copied into Naomi upper RAM, its service vector
+handler ran, and Holly DMA serviced the exact high-offset 576-sector request.
+It closes the synthetic high-offset transport/runtime gate. It is not yet a
+test of the actual commercial payload bytes or retail game execution.
+
+### Retail executable load-integrity test (v63)
+
+The v63 map-aware diagnostic now adds a second, separate read of the complete
+retail `1ST_READ.BIN` from FAD 548574, 576 sectors, into uncached Naomi
+upper-RAM staging memory at `0xAD100000` (physical `0x0D100000`). This
+staging area is above the KOS heap ceiling and does not overlap the resident
+shim at `0x8D000000–0x8D030000`. After DMA completion, the diagnostic
+computes SHA-256 over all 1,179,648 bytes and compares it with the inspected
+retail executable hash:
+
+`37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32`.
+
+A complete image assembled with the real packed payload should display
+`RETAIL 1ST_READ LOAD: PASS` and `1ST_READ SHA256: MATCH`. The sparse
+synthetic fixture ROM intentionally cannot satisfy this hash check; use the
+map-aware base ROM plus the actual packed payload. The v63 build artifact
+includes a Windows PowerShell helper to create that combined image locally,
+without uploading or redistributing the commercial payload.
+
+This test validates the actual retail executable bytes through the resident
+bridge, but deliberately does not jump to the executable. If it passes, the
+next step is a separate chainload implementation, including a resident copy
+and handoff routine so the KOS loader can be overwritten safely.
