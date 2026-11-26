@@ -30,7 +30,72 @@ jobs:
             --user-agent "Mozilla/5.0" \
             "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
             --output vf3-assets.zip
-          entry="$(unzip -Z1 vf3-assets.zip | grep -E '(^|/)1ST_READ\\.BIN$' | head -n 1)"
+          entry="$(unzip -Z1 vf3-assets.zip | grep -E '(^|/)1ST_READ[.]BIN | head -n 1)"
+          test -n "$entry"
+          unzip -p vf3-assets.zip "$entry" > 1ST_READ.BIN
+          test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
+          echo "Extracted entry: $entry" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum 1ST_READ.BIN | tee executable.sha256
+          echo "Expected SHA-256: 37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32" >> "$GITHUB_STEP_SUMMARY"
+          echo "Actual SHA-256: $(cut -d' ' -f1 executable.sha256)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Executable size: $(stat -c %s 1ST_READ.BIN) bytes" >> "$GITHUB_STEP_SUMMARY"
+          test "$(cut -d' ' -f1 executable.sha256)" = "37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32"
+
+      - name: Inspect executable strings and GD-ROM call references
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, re, struct
+          data = Path("1ST_READ.BIN").read_bytes()
+          out = []
+          out.append("VF3tb RETAIL DREAMCAST EXECUTABLE INSPECTION")
+          out.append(f"SIZE: {len(data)}")
+          out.append(f"SHA256: {hashlib.sha256(data).hexdigest()}")
+          out.append("LOAD BASE REFERENCE: 0x8C010000 (from existing project research)")
+          out.append("FIRST 64 BYTES:")
+          out.append(data[:64].hex(" "))
+          out.append("")
+          out.append("KNOWN ADDRESS LITERALS (big-endian 32-bit occurrences):")
+          for value, label in [
+              (0x8C0000BC, "BIOS service pointer"),
+              (0x8C001006, "REIOS entry reference"),
+              (0x8C0360C8, "_gdFsDaPlaySct candidate"),
+              (0x8C0430A0, "modeled syscall stub A"),
+              (0x8C0430B4, "modeled syscall stub B"),
+          ]:
+              needle = struct.pack(">I", value)
+              offsets = [m.start() for m in re.finditer(re.escape(needle), data)]
+              out.append(f"{label} 0x{value:08X}: " + (", ".join(f"file+0x{x:X}" for x in offsets[:32]) if offsets else "not found"))
+          out.append("")
+          out.append("ASCII STRINGS (4+ chars) matching GD/GDFS/ROM/SYSCALL/DMA terms:")
+          for m in re.finditer(rb"[ -~]{4,}", data):
+              s = m.group().decode("ascii", "replace")
+              if re.search(r"gd|gdfs|rom|syscall|dma|disc|sector|naomi", s, re.I):
+                  out.append(f"file+0x{m.start():X}: {s[:180]}")
+          Path("executable-inspection.txt").write_text("\\n".join(out) + "\\n")
+          PY
+          if command -v sh4-linux-gnu-objdump >/dev/null 2>&1; then
+            sh4-linux-gnu-objdump -D -b binary -m sh4 --adjust-vma=0x8c010000 1ST_READ.BIN > vf3tb-sh4-disassembly.txt
+            {
+              echo
+              echo "SH-4 DISASSEMBLY REFERENCES (address constants / GDFS terms)"
+              grep -in -E '8c0000bc|8c001006|8c0360c8|8c0430a0|8c0430b4|gdFs|GDFS|DMAREAD' vf3tb-sh4-disassembly.txt | head -n 160 || true
+            } >> executable-inspection.txt
+          else
+            echo "SH-4 objdump unavailable; string/literal scan completed." >> executable-inspection.txt
+          fi
+          cat executable-inspection.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload inspection report (not the copyrighted executable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3tb-dreamcast-executable-inspection-v1
+          path: |
+            executable-inspection.txt
+            executable.sha256
+          if-no-files-found: error
+ | head -n 1)"
           test -n "$entry"
           unzip -p vf3-assets.zip "$entry" > 1ST_READ.BIN
           test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
