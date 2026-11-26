@@ -44,12 +44,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/inspect_vf3tb_executable.py
-          sh4-linux-gnu-objdump -D -b binary -m sh4 --adjust-vma=0x8c010000 1ST_READ.BIN > vf3tb-sh4-disassembly.txt
-          {
-            echo
-            echo "SH-4 DISASSEMBLY REFERENCES (address constants / GDFS terms)"
-            grep -in -E '8c0000bc|8c001006|8c0360c8|8c0430a0|8c0430b4|gdFs|GDFS|DMAREAD' vf3tb-sh4-disassembly.txt | head -n 160 || true
-          } >> executable-inspection.txt
           cat executable-inspection.txt >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload inspection report (not the copyrighted executable)
