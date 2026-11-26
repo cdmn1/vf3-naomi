@@ -137,7 +137,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
             out.append(line)
     out.extend(["", "SERVICE-VECTOR STUB WINDOWS (every mov.l literal resolving to 0x8C0000BC):"])
     for index, line in enumerate(disassembly):
-        if re.search(r"!\\s*8c0000bc\\b", line, re.I):
+        if re.search(r"!\s*8c0000bc\b", line, re.I):
             out.append(f"--- service-vector trampoline at disassembly line {index + 1} ---")
             out.extend(disassembly[max(0, index - 4):min(len(disassembly), index + 5)])
     out.extend(["", "SH-4 DISASSEMBLY WINDOWS AROUND CANDIDATE FUNCTIONS / STRING DATA:"])
