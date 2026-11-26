@@ -14,7 +14,7 @@ class AssetMapHeaderTests(unittest.TestCase):
                 {"name":"A.BIN","fad":100,"sectors":1,"payload_offset":0},
                 {"name":"1ST_READ.BIN","fad":300,"sectors":576,"payload_offset":8192}]}))
             out=mod.generate(p,0x200000)
-            self.assertIn("#define VF3_ASSET_MAP_COUNT 2u",out)
+            self.assertIn("#define VF3_ASSET_MAP_COUNT 3u",out)
             self.assertIn("{100u, 1u, 2097152u}",out)
             self.assertIn("{200u, 2u, 2101248u}",out)
             self.assertIn("#define VF3_ASSET_TEST_FAD 300u",out)
