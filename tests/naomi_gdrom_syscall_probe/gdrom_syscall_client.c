@@ -3,8 +3,8 @@
 #include "gdrom_syscall.h"
 #include "resident_offsets.h"
 
-extern const uint8_t _binary_resident_shim_bin_start[];
-extern const uint8_t _binary_resident_shim_bin_end[];
+extern const uint8_t resident_blob_start[] __asm__("_binary_resident_shim_bin_start");
+extern const uint8_t resident_blob_end[] __asm__("_binary_resident_shim_bin_end");
 
 typedef uint32_t (*resident_fn0)(void);
 
@@ -12,8 +12,8 @@ static int resident_loaded;
 
 static int load_resident_image(void)
 {
-    const uint8_t *src = _binary_resident_shim_bin_start;
-    size_t size = (size_t)(_binary_resident_shim_bin_end - _binary_resident_shim_bin_start);
+    const uint8_t *src = resident_blob_start;
+    size_t size = (size_t)(resident_blob_end - resident_blob_start);
     volatile uint8_t *dst = (volatile uint8_t *)(uintptr_t)0xad000000u;
     uintptr_t line;
 
