@@ -8,10 +8,12 @@ on:
       - "tools/pack_vf3_assets.py"
       - "tools/generate_vf3_asset_map_header.py"
       - "tools/append_vf3_assets_to_naomi_rom.py"
+      - "tools/generate_vf3_asset_map_from_manifest.py"
       - "docs/GDROM_DISC_FILE_MAP.csv"
       - "tests/test_vf3_asset_packer.py"
       - "tests/test_vf3_asset_map_header.py"
       - "tests/test_append_vf3_assets_to_naomi_rom.py"
+      - "tests/test_vf3_asset_map_from_manifest.py"
       - ".github/workflows/naomi-gdrom-syscall-probe.yml"
   workflow_dispatch:
 
@@ -182,59 +184,25 @@ jobs:
           path: gdrom-syscall-artifact/*
           if-no-files-found: error
 
-      - name: Download and pack the 306 MiB VF3tb asset set (omit MOVIE_A only)
+      - name: Generate 306 MiB FAD map from the checked-in retail manifest
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-all-errors --user-agent "Mozilla/5.0" \
-            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
-            --output vf3-assets.zip
-          mkdir vf3-assets
-          python3 - <<'PY'
-          import csv, pathlib, zipfile
-          with open("docs/GDROM_DISC_FILE_MAP.csv", newline="", encoding="utf-8") as f:
-              wanted = {r["asset_name"].upper() for r in csv.DictReader(f)}
-          out = pathlib.Path("vf3-assets")
-          seen = set()
-          with zipfile.ZipFile("vf3-assets.zip") as z:
-              for info in z.infolist():
-                  if info.is_dir():
-                      continue
-                  name = pathlib.PurePosixPath(info.filename.lstrip("/")).name
-                  key = name.upper()
-                  if key not in wanted:
-                      continue
-                  if key in seen:
-                      raise SystemExit(f"Duplicate asset in Dropbox ZIP: {name}")
-                  with z.open(info) as src, (out / name).open("wb") as dst:
-                      while True:
-                          block = src.read(1024 * 1024)
-                          if not block:
-                              break
-                          dst.write(block)
-                  seen.add(key)
-          missing = sorted(wanted - seen)
-          if missing:
-              raise SystemExit("Missing manifest assets: " + ", ".join(missing))
-          print(f"Extracted {len(seen)} VF3tb assets.")
-          PY
           python3 -m unittest discover -s tests -p 'test_vf3_asset_packer.py' -v
           python3 -m unittest discover -s tests -p 'test_vf3_asset_map_header.py' -v
           python3 -m unittest discover -s tests -p 'test_append_vf3_assets_to_naomi_rom.py' -v
-          python3 tools/pack_vf3_assets.py \
-            --assets vf3-assets \
+          python3 -m unittest discover -s tests -p 'test_vf3_asset_map_from_manifest.py' -v
+          python3 tools/generate_vf3_asset_map_from_manifest.py \
             --manifest docs/GDROM_DISC_FILE_MAP.csv \
-            --output vf3-netdimm-306mb.payload \
-            --map vf3-netdimm-306mb-map.json \
+            --output vf3-netdimm-306mb-map.json \
             --exclude MOVIE_A.SFD
-
-      - name: Build combined 306 MiB VF3 asset smoke-test ROM
+      - name: Build map-aware VF3 asset smoke-test base ROM
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
           set -eo pipefail
           BUILD_VERSION="assetmap-v${GITHUB_RUN_NUMBER}"
           ROM="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-${BUILD_VERSION}.bin"
-          # First link fixes the table size; then derive the exact append offset.
+          # First link fixes table size; derive the exact aligned payload offset.
           python3 tools/generate_vf3_asset_map_header.py \
             --map-json vf3-netdimm-306mb-map.json \
             --payload-base 0x02000000 \
@@ -246,7 +214,6 @@ jobs:
           BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
           FIRST_SIZE="$(stat -c '%s' "$ROM")"
           PAYLOAD_BASE="$(python3 -c 'import sys; n=int(sys.argv[1]); print((n+2047)//2048*2048)' "$FIRST_SIZE")"
-          # Rebuild with the actual absolute cartridge offset of the payload.
           python3 tools/generate_vf3_asset_map_header.py \
             --map-json vf3-netdimm-306mb-map.json \
             --payload-base "$PAYLOAD_BASE" \
@@ -255,38 +222,40 @@ jobs:
           BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
           SECOND_SIZE="$(stat -c '%s' "$ROM")"
           test "$FIRST_SIZE" = "$SECOND_SIZE"
-          python3 tools/append_vf3_assets_to_naomi_rom.py \
-            --rom "$ROM" \
-            --payload vf3-netdimm-306mb.payload \
-            --map-json vf3-netdimm-306mb-map.json \
-            --header tests/naomi_gdrom_syscall_probe/vf3_asset_map.h \
-            --payload-base "$PAYLOAD_BASE" \
-            --output vf3-naomi-vf3tb-306mb-smoke-test.bin
           mkdir -p vf3-assetmap-build
           cp "$ROM" vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin
           cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-assetmap-build/
           python3 - <<'PY'
           import hashlib, json, pathlib
           d=json.loads(pathlib.Path("vf3-netdimm-306mb-map.json").read_text())
-          image=pathlib.Path("vf3-naomi-vf3tb-306mb-smoke-test.bin")
+          base=pathlib.Path("vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin")
+          payload_base=int(pathlib.Path("vf3-assetmap-build/vf3_asset_map.h").read_text().split("VF3_ASSET_PAYLOAD_BASE ")[1].split("u")[0])
+          expected=payload_base+int(d["payload_bytes"])
           report=[
-            "VF3tb USA 306 MiB asset-mapped Naomi smoke-test image",
-            f"Packed assets: {d['packed_file_count']}",
-            f"Asset payload bytes: {d['payload_bytes']}",
+            "VF3tb USA 306 MiB mapped-asset Naomi smoke-test base ROM",
+            f"Manifest assets: {d['source_file_count']}",
+            f"Mapped assets: {d['packed_file_count']}",
+            f"Raw asset bytes: {d['source_bytes']}",
+            f"Sector-aligned payload bytes: {d['payload_bytes']}",
             f"Excluded: {', '.join(d['excluded'])}",
             "MOVIE_B.SFD: included",
-            f"Combined image bytes: {image.stat().st_size}",
-            f"Combined image MiB: {image.stat().st_size/1048576:.2f}",
-            f"Combined image SHA-256: {hashlib.sha256(image.read_bytes()).hexdigest()}",
-            "Runtime test asset: 1ST_READ.BIN",
-            "Runtime test: one 2048-byte DMAREAD compared against cartridge PIO",
-            "NetDIMM limit check: PASS (512 MiB)",
+            f"Base ROM bytes: {base.stat().st_size}",
+            f"Absolute payload base: {payload_base} (0x{payload_base:08X})",
+            f"Expected combined image bytes: {expected}",
+            f"Expected combined image MiB: {expected/1048576:.2f}",
+            f"Base ROM SHA-256: {hashlib.sha256(base.read_bytes()).hexdigest()}",
+            "Runtime smoke-test asset: 1ST_READ.BIN",
+            "Map-aware SH-4 bridge build: PASS",
+            "Payload bytes are not included in this base-ROM artifact.",
           ]
-          assert image.stat().st_size <= 512*1024*1024
+          assert d["packed_file_count"] == 411
+          assert expected <= 512*1024*1024
+          assert any(e["name"] == "1ST_READ.BIN" for e in d["entries"])
+          assert any(e["name"] == "MOVIE_B.SFD" for e in d["entries"])
+          assert "MOVIE_A.SFD" not in [e["name"] for e in d["entries"]]
           pathlib.Path("vf3-assetmap-build/vf3-assetmap-build-report.txt").write_text("\n".join(report)+"\n")
           print("\n".join(report))
           PY
-          rm -f vf3-naomi-vf3tb-306mb-smoke-test.bin
 
       - name: Upload map-aware bridge build report (metadata only)
         uses: actions/upload-artifact@v4
