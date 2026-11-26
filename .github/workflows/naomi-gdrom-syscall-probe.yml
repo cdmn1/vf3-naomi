@@ -228,7 +228,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, pathlib
           d=json.loads(pathlib.Path("vf3-netdimm-306mb-map.json").read_text())
-          base=pathlib.Path("vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin")
+          base=next(pathlib.Path("vf3-assetmap-build").glob("vf3-naomi-assetmap-base-v*.bin"))
           payload_base=int(pathlib.Path("vf3-assetmap-build/vf3_asset_map.h").read_text().split("VF3_ASSET_PAYLOAD_BASE ")[1].split("u")[0])
           expected=payload_base+int(d["payload_bytes"])
           report=[
