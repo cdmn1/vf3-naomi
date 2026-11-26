@@ -491,8 +491,8 @@ jobs:
               f"ROM SHA-256: {digest}",
               "Expected: direct PIO / DMA and PIOREAD / DMA comparisons PASS",
           ]
-          (out / "BUILD_INFO.txt").write_text("\\n".join(report) + "\\n")
-          print("\\n".join(report))
+          (out / "BUILD_INFO.txt").write_text("\n".join(report) + "\n")
+          print("\n".join(report))
           PY
 
       - name: Upload full-manifest-offset GD-ROM diagnostic
