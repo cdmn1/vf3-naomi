@@ -20,8 +20,11 @@ request, transfer, status and server calls used by the retail code.
   DMA chunks across packed-asset boundaries.
 
 The map-aware base-ROM artifact includes the correct absolute payload offset,
-but deliberately does not include commercial game assets. Append the
-separately packed 306 MiB payload with
+but deliberately does not include commercial game assets. Its runtime test
+requests all 576 sectors of 1ST_READ.BIN (1,179,648 bytes), forcing the
+handler to complete two Holly DMA chunks at the 1 MiB boundary; the first
+sector is compared with direct cartridge PIO. Append the separately packed
+306 MiB payload with
 `tools/append_vf3_assets_to_naomi_rom.py` before testing it in Flycast or on
 a Naomi cabinet. The full combined image has not yet been run.
 
