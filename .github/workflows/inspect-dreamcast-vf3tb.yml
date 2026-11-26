@@ -46,7 +46,7 @@ jobs:
                       current = {}
                   continue
               if " = " in line:
-                  key, value = line.rstrip("\\r\\n").split(" = ", 1)
+                  key, value = line.strip().split(" = ", 1)
                   current[key] = value
           if current:
               records.append(current)
