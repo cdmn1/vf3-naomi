@@ -1,5 +1,7 @@
 # Naomi GD-ROM / NetDIMM asset access investigation
 
+> **Current direction (2026-11-26):** This earlier investigation is background, not the active plan. The primary route is now the original Dreamcast VF3tb executable with its GD-ROM syscall path redirected to NetDIMM cartridge reads and DMA. See [DREAMCAST_GDROM_SYSCALL_REDIRECTION.md](DREAMCAST_GDROM_SYSCALL_REDIRECTION.md). The generic Naomi interface cautions below remain relevant, but do not trigger another broad Flycast trace campaign.
+
 ## Status
 
 The earlier vf3_naomi_gdrom_probe-v19.bin is withdrawn. It called the Dreamcast BIOS GD-ROM syscall family from a Naomi build without establishing that Naomi BIOS implements that service. It must not be treated as a valid Naomi storage probe, and its results would not validate the Naomi NetDIMM path.
