@@ -47,3 +47,16 @@ metadata-only asset-map base ROM, this diagnostic image physically contains
 the bytes that PIO and DMA read, so its two data-comparison lines are meaningful
 without the separate Dropbox payload. It is intended to isolate bridge address
 translation and transfer integrity before the real packed assets are available.
+
+
+## Full-manifest offset diagnostic
+
+After the one-entry synthetic data-check passes, CI builds a second diagnostic
+using the complete 411-entry VF3tb USA packed FAD map generated from
+`docs/GDROM_DISC_FILE_MAP.csv`. The ROM is extended to the full sector-aligned
+payload length (about 306.6 MiB), but remains sparse: only the deterministic
+576-sector test fixture is written, at the actual packed payload offset for
+`1ST_READ.BIN`. The test therefore exercises the real manifest FAD lookup and
+the non-zero, high cartridge offset without distributing any retail game data.
+This distinguishes a correct base-plus-relative-offset translation from a
+test that happens to pass at payload offset zero.
