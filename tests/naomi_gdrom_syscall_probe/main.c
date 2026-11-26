@@ -28,7 +28,7 @@ static uint16_t pio_words[WORDS];
 static uint8_t dma_buffer[DMA_TEST_SECTORS * VF3_GD_SECTOR_BYTES] __attribute__((aligned(32)));
 static uint8_t pio_bridge_buffer[WORDS * 2u] __attribute__((aligned(32)));
 static pvr_ptr_t font_texture;
-static int dma_pass, pio_bridge_pass, data_match, status_pass;
+static int dma_pass, pio_bridge_pass, direct_match, bridge_match, status_pass;
 static uint32_t old_service, dma_status, dma_bytes, dma_request, pio_request;
 
 static void read_cart_pio(void)
@@ -142,15 +142,16 @@ static void draw_screen(void)
     draw_text(32,76,"BIOS SERVICE VECTOR: INSTALLED");
     draw_text(32,112,dma_pass?"DMAREAD / HOLLY DMA: PASS":"DMAREAD / HOLLY DMA: FAIL");
     draw_text(32,148,pio_bridge_pass?"PIOREAD TRANSLATED TO DMA: PASS":"PIOREAD TRANSLATED TO DMA: FAIL");
-    draw_text(32,184,data_match?"NETDIMM PIO / SYSCALL DMA MATCH: PASS":"NETDIMM PIO / SYSCALL DMA MATCH: FAIL");
-    draw_text(32,220,status_pass?"GET_CMD_STAT COMPLETION: PASS":"GET_CMD_STAT COMPLETION: FAIL");
+    draw_text(32,184,direct_match?"DIRECT PIO / DMA DATA MATCH: PASS":"DIRECT PIO / DMA DATA MATCH: FAIL");
+    draw_text(32,220,bridge_match?"PIOREAD / DMA DATA MATCH: PASS":"PIOREAD / DMA DATA MATCH: FAIL");
+    draw_text(32,256,status_pass?"GET_CMD_STAT COMPLETION: PASS":"GET_CMD_STAT COMPLETION: FAIL");
     snprintf(line,sizeof line,"DMA STATUS %08X  BYTES %u",(unsigned)dma_status,(unsigned)dma_bytes);
-    draw_text(32,260,line);
+    draw_text(32,292,line);
     snprintf(line,sizeof line,"OLD SERVICE VECTOR %08X",(unsigned)old_service);
-    draw_text(32,296,line);
+    draw_text(32,328,line);
     snprintf(line,sizeof line,"TEST FAD %u  CART OFFSET %08X",(unsigned)TEST_FAD,(unsigned)TEST_OFFSET);
-    draw_text(32,340,line);
-    draw_text(32,376,"NO SERIAL CONNECTION REQUIRED");
+    draw_text(32,364,line);
+    draw_text(32,400,"NO SERIAL CONNECTION REQUIRED");
     pvr_list_finish(); pvr_scene_finish();
 }
 
@@ -159,11 +160,13 @@ int main(void)
     read_cart_pio();
     old_service = vf3_gd_install();
     run_dma_syscall();
-    run_pio_to_dma_bridge();
-    data_match = compare_uncached(pio_words,dma_buffer) &&
-                 compare_uncached(pio_words,pio_bridge_buffer);
+    /* Preserve the multi-chunk DMA result before the PIOREAD request replaces
+       the bridge state with its own one-sector transfer. */
     dma_status = vf3_gd_last_dma_status();
     dma_bytes = vf3_gd_last_bytes();
+    direct_match = compare_uncached(pio_words,dma_buffer);
+    run_pio_to_dma_bridge();
+    bridge_match = compare_uncached(pio_words,pio_bridge_buffer);
 
     pvr_init_defaults();
     pvr_set_bg_color(0.02f,0.06f,0.12f);
