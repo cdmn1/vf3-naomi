@@ -16,15 +16,19 @@ A related project, [celsowm/vf3-decomp](https://github.com/celsowm/vf3-decomp), 
 
 No playable Naomi port or hardware compatibility is claimed yet.
 
-## Immediate next task: execute actual VF3 code on Naomi
+## Immediate next task: redirect VF3 GD-ROM reads to NetDIMM DMA
 
-The first standalone Naomi executable is now built and confirmed booting in Flycast. The known-good baseline is in `tests/naomi_bootstrap/`; it proves KallistiOS startup and visible PowerVR2 output.
+The primary path is the original Dreamcast VF3tb executable and its existing assets. The next implementation is a compatibility shim that redirects the game's GD-ROM/GDFS read path to the NAOMI cartridge/NetDIMM and services bulk reads with Holly System Bus DMA.
 
-The next target, `tests/naomi_vf3_runtime/`, now goes beyond table parsing: it uses the upstream `mt_motion_view()` source-row decoder and `vf3_native_motion_eval()` 63-channel evaluator on real MTAKIPAI rows 1050 and 2386. The workflow validates the same code against the downloaded asset on the host, then cross-compiles it into a Naomi ROM that displays stream sizes, opcode counts and sampled output ranges. This establishes real source-stream decoding and channel evaluation, but not yet channel-to-bone/POL mapping or visible fighter playback. The smaller `tests/naomi_vf3core_smoke/` synthetic parser test remains as an independent no-game-data check.
+This follows the technical approach described in the comments accompanying the user's reference video: rewrite the low-level GD-ROM syscall path to use cartridge reads, and replace CPU-driven PIO transfers with DMA. Those comments are a working lead, not verified source code; the exact retail VF3 request ABI and transfer semantics must be confirmed before implementation.
 
-After the parser passed, the storage investigation moved to the Naomi cartridge/DIMM path. The new versioned `tests/naomi_dma_probe/` compares cartridge PIO and Holly System Bus GD-DMA reads from the same image offset. It does not call Dreamcast BIOS GD-ROM syscalls. The withdrawn v19 probe remains invalid and should not be tested. A successful PIO/DMA comparison will establish raw image-offset access; GDFS filename/FAD mapping and VF3's loader scatter/re-site behavior remain separate tasks. ROM-derived asset checkpoints will be encrypted and content-addressed; plaintext commercial data will not be placed in public caches or artifacts.
+A new implementation plan is in [docs/DREAMCAST_GDROM_SYSCALL_REDIRECTION.md](docs/DREAMCAST_GDROM_SYSCALL_REDIRECTION.md). It separates four tasks: identify the actual guest syscall/GDFS boundary; reuse the existing Naomi cartridge DMA backend; preserve the game's request/status contract; then boot the original executable and validate real resource loads.
 
-Input-path findings are documented and frozen for now. Do not launch more input-trace builds unless the running game later gives us a concrete reason to revisit them.
+The existing [tests/naomi_dma_probe/](tests/naomi_dma_probe/README.md) is useful low-level groundwork: it compares cartridge PIO with Holly GD-DMA at the same image offset. It deliberately bypasses Dreamcast GD-ROM syscalls, so it is **not** the finished redirection layer. The GDFS asset index and loader analysis remain useful for checking FAD/LBA mapping and guest destination buffers.
+
+**Paused as the primary path:** Model 3 PPC/Real3D reconstruction, repeated MT evaluator/pointer-watch captures, and further synthetic scene-builder milestones. Preserve their source, captures and reports as historical research; do not delete them. Reuse the verified Naomi NetDIMM packaging, JVS and System Test Menu hand-off work where it helps the Dreamcast executable.
+
+The next meaningful success is not another probe PASS: it is a real VF3 GD-ROM/GDFS request being fulfilled by NetDIMM DMA into the guest RAM destination, with the completion/status expected by the original game.
 
 ## Resource-loader investigation
 
