@@ -1,0 +1,68 @@
+name: Inspect supplied VF3tb IP0000.BIN
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-ip0000.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download IP0000.BIN from the user's Dropbox share
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/f2x2uqth6xh4t4zif0crr/IP0000.BIN?rlkey=tdnycodnehs1mo9k1p1c5x80r&dl=1" \
+            --output IP0000.BIN
+          test -s IP0000.BIN
+          file IP0000.BIN
+          stat -c 'Downloaded bytes: %s' IP0000.BIN
+
+      - name: Inspect boot-sector structure and VF3tb identity
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, re
+
+          p = Path("IP0000.BIN")
+          data = p.read_bytes()
+          report = []
+          report.append("VF3tb IP0000.BIN inspection")
+          report.append("============================")
+          report.append(f"File size: {len(data)} bytes")
+          report.append(f"SHA-256: {hashlib.sha256(data).hexdigest()}")
+          report.append(f"SHA-1: {hashlib.sha1(data).hexdigest()}")
+          report.append(f"MD5: {hashlib.md5(data).hexdigest()}")
+          report.append(f"Dreamcast 32 KiB IP.BIN size: {'MATCH' if len(data) == 32768 else 'NO MATCH'}")
+          report.append(f"Dreamcast boot header 'SEGA SEGAKATANA': {'FOUND' if b'SEGA SEGAKATANA' in data[:0x40] else 'NOT FOUND'}")
+          report.append("")
+          report.append("First 256 bytes:")
+          report.append(data[:256].hex(" "))
+          report.append("")
+          report.append("ASCII strings (minimum 4 characters):")
+          strings = [(m.start(), m.group().decode("ascii", "replace")) for m in re.finditer(rb"[ -~]{4,}", data)]
+          for off, value in strings:
+              report.append(f"0x{off:04X}: {value}")
+          report.append("")
+          report.append("Expected VF3tb identifiers:")
+          for value in (b"MK-51001", b"V1.002", b"VF3TB", b"1ST_READ.BIN"):
+              report.append(f"{value.decode()}: {'FOUND' if value in data else 'NOT FOUND'}")
+          Path("IP0000-inspection.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+          print("\n".join(report))
+          PY
+
+      - name: Publish text inspection only
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3tb-ip0000-inspection-v${{ github.run_number }}
+          path: IP0000-inspection.txt
+          if-no-files-found: error
