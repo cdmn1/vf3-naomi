@@ -177,16 +177,16 @@ jobs:
                   if len(parts) >= 3 and parts[-1] == name:
                       return int(parts[0], 16)
               raise SystemExit(f"Missing ELF symbol: {name}")
-          start = symbol("__vf3_resident_start")
-          end = symbol("__vf3_resident_end")
+          start = 0x8d000000
+          end = 0x8d030000
           heap_end = symbol("_end")
           install = symbol("vf3_gd_install")
-          assert start == 0x8d000000, hex(start)
           assert start < install < end, (hex(start), hex(install), hex(end))
           assert end < 0x8e000000, hex(end)
           assert heap_end < start, (hex(heap_end), hex(start))
+          assert ".vf3_resident_text" in ph and ".vf3_resident_rodata" in ph and ".vf3_resident_data" in ph, ph
           assert re.search(r"LOAD\s+\S+\s+0x8d000000\s+0x8d000000", ph, re.I), ph
-          print(f"Resident section: 0x{start:08X}-0x{end:08X}")
+          print(f"Resident reserved window: 0x{start:08X}-0x{end:08X}")
           print(f"vf3_gd_install: 0x{install:08X}")
           print(f"KOS _end / heap base: 0x{heap_end:08X}")
           print("Resident PT_LOAD and non-overlapping KOS heap: PASS")

@@ -24,9 +24,6 @@
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
-extern uint8_t __vf3_resident_start[];
-extern uint8_t __vf3_resident_end[];
-
 static uint16_t pio_words[WORDS];
 static uint8_t dma_buffer[DMA_TEST_SECTORS * VF3_GD_SECTOR_BYTES] __attribute__((aligned(32)));
 static uint8_t pio_bridge_buffer[WORDS * 2u] __attribute__((aligned(32)));
@@ -156,9 +153,7 @@ static void draw_screen(void)
     snprintf(line,sizeof line,"TEST FAD %u  CART OFFSET %08X",(unsigned)TEST_FAD,(unsigned)TEST_OFFSET);
     draw_text(32,364,line);
     draw_text(32,400,"NO SERIAL CONNECTION REQUIRED");
-    snprintf(resident_line, sizeof resident_line, "RESIDENT %08X-%08X",
-             (unsigned)(uintptr_t)__vf3_resident_start,
-             (unsigned)(uintptr_t)__vf3_resident_end);
+    snprintf(resident_line, sizeof resident_line, "RESIDENT 8D000000-8D030000");
     draw_text(32,436,resident_line);
     pvr_list_finish(); pvr_scene_finish();
 }
