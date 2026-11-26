@@ -41,7 +41,7 @@ The first implementation should preserve the original request/completion contrac
 
 ### Stage B — implement the NAOMI DMA backend
 
-- Reuse the known-good register setup and bounds checks from the existing cartridge/DIMM DMA probe.
+- Use the register sequence in the existing cartridge/DIMM DMA probe as the starting candidate; verify DMA completion, destination visibility and NetDIMM behavior before treating it as a working backend.
 - Transfer NetDIMM image sectors directly into the guest destination buffer using the NAOMI/Holly DMA path.
 - Handle FAD-to-image-offset conversion, track/data-sector offsets, sector rounding, destination alignment and transfer limits.
 - Do not route bulk data through a CPU PIO copy loop.
