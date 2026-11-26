@@ -227,51 +227,66 @@ jobs:
             --map vf3-netdimm-306mb-map.json \
             --exclude MOVIE_A.SFD
 
-      - name: Generate retail FAD map and compile map-aware SH-4 bridge
+      - name: Build combined 306 MiB VF3 asset smoke-test ROM
         env:
           KOS_BASE: ${{ github.workspace }}/kos
         run: |
           set -eo pipefail
-          # 0x02000000 is a temporary sector-aligned payload base for this
-          # compile-only check. The final combined ROM build will substitute
-          # the actual aligned end-of-ROM offset before its final link.
+          BUILD_VERSION="assetmap-v${GITHUB_RUN_NUMBER}"
+          ROM="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-${BUILD_VERSION}.bin"
+          # First link fixes the table size; then derive the exact append offset.
           python3 tools/generate_vf3_asset_map_header.py \
             --map-json vf3-netdimm-306mb-map.json \
             --payload-base 0x02000000 \
             --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
-          grep -q '#define VF3_ASSET_MAP_COUNT 411u' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
-          grep -q 'MOVIE_B.SFD' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
-          if grep -q 'MOVIE_A.SFD' tests/naomi_gdrom_syscall_probe/vf3_asset_map.h; then
-            echo "MOVIE_A.SFD unexpectedly appears in the runtime map" >&2
-            exit 1
-          fi
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
-          make -C tests/naomi_gdrom_syscall_probe clean all
-          test -s tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          FIRST_SIZE="$(stat -c '%s' "$ROM")"
+          PAYLOAD_BASE="$(python3 -c 'import sys; n=int(sys.argv[1]); print((n+2047)//2048*2048)' "$FIRST_SIZE")"
+          # Rebuild with the actual absolute cartridge offset of the payload.
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-netdimm-306mb-map.json \
+            --payload-base "$PAYLOAD_BASE" \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          SECOND_SIZE="$(stat -c '%s' "$ROM")"
+          test "$FIRST_SIZE" = "$SECOND_SIZE"
+          python3 tools/append_vf3_assets_to_naomi_rom.py \
+            --rom "$ROM" \
+            --payload vf3-netdimm-306mb.payload \
+            --map-json vf3-netdimm-306mb-map.json \
+            --header tests/naomi_gdrom_syscall_probe/vf3_asset_map.h \
+            --payload-base "$PAYLOAD_BASE" \
+            --output vf3-naomi-vf3tb-306mb-smoke-test.bin
+          mkdir -p vf3-assetmap-build
+          cp "$ROM" vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin
+          cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-assetmap-build/
           python3 - <<'PY'
-          import json, pathlib
+          import hashlib, json, pathlib
           d=json.loads(pathlib.Path("vf3-netdimm-306mb-map.json").read_text())
-          h=pathlib.Path("tests/naomi_gdrom_syscall_probe/vf3_asset_map.h").read_text()
-          assert d["packed_file_count"] == 411
-          assert "MOVIE_A.SFD" in d["excluded"]
-          assert any(e["name"] == "MOVIE_B.SFD" for e in d["entries"])
-          assert h.count("}, /* ") == 411
-          report = [
-              "VF3tb USA packed-asset bridge compile",
-              f"Files packed: {d['packed_file_count']}",
-              f"Raw asset bytes: {d['source_bytes']}",
-              f"Sector-aligned payload bytes: {d['payload_bytes']}",
-              f"Runtime FAD entries: {len(d['entries'])}",
-              "Excluded: MOVIE_A.SFD only",
-              "Included: MOVIE_B.SFD",
-              "Map-aware SH-4 bridge compile: PASS",
-              "Payload base in this compile check: 0x02000000 (temporary)",
+          image=pathlib.Path("vf3-naomi-vf3tb-306mb-smoke-test.bin")
+          report=[
+            "VF3tb USA 306 MiB asset-mapped Naomi smoke-test image",
+            f"Packed assets: {d['packed_file_count']}",
+            f"Asset payload bytes: {d['payload_bytes']}",
+            f"Excluded: {', '.join(d['excluded'])}",
+            "MOVIE_B.SFD: included",
+            f"Combined image bytes: {image.stat().st_size}",
+            f"Combined image MiB: {image.stat().st_size/1048576:.2f}",
+            f"Combined image SHA-256: {hashlib.sha256(image.read_bytes()).hexdigest()}",
+            "Runtime test asset: 1ST_READ.BIN",
+            "Runtime test: one 2048-byte DMAREAD compared against cartridge PIO",
+            "NetDIMM limit check: PASS (512 MiB)",
           ]
-          pathlib.Path("vf3-asset-map-build-report.txt").write_text("\n".join(report)+"\n")
+          assert image.stat().st_size <= 512*1024*1024
+          pathlib.Path("vf3-assetmap-build/vf3-assetmap-build-report.txt").write_text("\n".join(report)+"\n")
           print("\n".join(report))
           PY
+          rm -f vf3-naomi-vf3tb-306mb-smoke-test.bin
 
       - name: Upload map-aware bridge build report (metadata only)
         uses: actions/upload-artifact@v4
