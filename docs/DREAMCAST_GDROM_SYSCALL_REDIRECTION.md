@@ -160,3 +160,17 @@ The helper at `0x8C0431DA` computes `r12 = r5 * 0x800` before building the reque
 ### Current implementation decision
 
 Do not replace the game’s loader or invent a separate read protocol. Preserve the retail syscall sequence and implement the narrow BIOS GD-ROM service contract on NAOMI. First resolve the caller of `0x8C0431DA` and confirm the DMA destination/length fields; then route the existing `DMAREAD` / `REQ_DMA_TRANS` / `CHECK_DMA_TRANS` flow to the NAOMI DMA backend. Keep the PIO branch available as a diagnostic fallback, not as the main transfer path.
+## 512 MiB NetDIMM packaging constraint
+
+The existing Dropbox folder inventory was re-summed directly from its file metadata (413 entries including one unrelated ZIP archive):
+
+- All 412 retail disc files total `686,357,488` bytes (`654.6 MiB`).
+- `MOVIE_A.SFD` is `356,409,344` bytes (`339.9 MiB`).
+- `MOVIE_B.SFD` is `69,398,528` bytes (`66.2 MiB`).
+- The two SFD movie files total `425,807,872` bytes (`406.1 MiB`).
+- The remaining retail files, excluding both movies, total `260,549,616` bytes (`248.5 MiB`).
+- Excluding the unrelated `n1-la_keyboard_xyu-[GDS-0017].zip` archive as well leaves `251,578,523` bytes (`239.9 MiB`) of game data.
+
+Therefore the full retail disc-file set does not fit in a 512 MiB NetDIMM image, but the executable and non-movie gameplay assets do, with substantial room for the loader, index and alignment. The first playable package should retain all non-SFD retail assets and omit both movie streams. The movie playback/read path must be handled gracefully (skip/no-op or a later optional video package); do not silently pretend the missing movie data is present. Whether either movie is required for attract mode or endings remains to be checked.
+
+One unrelated ZIP archive is present in the shared Dropbox folder; it is not part of the 412-file retail asset inventory and should not be packed.
