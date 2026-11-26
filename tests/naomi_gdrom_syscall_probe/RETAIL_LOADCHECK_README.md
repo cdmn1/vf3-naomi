@@ -29,7 +29,9 @@ Load the resulting combined image as a NAOMI NetDIMM image. The on-screen
 diagnostic should show the existing DMA/PIO checks passing, followed by:
 
 - `RETAIL 1ST_READ LOAD: PASS`
-- `1ST_READ SHA256: MATCH`
+- `1ST_READ SHA256: MATCH
+
+After displaying the successful result for approximately three seconds, this build copies the verified executable to its Dreamcast load address (0x8C010000), invalidates the instruction cache, switches to a reserved high-RAM stack, and jumps to the retail entry point. This is the first actual retail boot attempt. A black screen or reset means the executable reached a failure after the verified load; it does not invalidate the byte-integrity result.`
 
 The test reads all 576 sectors of the actual retail `1ST_READ.BIN` through
 the resident GD-ROM bridge into reserved Naomi upper RAM at `0x8D100000`.

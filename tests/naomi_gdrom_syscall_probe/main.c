@@ -223,6 +223,12 @@ int main(void)
     font_texture = pvr_mem_malloc(256u*256u*2u);
     if (!font_texture) for (;;) thd_sleep(1000);
     font_init();
+    if (retail_load_pass && retail_sha_pass) {
+        /* Let the user see the successful retail hash check before replacing
+           the low KOS image with the Dreamcast retail executable. */
+        for (unsigned i = 0; i < 180u; ++i) { draw_screen(); thd_sleep(16); }
+        vf3_gd_chainload();
+    }
     for (;;) { draw_screen(); thd_sleep(16); }
     return 0;
 }

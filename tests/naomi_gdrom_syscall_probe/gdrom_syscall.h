@@ -17,6 +17,8 @@ uint32_t vf3_gd_install(void);
 uint32_t vf3_gd_original_service(void);
 uint32_t vf3_gd_last_dma_status(void);
 uint32_t vf3_gd_last_bytes(void);
+/* Never returns: copies the verified retail executable to 0x8C010000 and jumps. */
+void vf3_gd_chainload(void);
 uint32_t vf3_gd_req_cmd(uint32_t command, const uint32_t *params);
 uint32_t vf3_gd_get_cmd_stat(uint32_t request_id, uint32_t *ext);
 uint32_t vf3_gd_exec_server(void);

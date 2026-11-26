@@ -24,7 +24,10 @@ SH_ELF_NM ?= $(SH_ELF_BIN)/sh-elf-nm
 gdrom_syscall_resident.o: gdrom_syscall.c gdrom_syscall.h vf3_asset_map.h
 	kos-cc -fno-jump-tables -c gdrom_syscall.c -o $@
 
-resident_shim.elf: gdrom_syscall_resident.o
+chainload.o: chainload.S
+	kos-cc -c chainload.S -o $@
+
+resident_shim.elf: gdrom_syscall_resident.o chainload.o
 	$(SH_ELF_LD) -EL -e _vf3_gd_install \
 		--section-start=.vf3_resident_text=0x8D000000 \
 		--section-start=.vf3_resident_rodata=0x8D010000 \
@@ -54,5 +57,5 @@ include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
 clean:
-	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o resident_shim.elf resident_shim.bin resident_offsets.h
+	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h
 .PHONY: all rom clean
