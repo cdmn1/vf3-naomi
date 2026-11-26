@@ -1,5 +1,6 @@
 #ifdef VF3_GD_HOST_TEST
 #include <stddef.h>
+#include <stdint.h>
 static volatile uint8_t vf3_fake_mmio[0x10000];
 static uint8_t vf3_fake_guest[0x10000];
 static void *vf3_guest_pointer(uint32_t address)
@@ -20,8 +21,10 @@ static void *vf3_guest_pointer(uint32_t address)
 #include "gdrom_syscall.h"
 #include "vf3_asset_map.h"
 
+#ifndef VF3_GD_HOST_TEST
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define REG32(a) (*(volatile uint32_t *)(uintptr_t)(a))
+#endif
 #define NAOMI_DMA_OFFSETH 0x005f700cu
 #define NAOMI_DMA_OFFSETL 0x005f7010u
 #define SB_GDSTAR 0x005f7404u
@@ -200,7 +203,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
         poll_cart_dma();
         ret = gd.status;
         if (r5) {
-            words = (volatile uint32_t *)(uintptr_t)r5;
+            words = GUEST_WORDS(r5);
             for (unsigned i = 0; i < 4; ++i)
                 words[i] = result[i];
         }
@@ -248,7 +251,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
     case VF3_GD_CHECK_PIO_TRANS:
         poll_cart_dma();
         if (r5)
-            *(volatile uint32_t *)(uintptr_t)r5 = remaining_sectors();
+            if (r5 && GUEST_WORDS(r5)) *GUEST_WORDS(r5) = remaining_sectors();
         return gd.status == VF3_GDC_BUSY ? 0u : 1u;
 
     case VF3_GD_READ_ABORT:
