@@ -483,3 +483,10 @@ wrapper's use of the third result word for the transfer size.
 
 Reference: KallistiOS
 [`kernel/arch/dreamcast/include/dc/syscalls.h`](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/dc/syscalls.h).
+
+
+A follow-up v62 run (GitHub Actions run 45888819759) rebuilt the same
+manifest-check image after fixing the diagnostic report formatting. It
+revalidated the same 321,617,920-byte image size and `0x13198000` cartridge
+offset; v62 ROM SHA-256:
+`d6c61f3f9c455d769587058d572e6444556e3e08485d2f5722584d7d616b773a`.
