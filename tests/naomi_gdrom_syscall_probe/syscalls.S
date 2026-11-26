@@ -1,9 +1,9 @@
     .text
     .align 2
 
-    .global vf3_gd_req_cmd
-    .type vf3_gd_req_cmd,@function
-vf3_gd_req_cmd:
+    .global _vf3_gd_req_cmd
+    .type _vf3_gd_req_cmd,@function
+_vf3_gd_req_cmd:
     mov #0, r6
     mov #0, r7
     mov.l .Lvec_req, r0
@@ -14,9 +14,9 @@ vf3_gd_req_cmd:
 .Lvec_req:
     .long 0x8c0000bc
 
-    .global vf3_gd_get_cmd_stat
-    .type vf3_gd_get_cmd_stat,@function
-vf3_gd_get_cmd_stat:
+    .global _vf3_gd_get_cmd_stat
+    .type _vf3_gd_get_cmd_stat,@function
+_vf3_gd_get_cmd_stat:
     mov #0, r6
     mov #1, r7
     mov.l .Lvec_stat, r0
@@ -27,9 +27,9 @@ vf3_gd_get_cmd_stat:
 .Lvec_stat:
     .long 0x8c0000bc
 
-    .global vf3_gd_exec_server
-    .type vf3_gd_exec_server,@function
-vf3_gd_exec_server:
+    .global _vf3_gd_exec_server
+    .type _vf3_gd_exec_server,@function
+_vf3_gd_exec_server:
     mov #0, r6
     mov #2, r7
     mov.l .Lvec_exec, r0
@@ -40,9 +40,9 @@ vf3_gd_exec_server:
 .Lvec_exec:
     .long 0x8c0000bc
 
-    .global vf3_gd_init_system
-    .type vf3_gd_init_system,@function
-vf3_gd_init_system:
+    .global _vf3_gd_init_system
+    .type _vf3_gd_init_system,@function
+_vf3_gd_init_system:
     mov #0, r6
     mov #3, r7
     mov.l .Lvec_init, r0
@@ -53,9 +53,9 @@ vf3_gd_init_system:
 .Lvec_init:
     .long 0x8c0000bc
 
-    .global vf3_gd_get_drv_stat
-    .type vf3_gd_get_drv_stat,@function
-vf3_gd_get_drv_stat:
+    .global _vf3_gd_get_drv_stat
+    .type _vf3_gd_get_drv_stat,@function
+_vf3_gd_get_drv_stat:
     mov #0, r6
     mov #4, r7
     mov.l .Lvec_drv, r0
@@ -66,9 +66,9 @@ vf3_gd_get_drv_stat:
 .Lvec_drv:
     .long 0x8c0000bc
 
-    .global vf3_gd_g1_dma_end
-    .type vf3_gd_g1_dma_end,@function
-vf3_gd_g1_dma_end:
+    .global _vf3_gd_g1_dma_end
+    .type _vf3_gd_g1_dma_end,@function
+_vf3_gd_g1_dma_end:
     mov #0, r6
     mov #5, r7
     mov.l .Lvec_g1, r0
@@ -79,9 +79,9 @@ vf3_gd_g1_dma_end:
 .Lvec_g1:
     .long 0x8c0000bc
 
-    .global vf3_gd_req_dma_trans
-    .type vf3_gd_req_dma_trans,@function
-vf3_gd_req_dma_trans:
+    .global _vf3_gd_req_dma_trans
+    .type _vf3_gd_req_dma_trans,@function
+_vf3_gd_req_dma_trans:
     mov #0, r6
     mov #6, r7
     mov.l .Lvec_reqdma, r0
@@ -92,9 +92,9 @@ vf3_gd_req_dma_trans:
 .Lvec_reqdma:
     .long 0x8c0000bc
 
-    .global vf3_gd_check_dma_trans
-    .type vf3_gd_check_dma_trans,@function
-vf3_gd_check_dma_trans:
+    .global _vf3_gd_check_dma_trans
+    .type _vf3_gd_check_dma_trans,@function
+_vf3_gd_check_dma_trans:
     mov #0, r6
     mov #7, r7
     mov.l .Lvec_checkdma, r0
@@ -105,9 +105,9 @@ vf3_gd_check_dma_trans:
 .Lvec_checkdma:
     .long 0x8c0000bc
 
-    .global vf3_gd_read_abort
-    .type vf3_gd_read_abort,@function
-vf3_gd_read_abort:
+    .global _vf3_gd_read_abort
+    .type _vf3_gd_read_abort,@function
+_vf3_gd_read_abort:
     mov #0, r6
     mov #8, r7
     mov.l .Lvec_abort, r0
@@ -118,9 +118,9 @@ vf3_gd_read_abort:
 .Lvec_abort:
     .long 0x8c0000bc
 
-    .global vf3_gd_reset
-    .type vf3_gd_reset,@function
-vf3_gd_reset:
+    .global _vf3_gd_reset
+    .type _vf3_gd_reset,@function
+_vf3_gd_reset:
     mov #0, r6
     mov #9, r7
     mov.l .Lvec_reset, r0
@@ -131,9 +131,9 @@ vf3_gd_reset:
 .Lvec_reset:
     .long 0x8c0000bc
 
-    .global vf3_gd_change_data_type
-    .type vf3_gd_change_data_type,@function
-vf3_gd_change_data_type:
+    .global _vf3_gd_change_data_type
+    .type _vf3_gd_change_data_type,@function
+_vf3_gd_change_data_type:
     mov #0, r6
     mov #10, r7
     mov.l .Lvec_type, r0
@@ -144,9 +144,9 @@ vf3_gd_change_data_type:
 .Lvec_type:
     .long 0x8c0000bc
 
-    .global vf3_gd_set_pio_callback
-    .type vf3_gd_set_pio_callback,@function
-vf3_gd_set_pio_callback:
+    .global _vf3_gd_set_pio_callback
+    .type _vf3_gd_set_pio_callback,@function
+_vf3_gd_set_pio_callback:
     mov #0, r6
     mov #11, r7
     mov.l .Lvec_piocb, r0
@@ -157,9 +157,9 @@ vf3_gd_set_pio_callback:
 .Lvec_piocb:
     .long 0x8c0000bc
 
-    .global vf3_gd_req_pio_trans
-    .type vf3_gd_req_pio_trans,@function
-vf3_gd_req_pio_trans:
+    .global _vf3_gd_req_pio_trans
+    .type _vf3_gd_req_pio_trans,@function
+_vf3_gd_req_pio_trans:
     mov #0, r6
     mov #12, r7
     mov.l .Lvec_reqpio, r0
@@ -170,9 +170,9 @@ vf3_gd_req_pio_trans:
 .Lvec_reqpio:
     .long 0x8c0000bc
 
-    .global vf3_gd_check_pio_trans
-    .type vf3_gd_check_pio_trans,@function
-vf3_gd_check_pio_trans:
+    .global _vf3_gd_check_pio_trans
+    .type _vf3_gd_check_pio_trans,@function
+_vf3_gd_check_pio_trans:
     mov #0, r6
     mov #13, r7
     mov.l .Lvec_checkpio, r0
