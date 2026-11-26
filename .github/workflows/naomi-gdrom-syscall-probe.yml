@@ -348,6 +348,83 @@ jobs:
           path: vf3-datacheck-build/*
           if-no-files-found: error
 
+      - name: Build full-manifest-offset GD-ROM diagnostic ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -eo pipefail
+          BUILD_VERSION="manifestcheck-v${GITHUB_RUN_NUMBER}"
+          ROM="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-${BUILD_VERSION}.bin"
+          # Link once to determine the exact sector-aligned payload base.
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-netdimm-306mb-map.json \
+            --payload-base 0x02000000 \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          FIRST_SIZE="$(stat -c '%s' "$ROM")"
+          PAYLOAD_BASE="$(python3 -c 'import sys; n=int(sys.argv[1]); print((n+2047)//2048*2048)' "$FIRST_SIZE")"
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-netdimm-306mb-map.json \
+            --payload-base "$PAYLOAD_BASE" \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          SECOND_SIZE="$(stat -c '%s' "$ROM")"
+          test "$FIRST_SIZE" = "$SECOND_SIZE"
+          python3 - "$ROM" "$PAYLOAD_BASE" vf3-netdimm-306mb-map.json <<'PY'
+          import hashlib, json, pathlib, sys
+          rom = pathlib.Path(sys.argv[1])
+          base = int(sys.argv[2])
+          doc = json.loads(pathlib.Path(sys.argv[3]).read_text())
+          asset = next(e for e in doc["entries"] if e["name"].upper() == "1ST_READ.BIN")
+          assert asset["fad"] == 548574
+          assert asset["sectors"] == 576
+          assert asset["payload_offset"] > 0
+          fixture_offset = base + int(asset["payload_offset"])
+          expected_size = base + int(doc["payload_bytes"])
+          assert fixture_offset + 576 * 2048 <= expected_size
+          # Make a sparse 306 MiB image with deterministic bytes only at the
+          # real 1ST_READ.BIN packed offset. No commercial game data is added.
+          with rom.open("r+b") as f:
+              f.seek(expected_size - 1)
+              f.write(b"\\0")
+              f.seek(fixture_offset)
+              fixture = bytes(((i * 37 + (i // 2048) * 11 + 0x5a) & 0xff) for i in range(576 * 2048))
+              f.write(fixture)
+          assert rom.stat().st_size == expected_size
+          out = pathlib.Path("vf3-manifestcheck-build")
+          out.mkdir(exist_ok=True)
+          target = out / f"vf3-naomi-gdrom-manifestcheck-v{pathlib.os.environ['GITHUB_RUN_NUMBER']}.bin"
+          target.write_bytes(rom.read_bytes())
+          report = [
+              "VF3 NAOMI GD-ROM full-manifest offset diagnostic",
+              "Synthetic deterministic fixture; no commercial game assets.",
+              f"Manifest assets: {doc['packed_file_count']} mapped / {doc['source_file_count']} source",
+              f"Test asset: {asset['name']}",
+              f"Test FAD: {asset['fad']}",
+              f"Payload-relative offset: 0x{int(asset['payload_offset']):08X}",
+              f"Absolute cartridge offset: 0x{fixture_offset:08X}",
+              f"Payload base: 0x{base:08X}",
+              "Fixture: 576 sectors (1,179,648 bytes)",
+              f"Combined sparse image size: {expected_size} bytes ({expected_size/1048576:.2f} MiB)",
+              f"ROM SHA-256: {hashlib.sha256(target.read_bytes()).hexdigest()}",
+              "Expected: direct PIO / DMA and PIOREAD / DMA comparisons PASS",
+          ]
+          (out / "BUILD_INFO.txt").write_text("\\n".join(report) + "\\n")
+          print("\\n".join(report))
+          PY
+
+      - name: Upload full-manifest-offset GD-ROM diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-gdrom-manifestcheck-v${{ github.run_number }}
+          path: vf3-manifestcheck-build/*
+          if-no-files-found: error
+
       - name: Upload map-aware bridge build report (metadata only)
         uses: actions/upload-artifact@v4
         with:
