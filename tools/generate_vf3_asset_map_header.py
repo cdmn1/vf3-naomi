@@ -35,7 +35,7 @@ def generate(map_path: Path, payload_base: int) -> str:
         f"#define VF3_ASSET_PAYLOAD_BASE {payload_base}u",
         f"#define VF3_ASSET_TEST_FAD {int(test_asset['fad'])}u",
         f"#define VF3_ASSET_TEST_OFFSET {payload_base + int(test_asset['payload_offset'])}u",
-        "static const vf3_asset_range vf3_asset_map[VF3_ASSET_MAP_COUNT ? VF3_ASSET_MAP_COUNT : 1] = {",
+        "static const vf3_asset_range vf3_asset_map[VF3_ASSET_MAP_COUNT ? VF3_ASSET_MAP_COUNT : 1] __attribute__((section(\".vf3_resident_rodata\"), used)) = {",
     ]
     for e in entries:
         absolute = payload_base + int(e["payload_offset"])

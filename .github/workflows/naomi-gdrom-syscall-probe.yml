@@ -127,6 +127,16 @@ jobs:
               at = s.find(guard, start + len(function))
               if at >= 0: s = s[:at] + s[at + len(guard):]
           p.write_text(s)
+          mm = Path("kos/kernel/mm/mm.c")
+          ms = mm.read_text()
+          heap_check = "if(new_base >= (_arch_mem_top - THD_KERNEL_STACK_SIZE)) {"
+          heap_capped = "if(new_base >= (0x8d000000u - THD_KERNEL_STACK_SIZE)) {"
+          if heap_check in ms:
+              ms = ms.replace(heap_check, heap_capped, 1)
+          elif heap_capped not in ms:
+              raise SystemExit("Could not safely cap KOS sbrk below resident region")
+          mm.write_text(ms)
+          print("KOS sbrk heap capped below resident shim at 0x8D000000")
           PY
           make -C "$KOS_BASE" -j2
 
@@ -146,11 +156,41 @@ jobs:
       - name: Compile and package GD-ROM syscall bridge probe
         env:
           KOS_BASE: ${{ github.workspace }}/kos
+          KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
         run: |
           set -eo pipefail
           export KOS_SUBARCH=naomi
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_gdrom_syscall_probe all
+          ELF="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf"
+          "$KOS_CC_BASE/bin/sh-elf-readelf" -l -S "$ELF" > resident-layout.txt
+          "$KOS_CC_BASE/bin/sh-elf-nm" -n "$ELF" > resident-symbols.txt
+          python3 - <<'PY'
+          import pathlib
+          import re
+          ph = pathlib.Path("resident-layout.txt").read_text()
+          nm = pathlib.Path("resident-symbols.txt").read_text()
+          def symbol(name):
+              for line in nm.splitlines():
+                  parts = line.split()
+                  if len(parts) >= 3 and parts[-1] == name:
+                      return int(parts[0], 16)
+              raise SystemExit(f"Missing ELF symbol: {name}")
+          start = symbol("__vf3_resident_start")
+          end = symbol("__vf3_resident_end")
+          heap_end = symbol("_end")
+          install = symbol("vf3_gd_install")
+          assert start == 0x8d000000, hex(start)
+          assert start < install < end, (hex(start), hex(install), hex(end))
+          assert end < 0x8e000000, hex(end)
+          assert heap_end < start, (hex(heap_end), hex(start))
+          assert re.search(r"LOAD\s+\S+\s+0x8d000000\s+0x8d000000", ph, re.I), ph
+          print(f"Resident section: 0x{start:08X}-0x{end:08X}")
+          print(f"vf3_gd_install: 0x{install:08X}")
+          print(f"KOS _end / heap base: 0x{heap_end:08X}")
+          print("Resident PT_LOAD and non-overlapping KOS heap: PASS")
+          PY
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_gdrom_syscall_probe rom
           test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
 
@@ -160,6 +200,7 @@ jobs:
           mkdir -p gdrom-syscall-artifact
           ROM="vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_gdrom_syscall_probe/${ROM}" gdrom-syscall-artifact/
+          cp resident-layout.txt gdrom-syscall-artifact/
           SIZE="$(stat -c '%s' "gdrom-syscall-artifact/${ROM}")"
           SHA="$(sha256sum "gdrom-syscall-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
@@ -174,7 +215,9 @@ jobs:
           Syscall vector: 0x8C0000BC
           Commands: DMAREAD 0x11 and PIOREAD 0x10 both serviced by Naomi Holly DMA
           Test mapping: FAD 45150 -> NetDIMM image offset 0
-          Scope: ABI and DMA transport probe only; not the retail game image
+          Resident code/data/map: 0x8D000000 (verified as ELF PT_LOAD)
+          KOS sbrk heap ceiling: below 0x8D000000
+          Scope: resident bridge and DMA transport probe only; not the retail game image
           EOF
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## GD-ROM syscall bridge probe

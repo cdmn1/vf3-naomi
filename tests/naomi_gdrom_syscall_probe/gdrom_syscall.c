@@ -1,6 +1,9 @@
-#ifdef VF3_GD_HOST_TEST
 #include <stddef.h>
 #include <stdint.h>
+#ifdef VF3_GD_HOST_TEST
+#include <string.h>
+#define VF3_RESIDENT_TEXT
+#define VF3_RESIDENT_DATA
 static volatile uint8_t vf3_fake_mmio[0x10000];
 static uint8_t vf3_fake_guest[0x10000];
 static void *vf3_guest_pointer(uint32_t address)
@@ -13,11 +16,10 @@ static void *vf3_guest_pointer(uint32_t address)
 #define REG32(a) (*(volatile uint32_t *)(void *)(vf3_fake_mmio + ((a) & 0xffffu)))
 #define GUEST_WORDS(a) ((volatile uint32_t *)vf3_guest_pointer(a))
 #else
-#include <kos.h>
+#define VF3_RESIDENT_TEXT __attribute__((section(".vf3_resident_text"), noinline, used))
+#define VF3_RESIDENT_DATA __attribute__((section(".vf3_resident_data"), used))
 #define GUEST_WORDS(a) ((volatile uint32_t *)(uintptr_t)(a))
 #endif
-#include <stdint.h>
-#include <string.h>
 #include "gdrom_syscall.h"
 #include "vf3_asset_map.h"
 
@@ -41,12 +43,17 @@ typedef struct {
     uint32_t current_fad, remaining_sectors, current_dest, chunk_sectors, chunk_bytes;
 } vf3_gd_state;
 
-static volatile uint32_t *const service_vector =
-    (volatile uint32_t *)(uintptr_t)0x8c0000bcu;
-static uint32_t saved_service;
-static vf3_gd_state gd;
+static uint32_t saved_service VF3_RESIDENT_DATA;
+static vf3_gd_state gd VF3_RESIDENT_DATA = {0};
 
-static void invalidate_destination(uint32_t dest, uint32_t bytes)
+static VF3_RESIDENT_TEXT void vf3_zero(void *memory, size_t bytes)
+{
+    volatile uint8_t *p = (volatile uint8_t *)memory;
+    while (bytes--)
+        *p++ = 0;
+}
+
+static VF3_RESIDENT_TEXT void invalidate_destination(uint32_t dest, uint32_t bytes)
 {
 #ifdef VF3_GD_HOST_TEST
     (void)dest;
@@ -61,7 +68,7 @@ static void invalidate_destination(uint32_t dest, uint32_t bytes)
 #endif
 }
 
-static const vf3_asset_range *find_asset_range(uint32_t fad)
+static VF3_RESIDENT_TEXT const vf3_asset_range *find_asset_range(uint32_t fad)
 {
 #if VF3_ASSET_MAP_COUNT > 0
     unsigned lo = 0, hi = VF3_ASSET_MAP_COUNT;
@@ -74,7 +81,7 @@ static const vf3_asset_range *find_asset_range(uint32_t fad)
     }
     return 0;
 #else
-    static const vf3_asset_range probe_range = {
+    static const vf3_asset_range probe_range VF3_RESIDENT_DATA = {
         VF3_GD_FAD_BASE, 0xffffffffu - VF3_GD_FAD_BASE, 0u
     };
     return fad >= probe_range.fad_start ? &probe_range : 0;
@@ -83,11 +90,10 @@ static const vf3_asset_range *find_asset_range(uint32_t fad)
 
 /* Start one contiguous part of the guest request. A request can span several
    packed assets; each asset boundary is handled as a separate Holly DMA. */
-static int start_cart_dma_chunk(void)
+static VF3_RESIDENT_TEXT int start_cart_dma_chunk(void)
 {
     const vf3_asset_range *entry;
-    uint32_t sectors, bytes, source_offset, physical;
-    uint64_t offset64;
+    uint32_t sectors, bytes, source_offset, physical, delta_sectors;
     entry = find_asset_range(gd.current_fad);
     if (!entry || gd.remaining_sectors == 0u)
         return -1;
@@ -98,19 +104,25 @@ static int start_cart_dma_chunk(void)
         sectors = MAX_DMA_CHUNK_BYTES / VF3_GD_SECTOR_BYTES;
     if (sectors == 0u) return -1;
 
-    /* Generated map entries store payload-relative offsets. Add the base
-       exactly once to obtain the absolute NetDIMM cartridge byte address. */
-    offset64 = (uint64_t)VF3_ASSET_PAYLOAD_BASE +
-               (uint64_t)entry->payload_offset +
-               (uint64_t)(gd.current_fad - entry->fad_start) * VF3_GD_SECTOR_BYTES;
+    /* Keep the resident handler free of 64-bit libgcc helpers: the packed
+       NetDIMM image is below 512 MiB, so checked 32-bit arithmetic is enough. */
+    delta_sectors = gd.current_fad - entry->fad_start;
 #if VF3_ASSET_MAP_COUNT == 0
-    offset64 = (uint64_t)(gd.current_fad - VF3_GD_FAD_BASE) * VF3_GD_SECTOR_BYTES;
+    if (gd.current_fad < VF3_GD_FAD_BASE ||
+        delta_sectors > (0xffffffffu >> 11)) return -2;
+    source_offset = delta_sectors << 11;
+#else
+    if (entry->payload_offset > 0xffffffffu - VF3_ASSET_PAYLOAD_BASE)
+        return -2;
+    source_offset = VF3_ASSET_PAYLOAD_BASE + entry->payload_offset;
+    if (delta_sectors > (0xffffffffu - source_offset) / VF3_GD_SECTOR_BYTES)
+        return -2;
+    source_offset += delta_sectors * VF3_GD_SECTOR_BYTES;
 #endif
-    if (offset64 > 0xffffffffu) return -2;
-    source_offset = (uint32_t)offset64;
     bytes = sectors * VF3_GD_SECTOR_BYTES;
     physical = gd.current_dest & 0x1fffffffu;
-    if (physical < 0x01000000u || physical + bytes < physical)
+    if (physical < 0x0c000000u || physical + bytes < physical ||
+        physical + bytes > 0x0e000000u)
         return -3;
 
     invalidate_destination(gd.current_dest, bytes);
@@ -130,7 +142,7 @@ static int start_cart_dma_chunk(void)
     return 0;
 }
 
-static void poll_cart_dma(void)
+static VF3_RESIDENT_TEXT void poll_cart_dma(void)
 {
     if (gd.status != VF3_GDC_BUSY || !gd.started)
         return;
@@ -152,12 +164,12 @@ static void poll_cart_dma(void)
     }
 }
 
-static uint32_t remaining_sectors(void)
+static VF3_RESIDENT_TEXT uint32_t remaining_sectors(void)
 {
     return gd.remaining_sectors;
 }
 
-static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
+static VF3_RESIDENT_TEXT uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
                                        uint32_t r6, uint32_t r7)
 {
     volatile uint32_t *words;
@@ -172,7 +184,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
         uint32_t next = gd.next_request_id ? gd.next_request_id : 2u;
         if (gd.status != VF3_GDC_OK)
             return 0u;
-        memset(&gd, 0, sizeof gd);
+        vf3_zero(&gd, sizeof gd);
         gd.next_request_id = next + 1u;
         gd.request_id = next;
         gd.command = r4;
@@ -183,12 +195,12 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
                 gd.params[i] = words[i];
         }
         if (gd.command == VF3_GD_CMD_DMAREAD || gd.command == VF3_GD_CMD_PIOREAD) {
-            uint64_t bytes = (uint64_t)gd.params[1] * VF3_GD_SECTOR_BYTES;
-            if (gd.params[1] == 0u || bytes > MAX_REQUEST_BYTES ||
+            if (gd.params[1] == 0u ||
+                gd.params[1] > MAX_REQUEST_BYTES / VF3_GD_SECTOR_BYTES ||
                 gd.params[0] > 0xffffffffu - gd.params[1]) {
                 gd.status = (uint32_t)VF3_GDC_ERR;
             } else {
-                gd.total_bytes = (uint32_t)bytes;
+                gd.total_bytes = gd.params[1] * VF3_GD_SECTOR_BYTES;
                 gd.current_fad = gd.params[0];
                 gd.remaining_sectors = gd.params[1];
                 gd.current_dest = gd.params[2];
@@ -279,7 +291,7 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
 
     case VF3_GD_RESET:
         REG32(SB_GDEN) = 0u;
-        memset(&gd, 0, sizeof gd);
+        vf3_zero(&gd, sizeof gd);
         gd.next_request_id = 2u;
         gd.status = VF3_GDC_OK;
         gd.request_id = 0xffffffffu;
@@ -290,26 +302,28 @@ static uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r5,
     }
 }
 
-uint32_t vf3_gd_install(void)
+VF3_RESIDENT_TEXT uint32_t vf3_gd_install(void)
 {
+    volatile uint32_t *service_vector =
+        (volatile uint32_t *)(uintptr_t)0x8c0000bcu;
     saved_service = *service_vector;
     *service_vector = (uint32_t)(uintptr_t)vf3_gd_syscall_handler;
-    memset(&gd, 0, sizeof gd);
+    vf3_zero(&gd, sizeof gd);
     gd.next_request_id = 2u;
     gd.request_id = 0xffffffffu;
     gd.status = VF3_GDC_OK;
     return saved_service;
 }
 
-uint32_t vf3_gd_original_service(void) { return saved_service; }
+VF3_RESIDENT_TEXT uint32_t vf3_gd_original_service(void) { return saved_service; }
 
-uint32_t vf3_gd_last_dma_status(void)
+VF3_RESIDENT_TEXT uint32_t vf3_gd_last_dma_status(void)
 {
     poll_cart_dma();
     return gd.dma_status;
 }
 
-uint32_t vf3_gd_last_bytes(void)
+VF3_RESIDENT_TEXT uint32_t vf3_gd_last_bytes(void)
 {
     poll_cart_dma();
     return gd.transferred_bytes;

@@ -16,11 +16,13 @@ all: $(TARGET)
 rom: $(ROM)
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
-$(TARGET): $(OBJS)
-	kos-cc -o $(TARGET) $(OBJS)
+$(TARGET): $(OBJS) resident_sections.ld
+	kos-cc -Wl,-T,$(CURDIR)/resident_sections.ld -o $(TARGET) $(OBJS)
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD Syscall $(BUILD_VERSION)" -e $(TARGET)
 include $(KOS_BASE)/Makefile.rules
+CFLAGS += -fno-jump-tables
+
 clean:
 	-rm -f $(TARGET) $(ROM) $(OBJS)
 .PHONY: all rom clean
