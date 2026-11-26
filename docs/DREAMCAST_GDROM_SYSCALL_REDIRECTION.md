@@ -197,3 +197,4 @@ Important limits of this first build:
 - It does not yet load `1ST_READ.BIN` or `RELOAD.BIN`, and it is not a playable game build.
 
 The next validation is a Flycast run of this ROM. If both read paths and the byte comparisons pass, extend the same handler to the retail FAD-to-packed-asset index and multi-sector transfers, then use it in the Dreamcast executable bootstrap.
+Clean rebuild `vf3_naomi_gdrom_syscall_probe-v7.bin` also succeeded after removing temporary linker diagnostics from the Makefile. It is 225,724 bytes with SHA-256 `1e7613c4545bce8cf7e103df3545558c375dd08c1405aaee3aa424e03ef913d3`.
