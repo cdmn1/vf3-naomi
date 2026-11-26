@@ -30,9 +30,18 @@ jobs:
             --user-agent "Mozilla/5.0" \
             "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
             --output vf3-assets.zip
-          entry="$(unzip -Z1 vf3-assets.zip | grep -E '(^|/)1ST_READ[.]BIN | head -n 1)"
-          test -n "$entry"
-          unzip -p vf3-assets.zip "$entry" > 1ST_READ.BIN
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          with zipfile.ZipFile("vf3-assets.zip") as archive:
+              matches = [name for name in archive.namelist()
+                         if name.rsplit("/", 1)[-1].upper() == "1ST_READ.BIN"]
+              if len(matches) != 1:
+                  raise SystemExit(f"Expected one 1ST_READ.BIN, found: {matches}")
+              entry = matches[0]
+              Path("1ST_READ.BIN").write_bytes(archive.read(entry))
+          print(f"Extracted entry: {entry}")
+          PY
           test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
           echo "Extracted entry: $entry" >> "$GITHUB_STEP_SUMMARY"
           sha256sum 1ST_READ.BIN | tee executable.sha256
