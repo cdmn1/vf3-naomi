@@ -174,3 +174,12 @@ The existing Dropbox folder inventory was re-summed directly from its file metad
 Therefore the full retail disc-file set does not fit in a 512 MiB NetDIMM image, but the executable and non-movie gameplay assets do, with substantial room for the loader, index and alignment. The first playable package should retain all non-SFD retail assets and omit both movie streams. The movie playback/read path must be handled gracefully (skip/no-op or a later optional video package); do not silently pretend the missing movie data is present. Whether either movie is required for attract mode or endings remains to be checked.
 
 One unrelated ZIP archive is present in the shared Dropbox folder; it is not part of the 412-file retail asset inventory and should not be packed.
+## Second-stage RELOAD.BIN confirmation
+
+The same workflow extracted `RELOAD.BIN` from the shared folder and verified its size (`655,360` bytes) and SHA-256 (`b8eb49a134230bcd195b5abb03adfd03edfe7ba936b261362bacf2c9e48cd2d1`). Its disassembly contains the GDFS 0.53 and NAOMI LIBRARY 0.8 banners, plus a second complete family of service-vector trampolines:
+
+- `0x8C012BC0 + 0x14*n`, for `n = 0..13`: each sets `r6=0`, sets `r7=n`, loads `0x8C0000BC`, dereferences it and jumps through the service pointer.
+- `0x8C012CD8`: alternate selector `r6=-1, r7=0`.
+- `0x8C012CEC`: alternate selector `r6=-1, r7=1`.
+
+This independently confirms that both `1ST_READ.BIN` and `RELOAD.BIN` expect the same BIOS service-vector address and the same `r6/r7` dispatch convention. The narrowest replacement remains a handler installed at `0x8C0000BC`; it must handle the `r6=0` GD-ROM family and preserve or explicitly support the `r6=-1` calls if the game reaches them. The service pointer must remain valid when the second-stage module is loaded.
