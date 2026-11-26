@@ -163,42 +163,56 @@ jobs:
           . "$KOS_BASE/environ.sh"
           export KOS_INC_PATHS_CPP=""
           make -C tests/naomi_gdrom_syscall_probe all
-          ELF="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf"
-          "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$ELF" > resident-layout.txt
-          "$KOS_CC_BASE/bin/sh-elf-nm" -n "$ELF" > resident-symbols.txt
+          RESIDENT_ELF="tests/naomi_gdrom_syscall_probe/resident_shim.elf"
+          APP_ELF="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf"
+          "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$RESIDENT_ELF" > resident-layout.txt
+          "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$APP_ELF" > app-layout.txt
+          "$KOS_CC_BASE/bin/sh-elf-nm" -n "$RESIDENT_ELF" > resident-symbols.txt
+          "$KOS_CC_BASE/bin/sh-elf-nm" -u tests/naomi_gdrom_syscall_probe/gdrom_syscall_resident.o > resident-undefined.txt
+          "$KOS_CC_BASE/bin/sh-elf-nm" -n "$APP_ELF" > app-symbols.txt
           python3 - <<'PY'
           import pathlib
           import re
-          ph = pathlib.Path("resident-layout.txt").read_text()
+          resident = pathlib.Path("resident-layout.txt").read_text()
+          app = pathlib.Path("app-layout.txt").read_text()
           nm = pathlib.Path("resident-symbols.txt").read_text()
-          def symbol(name):
-              for line in nm.splitlines():
+          app_nm = pathlib.Path("app-symbols.txt").read_text()
+          undefined = pathlib.Path("resident-undefined.txt").read_text().strip()
+          def symbol(table, name):
+              for line in table.splitlines():
                   parts = line.split()
-                  if len(parts) >= 3 and parts[-1] == name:
+                  if len(parts) >= 3 and parts[-1].lstrip("_") == name:
                       return int(parts[0], 16)
               raise SystemExit(f"Missing ELF symbol: {name}")
-          def section_address(name):
-              match = re.search(r"\]\s+" + re.escape(name) + r"\s+\S+\s+([0-9a-fA-F]+)", ph)
+          def section_address(table, name):
+              match = re.search(r"\]\s+" + re.escape(name) + r"\s+\S+\s+([0-9a-fA-F]+)", table)
               if not match:
-                  raise SystemExit(f"Missing ELF section: {name}\n{ph}")
+                  raise SystemExit(f"Missing ELF section: {name}\n{table}")
               return int(match.group(1), 16)
-          text_addr = section_address(".vf3_resident_text")
-          rodata_addr = section_address(".vf3_resident_rodata")
-          data_addr = section_address(".vf3_resident_data")
-          heap_end = symbol("_end")
+          text_addr = section_address(resident, ".vf3_resident_text")
+          rodata_addr = section_address(resident, ".vf3_resident_rodata")
+          data_addr = section_address(resident, ".vf3_resident_data")
+          heap_end = symbol(app_nm, "_end")
           assert text_addr == 0x8d000000, hex(text_addr)
           assert rodata_addr == 0x8d010000, hex(rodata_addr)
           assert data_addr == 0x8d020000, hex(data_addr)
-          assert heap_end < text_addr, (hex(heap_end), hex(text_addr))
-          assert re.search(r"LOAD\s+\S+\s+0x8d000000\s+0x8d000000", ph, re.I), ph
+          assert heap_end < 0x8d000000, hex(heap_end)
+          assert not undefined, f"Resident object has external dependencies:\n{undefined}"
+          assert re.search(r"LOAD\s+\S+\s+0x8d000000\s+0x8d000000", resident, re.I), resident
+          app_loads = [line.split() for line in app.splitlines() if line.strip().startswith("LOAD")]
+          assert app_loads, app
+          assert all(int(row[2], 16) < 0x8d000000 for row in app_loads), app
+          image_size = pathlib.Path("tests/naomi_gdrom_syscall_probe/resident_shim.bin").stat().st_size
+          assert 0x20000 < image_size <= 0x30000, hex(image_size)
           print(f"Resident text:   0x{text_addr:08X}")
           print(f"Resident rodata: 0x{rodata_addr:08X}")
           print(f"Resident data:   0x{data_addr:08X}")
-          print(f"KOS _end / heap base: 0x{heap_end:08X}")
-          print("Resident PT_LOAD and non-overlapping KOS heap: PASS")
+          print(f"Resident image:  {image_size} bytes; no unresolved references")
+          print(f"KOS app _end:    0x{heap_end:08X}; heap capped below resident region")
+          print("Resident blob and low-address NAOMI ROM ELF: PASS")
           PY
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_gdrom_syscall_probe rom
-          test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
+                    test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
 
       - name: Validate and upload GD-ROM syscall bridge ROM
         run: |
@@ -207,6 +221,9 @@ jobs:
           ROM="vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_gdrom_syscall_probe/${ROM}" gdrom-syscall-artifact/
           cp resident-layout.txt gdrom-syscall-artifact/
+          cp app-layout.txt gdrom-syscall-artifact/
+          cp resident-undefined.txt gdrom-syscall-artifact/
+          cp "tests/naomi_gdrom_syscall_probe/resident_shim.bin" gdrom-syscall-artifact/
           SIZE="$(stat -c '%s' "gdrom-syscall-artifact/${ROM}")"
           SHA="$(sha256sum "gdrom-syscall-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
@@ -221,7 +238,7 @@ jobs:
           Syscall vector: 0x8C0000BC
           Commands: DMAREAD 0x11 and PIOREAD 0x10 both serviced by Naomi Holly DMA
           Test mapping: FAD 45150 -> NetDIMM image offset 0
-          Resident code/data/map: 0x8D000000 (verified as ELF PT_LOAD)
+          Resident code/data/map: linked at 0x8D000000 and copied from embedded blob at runtime
           KOS sbrk heap ceiling: below 0x8D000000
           Scope: resident bridge and DMA transport probe only; not the retail game image
           EOF

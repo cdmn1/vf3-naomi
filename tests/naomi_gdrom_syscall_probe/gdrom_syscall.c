@@ -23,6 +23,7 @@ static void *vf3_guest_pointer(uint32_t address)
 #define GUEST_WORDS(a) ((volatile uint32_t *)(uintptr_t)(a))
 #endif
 #include "gdrom_syscall.h"
+#define VF3_ASSET_MAP_IMPLEMENTATION
 #include "vf3_asset_map.h"
 
 #ifndef VF3_GD_HOST_TEST
