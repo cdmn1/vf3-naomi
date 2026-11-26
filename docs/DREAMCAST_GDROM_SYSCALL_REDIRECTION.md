@@ -406,3 +406,52 @@ Source references (KOS commit
 [ shlelf.xc ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/utils/ldscripts/shlelf.xc),
 and
 [ arch.h ](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/arch/arch.h).
+
+
+### Resident shim v61: embedded image copied into upper Naomi RAM
+
+The first attempt to put the resident sections directly into the final KOS ELF
+was rejected by `naomibintool` as an invalid section address. The working
+packaging design keeps the final NAOMI ELF within the normal loadable range and
+embeds the separately linked high-memory image as ordinary low-memory data:
+
+- Resident text is linked at `0x8D000000`.
+- Resident read-only data, including the generated FAD map, is linked at
+  `0x8D010000`.
+- Resident mutable state is linked at `0x8D020000`.
+- The three resident sections are extracted into a 131,144-byte binary image
+  and embedded in the KOS application.
+- Before installing the service vector, the low-memory client copies that
+  image through the uncached P2 alias to the corresponding `0x8Dxxxxxx`
+  physical RAM window, then invalidates stale D-cache and I-cache lines using
+  KOS cache APIs.
+- The resident object has no unresolved external references. Its handler,
+  helpers, map and state therefore do not depend on KOS/libc code that may be
+  overwritten by the retail `1ST_READ.BIN`.
+- KOS `sbrk` is capped below `0x8D000000`; the final application ELF ends at
+  `0x8C07A780`. The ordinary NAOMI ROM packager now accepts the resulting
+  application ELF.
+
+The successful GitHub Actions build is run 45888508926, version v61. Its
+full-manifest diagnostic image is 321,617,920 bytes (306.72 MiB), with a
+synthetic 576-sector fixture at the actual `1ST_READ.BIN` manifest location:
+FAD 548574, payload-relative offset `0x13142800`, payload base
+`0x00055800`, absolute cartridge offset `0x13198000`. The fixture contains
+no commercial game assets. The artifact SHA-256 is
+`8d05df34288817c605423d1071ee80fd74f9d52f1ccfb77ede8d253dc2baa547`.
+
+This proves the resident image can be linked, embedded, packaged and mapped
+to the correct high cartridge offset at build time. It does **not** yet prove
+that the runtime copy and cache invalidation execute correctly in Flycast or
+on hardware, nor that the resident handler survives a retail-game chainload.
+The next required validation is to run the v61 manifest-check ROM and confirm
+the DMA/PIO comparison screen. After that, the next engineering step is the
+retail loader/chainload path.
+
+The reserved resident image currently occupies approximately 128 KiB within
+the Naomi-only upper RAM window. Capping KOS's heap protects it during the
+bootstrap, but does not prevent the retail game from using that upper memory
+after chainload. The Dreamcast trace showed no register values pointing into
+the upper 16 MiB during the captured character-select/Round 1 session; this
+is supporting evidence only, not proof that later gameplay never allocates
+there.
