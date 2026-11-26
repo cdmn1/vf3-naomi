@@ -117,3 +117,30 @@ mem 0x0C03006C 0x100
 mem 0x0C030D6C 0x100
 mem 0x0C10E548 0x100
 mem 0x0C10EB60 0x100
+
+# v73: direct retail GD-ROM request path. These PCs are in 1ST_READ.BIN
+# and record the actual guest registers around the request/status calls.
+# 0x8C0431DA is the DMA/PIO read wrapper entry (r4=FAD, r5=sectors,
+# r6=destination, r7=transfer mode; mode 1 selects DMAREAD).
+pc 0x8C0431DA
+pc 0x8C0431E0
+pc 0x8C043226
+pc 0x8C04322E
+# REQ_DMA_TRANS wrapper/call and return.
+pc 0x8C043284
+pc 0x8C04329A
+pc 0x8C0432A0
+# GET_CMD_STAT wrapper/call and return. The result block is on the guest stack.
+pc 0x8C0432DE
+pc 0x8C0432E4
+pc 0x8C0432EA
+# CHECK_DMA_TRANS and EXEC_SERVER callsites.
+pc 0x8C04340C
+pc 0x8C04340E
+pc 0x8C043412
+pc 0x8C0434C8
+pc 0x8C0434CA
+pc 0x8C0434CE
+# Watch the actual GDFS dispatch boundary as well as the service-vector word.
+pc 0x8C0360C8
+mem 0x8C0000BC 0x4
