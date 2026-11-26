@@ -13,15 +13,17 @@ request, transfer, status and server calls used by the retail code.
 - **Transport probe:** the checked-in default `vf3_asset_map.h` has zero
   entries. This preserves the v6 synthetic test mapping, FAD 45150 to image
   offset zero, and is used by the on-screen one-sector PIO/DMA comparison.
-- **Retail asset-map build:** CI generates a 411-entry table from the packed
-  VF3tb USA manifest, excluding only `MOVIE_A.SFD`. The syscall handler then
-  translates each requested FAD to an absolute NetDIMM cartridge offset and
-  chains Holly DMA chunks across mapped asset boundaries. Missing FAD ranges
-  return an error rather than reading an unrelated packed file.
+- **Retail asset-map build:** CI generates a 411-entry table from the retail
+  VF3tb USA manifest, excluding only `MOVIE_A.SFD`. The runtime smoke test
+  targets the actual `1ST_READ.BIN` FAD and packed offset. The syscall handler
+  translates requested FADs to absolute cartridge offsets and chains Holly
+  DMA chunks across packed-asset boundaries.
 
-The map-aware build currently receives a temporary aligned payload base for
-compile validation. It is not yet a combined ROM with the packed payload and
-has not yet been run in Flycast or on a Naomi cabinet.
+The map-aware base-ROM artifact includes the correct absolute payload offset,
+but deliberately does not include commercial game assets. Append the
+separately packed 306 MiB payload with
+`tools/append_vf3_assets_to_naomi_rom.py` before testing it in Flycast or on
+a Naomi cabinet. The full combined image has not yet been run.
 
 No serial connection is required. No commercial game assets are committed
 to this repository or uploaded as GitHub Actions artifacts.
