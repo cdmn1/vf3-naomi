@@ -245,6 +245,7 @@ jobs:
             f"Expected combined image MiB: {expected/1048576:.2f}",
             f"Base ROM SHA-256: {hashlib.sha256(base.read_bytes()).hexdigest()}",
             "Runtime smoke-test asset: 1ST_READ.BIN",
+            "Runtime DMA test: 576 sectors (1,179,648 bytes), split at 1 MiB",
             "Map-aware SH-4 bridge build: PASS",
             "Payload bytes are not included in this base-ROM artifact.",
           ]
