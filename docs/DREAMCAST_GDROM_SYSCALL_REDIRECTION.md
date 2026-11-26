@@ -198,3 +198,70 @@ Important limits of this first build:
 
 The next validation is a Flycast run of this ROM. If both read paths and the byte comparisons pass, extend the same handler to the retail FAD-to-packed-asset index and multi-sector transfers, then use it in the Dreamcast executable bootstrap.
 Clean rebuild `vf3_naomi_gdrom_syscall_probe-v7.bin` also succeeded after removing temporary linker diagnostics from the Makefile. It is 225,724 bytes with SHA-256 `1e7613c4545bce8cf7e103df3545558c375dd08c1405aaee3aa424e03ef913d3`.
+
+## Retail DMA wrapper and bridge contract audit (2026-11-26)
+
+A closer read of the retail disassembly identifies the function-shaped transfer
+wrapper beginning at `0x8C0431DA` (the instruction at `0x8C0431D8` belongs
+to the preceding code boundary). Its observed register contract is:
+
+- `r4`: starting FAD;
+- `r5`: sector count;
+- `r6`: destination address;
+- `r7=1`: DMA path, command `0x11` (`DMAREAD`);
+- `r7=0`: PIO path, command `0x10` (`PIOREAD`).
+
+The routine computes the transfer byte count as `r5 * 2048`, creates the
+four-word request block `{FAD, sector_count, destination, 0}`, and submits
+it through the `REQ_CMD` trampoline at `0x8C043226`. The DMA branch calls
+the cache-preparation helper at `0x8C050E8A`; the alternate aligned-buffer
+path can call `0x8C050C60`. This establishes the wrapper's request layout
+directly from the retail executable.
+
+The subsequent helper callsites are also identified:
+
+| PC | Operation | Evidence at callsite |
+|---|---|---|
+| `0x8C04329A` | `REQ_DMA_TRANS` | request ID in `r4`, two-word transfer parameter block in `r5` |
+| `0x8C0432E4` | `GET_CMD_STAT` | request ID in `r4`, four-word result block on stack in `r5` |
+| `0x8C04340E` | `CHECK_DMA_TRANS` | transfer-check wrapper |
+| `0x8C0434CA` | `EXEC_SERVER` | server-execution wrapper |
+
+The static scan still finds no direct literal pointer to the wrapper entry
+`0x8C0431DA`. That is consistent with the related project's finding that
+this executable uses extensive object/table-indirect dispatch, but it does
+not prove this particular routine is reached during the game. The v73 Flycast
+loader trace therefore adds register snapshots at the wrapper, request,
+transfer, status and server callsites, plus the GDFS dispatch boundary
+`0x8C0360C8` and the service-vector word `0x8C0000BC`.
+
+### Bridge state-machine correction
+
+A source audit found two issues in the first Naomi bridge implementation:
+
+1. `GET_CMD_STAT` took its result-byte-count snapshot before polling the DMA.
+   If that poll observed the final DMA completion, the status could be
+   COMPLETE while `ext[2]` still contained the previous byte count.
+2. `REQ_CMD` could replace a terminal-but-unconsumed request. The REIOS model
+   accepts a new request only while the device is idle.
+
+Both are corrected. The bridge now polls before filling the four-word result
+block, returns terminal status only for the matching request ID, and accepts
+a new request only from the idle state. A host-side regression test exercises
+the final-byte-count case, request-ID ownership and request gating; it passed
+as step 3 of GitHub Actions run
+[45879107100](https://github.com/cdmn1/vf3-naomi/actions/runs/45879107100).
+This is a state-machine unit test, not a NetDIMM hardware or retail-game test.
+
+### Resident-shim memory placement lead
+
+The pinned KallistiOS architecture header defines `HW_MEM_16` as 16 MiB and
+`HW_MEM_32` as 32 MiB for NAOMI / 32-MiB systems. Its 32-MiB memory top is
+`0x8E000000`; the 16-MiB boundary is `0x8D000000`. This makes the second
+16 MiB (`0x8D000000–0x8E000000`) a candidate location for a resident GD-ROM
+shim that survives loading the Dreamcast executable at `0x8C010000`.
+
+It is not yet safe to assume that range is unused: the Naomi-specific game
+code may allocate from the extra RAM. The bootloader must reserve the shim
+region or constrain the game's allocator before relying on it. KOS source
+reference: [KallistiOS arch.h, 32-MiB memory definitions](https://github.com/KallistiOS/KallistiOS/blob/9926b70aeafc8398675caef98813f10d15d8a329/kernel/arch/dreamcast/include/arch/arch.h).
