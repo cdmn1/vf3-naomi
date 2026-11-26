@@ -300,6 +300,10 @@ jobs:
           mkdir -p vf3-assetmap-build
           cp "$ROM" vf3-assetmap-build/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin
           cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-assetmap-build/
+          cp docs/GDROM_DISC_FILE_MAP.csv vf3-assetmap-build/
+          mkdir -p vf3-assetmap-build/tools
+          cp tools/pack_vf3_assets.py tools/append_vf3_assets_to_naomi_rom.py vf3-assetmap-build/tools/
+          cp tools/build_vf3_netdimm_image.ps1 vf3-assetmap-build/
           python3 - <<'PY'
           import hashlib, json, pathlib
           d=json.loads(pathlib.Path("vf3-netdimm-306mb-map.json").read_text())
@@ -319,8 +323,10 @@ jobs:
             f"Expected combined image bytes: {expected}",
             f"Expected combined image MiB: {expected/1048576:.2f}",
             f"Base ROM SHA-256: {hashlib.sha256(base.read_bytes()).hexdigest()}",
-            "Runtime smoke-test asset: 1ST_READ.BIN",
-            "Runtime DMA test: 576 sectors (1,179,648 bytes), split at 1 MiB",
+            "Runtime smoke-test asset: retail 1ST_READ.BIN (FAD 548574)",
+            "Runtime DMA load: 576 sectors (1,179,648 bytes) to reserved 0x8D100000 staging RAM",
+            "Runtime integrity check: SHA-256 compared with the inspected retail executable",
+            "Expected screen on the complete packed payload: RETAIL LOAD PASS / SHA256 MATCH",
             "Map-aware SH-4 bridge build: PASS",
             "Payload bytes are not included in this base-ROM artifact.",
           ]
