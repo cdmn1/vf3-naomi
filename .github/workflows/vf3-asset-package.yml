@@ -26,8 +26,35 @@ jobs:
             "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
             --output vf3-assets.zip
           mkdir vf3-assets
-          unzip -q vf3-assets.zip -d vf3-assets
-          echo "Downloaded and extracted shared folder."
+          python3 - <<'PY'
+          import csv, pathlib, zipfile
+          with open("docs/GDROM_DISC_FILE_MAP.csv", newline="", encoding="utf-8") as f:
+              wanted = {r["asset_name"].upper() for r in csv.DictReader(f)}
+          out = pathlib.Path("vf3-assets")
+          seen = set()
+          with zipfile.ZipFile("vf3-assets.zip") as z:
+              for info in z.infolist():
+                  if info.is_dir():
+                      continue
+                  # Dropbox ZIP entries can carry an absolute root path.
+                  name = pathlib.PurePosixPath(info.filename.lstrip("/")).name
+                  key = name.upper()
+                  if key not in wanted:
+                      continue
+                  if key in seen:
+                      raise SystemExit(f"Duplicate asset in Dropbox ZIP: {name}")
+                  with z.open(info) as src, (out / name).open("wb") as dst:
+                      while True:
+                          block = src.read(1024 * 1024)
+                          if not block:
+                              break
+                          dst.write(block)
+                  seen.add(key)
+          missing = sorted(wanted - seen)
+          if missing:
+              raise SystemExit("Missing manifest assets: " + ", ".join(missing))
+          print(f"Extracted {len(seen)} manifest assets without unpacking unrelated ZIP entries.")
+          PY
       - name: Test packer
         run: python3 -m unittest discover -s tests -p 'test_vf3_asset_packer.py' -v
       - name: Create compact payload and FAD map (exclude MOVIE_A.SFD only)
