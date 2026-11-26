@@ -43,7 +43,7 @@ jobs:
           print(f"Extracted entry: {entry}")
           PY
           test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
-          echo "Extracted entry: $entry" >> "$GITHUB_STEP_SUMMARY"
+          echo "Extracted entry: 1ST_READ.BIN (found in shared-folder ZIP)" >> "$GITHUB_STEP_SUMMARY"
           sha256sum 1ST_READ.BIN | tee executable.sha256
           echo "Expected SHA-256: 37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32" >> "$GITHUB_STEP_SUMMARY"
           echo "Actual SHA-256: $(cut -d' ' -f1 executable.sha256)" >> "$GITHUB_STEP_SUMMARY"
