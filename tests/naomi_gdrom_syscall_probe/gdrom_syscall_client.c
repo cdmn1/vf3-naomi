@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <arch/cache.h>
 #include "gdrom_syscall.h"
 #include "resident_offsets.h"
 
@@ -15,8 +16,6 @@ static int load_resident_image(void)
     const uint8_t *src = resident_blob_start;
     size_t size = (size_t)(resident_blob_end - resident_blob_start);
     volatile uint8_t *dst = (volatile uint8_t *)(uintptr_t)0xad000000u;
-    uintptr_t line;
-
     if (resident_loaded)
         return 0;
     if (size != VF3_RESIDENT_IMAGE_SIZE)
@@ -26,13 +25,9 @@ static int load_resident_image(void)
     for (size_t i = 0; i < size; ++i)
         dst[i] = src[i];
 
-    /* Invalidate stale data/instructions for the copied resident image. */
-    for (line = VF3_RESIDENT_IMAGE_BASE;
-         line < VF3_RESIDENT_IMAGE_BASE + size; line += 32u) {
-        __asm__ volatile("ocbi @%0" :: "r"(line) : "memory");
-        __asm__ volatile("icbi @%0" :: "r"(line) : "memory");
-    }
-    __asm__ volatile("synco" ::: "memory");
+    /* Discard stale D-cache lines and invalidate I-cache for the copied code. */
+    arch_dcache_inval_range(VF3_RESIDENT_IMAGE_BASE, size);
+    arch_icache_inval_range(VF3_RESIDENT_IMAGE_BASE, size);
     resident_loaded = 1;
     return 0;
 }
