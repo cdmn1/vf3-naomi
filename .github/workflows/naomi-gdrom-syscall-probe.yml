@@ -258,6 +258,96 @@ jobs:
           print("\n".join(report))
           PY
 
+      - name: Build self-contained synthetic FAD data-integrity ROM
+        env:
+          KOS_BASE: ${{ github.workspace }}/kos
+        run: |
+          set -euo pipefail
+          BUILD_VERSION="datacheck-v${GITHUB_RUN_NUMBER}"
+          ROM="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-${BUILD_VERSION}.bin"
+          python3 - <<'PY'
+          import json
+          doc = {
+              "format": "VF3NAOMI_PACKED_ASSETS_V1",
+              "sector_bytes": 2048,
+              "fad_bias": 150,
+              "excluded": [],
+              "source_file_count": 1,
+              "packed_file_count": 1,
+              "source_bytes": 1179648,
+              "payload_bytes": 1179648,
+              "entries": [{
+                  "name": "1ST_READ.BIN",
+                  "fad": 548574,
+                  "disc_lba": 548424,
+                  "sectors": 576,
+                  "size_bytes": 1179648,
+                  "sha1": "synthetic-diagnostic-fixture",
+                  "payload_offset": 0
+              }]
+          }
+          with open("vf3-datacheck-map.json", "w") as f:
+              json.dump(doc, f, indent=2)
+          PY
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-datacheck-map.json \
+            --payload-base 0x02000000 \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          export KOS_SUBARCH=naomi
+          . "$KOS_BASE/environ.sh"
+          export KOS_INC_PATHS_CPP=""
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          FIRST_SIZE="$(stat -c '%s' "$ROM")"
+          PAYLOAD_BASE="$(python3 -c 'import sys; n=int(sys.argv[1]); print((n+2047)//2048*2048)' "$FIRST_SIZE")"
+          python3 tools/generate_vf3_asset_map_header.py \
+            --map-json vf3-datacheck-map.json \
+            --payload-base "$PAYLOAD_BASE" \
+            --output tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
+          make -C tests/naomi_gdrom_syscall_probe clean
+          BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
+          SECOND_SIZE="$(stat -c '%s' "$ROM")"
+          test "$FIRST_SIZE" = "$SECOND_SIZE"
+          python3 - "$ROM" "$PAYLOAD_BASE" <<'PY'
+          import pathlib, sys
+          rom = pathlib.Path(sys.argv[1])
+          base = int(sys.argv[2])
+          size = 576 * 2048
+          fixture = bytes(((i * 37 + (i // 2048) * 11 + 0x5a) & 0xff) for i in range(size))
+          with rom.open("r+b") as f:
+              f.seek(base)
+              f.write(fixture)
+          assert rom.stat().st_size == base + size
+          print(f"Appended {size} deterministic synthetic bytes at 0x{base:08X}")
+          PY
+          mkdir -p vf3-datacheck-build
+          cp "$ROM" vf3-datacheck-build/vf3-naomi-gdrom-datacheck-v${GITHUB_RUN_NUMBER}.bin
+          cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-datacheck-build/
+          python3 - "$ROM" "$PAYLOAD_BASE" <<'PY'
+          import hashlib, pathlib, sys
+          p=pathlib.Path(sys.argv[1])
+          report=[
+              "VF3 NAOMI GD-ROM bridge data-integrity diagnostic",
+              "Synthetic deterministic fixture; contains no commercial game assets.",
+              "FAD: 548574",
+              f"Cartridge payload offset: 0x{int(sys.argv[2]):08X}",
+              "Fixture size: 576 sectors (1,179,648 bytes)",
+              "Expected DMA chunks: 1 MiB + 128 KiB",
+              f"ROM size: {p.stat().st_size}",
+              f"ROM SHA-256: {hashlib.sha256(p.read_bytes()).hexdigest()}",
+              "Expected: direct PIO / DMA and PIOREAD / DMA comparisons PASS",
+          ]
+          pathlib.Path("vf3-datacheck-build/BUILD_INFO.txt").write_text("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload self-contained GD-ROM data-integrity diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-gdrom-datacheck-v${{ github.run_number }}
+          path: vf3-datacheck-build/*
+          if-no-files-found: error
+
       - name: Upload map-aware bridge build report (metadata only)
         uses: actions/upload-artifact@v4
         with:
