@@ -41,7 +41,7 @@ def generate(map_path: Path, payload_base: int) -> str:
         absolute = payload_base + int(e["payload_offset"])
         if absolute > 0xffffffff:
             raise ValueError("payload offset exceeds 32-bit cartridge addressing")
-        lines.append(f"    {{{int(e['fad'])}u, {int(e['sectors'])}u, {absolute}u}}, /* {e['name']} */")
+        lines.append(f"    {{{int(e['fad'])}u, {int(e['sectors'])}u, {int(e['payload_offset'])}u}}, /* {e['name']} */")
     lines += ["};", "#endif", ""]
     return "\n".join(lines)
 
