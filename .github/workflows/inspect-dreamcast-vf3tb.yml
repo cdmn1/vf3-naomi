@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-all-errors --user-agent "Mozilla/5.0" \
-            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1" \
+            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=ejwtj15gzidjkyf4d7mhw1ffb&st=kk7fngmr&dl=1" \
             --output vf3-assets.zip
           entry="$(unzip -Z1 vf3-assets.zip | grep -m1 '1ST_READ.BIN')"
           test -n "$entry"
