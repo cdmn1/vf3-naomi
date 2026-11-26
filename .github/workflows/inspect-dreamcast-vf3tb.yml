@@ -1,4 +1,4 @@
-name: Inspect retail VF3tb Dreamcast executable
+name: Inspect retail VF3tb Dreamcast executables
 
 on:
   push:
@@ -36,21 +36,28 @@ jobs:
           test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
           echo "Extracted entry: $entry" >> "$GITHUB_STEP_SUMMARY"
           sha256sum 1ST_READ.BIN | tee executable.sha256
-          echo "Expected SHA-256: 37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32" >> "$GITHUB_STEP_SUMMARY"
-          echo "Actual SHA-256: $(cut -d' ' -f1 executable.sha256)" >> "$GITHUB_STEP_SUMMARY"
           test "$(cut -d' ' -f1 executable.sha256)" = "37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32"
+          reload_entry="$(unzip -Z1 vf3-assets.zip | grep -m1 'RELOAD.BIN')"
+          test -n "$reload_entry"
+          unzip -p vf3-assets.zip "$reload_entry" > RELOAD.BIN
+          test "$(stat -c %s RELOAD.BIN)" = "655360"
+          echo "Extracted second-stage module: $reload_entry" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum RELOAD.BIN | tee reload.sha256
 
-      - name: Inspect executable and SH-4 references
+      - name: Inspect 1ST_READ and RELOAD SH-4 code
         run: |
           set -euo pipefail
-          python3 tools/inspect_vf3tb_executable.py
-          cat executable-inspection.txt >> "$GITHUB_STEP_SUMMARY"
+          python3 tools/inspect_vf3tb_executable.py 1ST_READ.BIN
+          python3 tools/inspect_vf3tb_executable.py RELOAD.BIN
+          cat 1st_read-inspection.txt reload-inspection.txt >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload inspection report (not the copyrighted executable)
+      - name: Upload inspection reports (not copyrighted executables)
         uses: actions/upload-artifact@v4
         with:
-          name: vf3tb-dreamcast-executable-inspection-v1
+          name: vf3tb-dreamcast-executable-inspection-v2
           path: |
-            executable-inspection.txt
+            1st_read-inspection.txt
+            reload-inspection.txt
             executable.sha256
+            reload.sha256
           if-no-files-found: error
