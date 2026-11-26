@@ -53,7 +53,15 @@ for offset, value in strings:
 
 out.extend(["", "SH-4 PC-RELATIVE LITERAL REFERENCES TO THOSE STRINGS:"])
 string_vas = {BASE + offset: value for offset, value in strings}
+stub_vas = {
+    0x8C04308C: "REQ_CMD (r7=0)", 0x8C0430A0: "GET_CMD_STAT (r7=1)",
+    0x8C0430B4: "EXEC_SERVER (r7=2)", 0x8C0430C8: "r7=3",
+    0x8C0430DC: "r7=4", 0x8C0430F0: "r7=5",
+}
+stub_aliases = {value: label for value, label in stub_vas.items()}
+stub_aliases.update({value & 0x0FFFFFFF: label + " (P0 alias)" for value, label in stub_vas.items()})
 pc_refs = []
+stub_refs = []
 for offset in range(0, len(data) - 1, 2):
     insn = struct.unpack_from("<H", data, offset)[0]
     if (insn & 0xF000) != 0xD000:  # mov.l @(disp,PC),Rn
@@ -65,11 +73,18 @@ for offset in range(0, len(data) - 1, 2):
         literal_value = struct.unpack_from("<I", data, literal_off)[0]
         if literal_value in string_vas:
             pc_refs.append((offset, insn_va, literal_off, literal_value, string_vas[literal_value], (insn >> 8) & 0xF))
+        if literal_value in stub_aliases:
+            stub_refs.append((offset, insn_va, literal_off, literal_value, stub_aliases[literal_value], (insn >> 8) & 0xF))
 for ref in pc_refs[:100]:
     off, va, lit_off, value, label, reg = ref
     out.append(f"code file+0x{off:X} VA=0x{va:08X}: mov.l @(PC literal file+0x{lit_off:X}),r{reg} -> 0x{value:08X} [{label}]")
 if not pc_refs:
-    out.append("No matches under the SH-4 mov.l @(disp,PC),Rn decoding assumption.")
+    out.append("No matches under the SH-4 mov.l @(disp,PC),Rn decoding assumption.")out.extend(["", "PC-RELATIVE CALL REFERENCES TO BIOS SYSCALL STUBS (including P0 aliases):"])
+for ref in stub_refs[:160]:
+    off, va, lit_off, value, label, reg = ref
+    out.append(f"code file+0x{off:X} VA=0x{va:08X}: mov.l literal file+0x{lit_off:X},r{reg} -> 0x{value:08X} [{label}]")
+if not stub_refs:
+    out.append("No direct PC-relative references to the known stub addresses/aliases.")
 
 out.extend(["", "ASCII STRINGS MATCHING GD/GDFS/ROM/SYSCALL/DMA TERMS:"])
 for match in re.finditer(rb"[ -~]{4,}", data):
