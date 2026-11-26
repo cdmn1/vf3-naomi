@@ -17,6 +17,7 @@ rom: $(ROM)
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
 $(TARGET): $(OBJS)
+	sh-elf-nm -g syscalls.o
 	kos-cc -o $(TARGET) $(OBJS)
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD Syscall $(BUILD_VERSION)" -e $(TARGET)
