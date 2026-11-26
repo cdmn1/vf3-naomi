@@ -14,39 +14,45 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out VF3 Naomi
         uses: actions/checkout@v4
 
-      - name: Install SH-4 disassembler
+      - name: Install 7-Zip and SH-4 disassembler
         run: |
           sudo apt-get update
-          sudo apt-get install -y binutils-sh4-linux-gnu
+          sudo apt-get install -y p7zip-full binutils-sh4-linux-gnu
 
-      - name: Download the existing shared VF3tb folder
+      - name: Download and verify the new Dropbox 7z archive
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-all-errors --user-agent "Mozilla/5.0" \
-            "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=ejwtj15gzidjkyf4d7mhw1ffb&dl=1" \
-            --output vf3-assets.zip
+            "https://www.dropbox.com/scl/fi/axraudzw49jtr8rzat9wc/dc-vf3tb-usa.7z?rlkey=k6uxeattji64870k5z48v93vs&st=0qedcncl&dl=1" \
+            --output dc-vf3tb-usa.7z
           echo "Dropbox response details:"
-          file vf3-assets.zip
-          head -c 512 vf3-assets.zip | strings | head -n 8 || true
-          unzip -tq vf3-assets.zip
-          entry="$(unzip -Z1 vf3-assets.zip | grep -m1 '1ST_READ.BIN')"
+          file dc-vf3tb-usa.7z
+          ls -lh dc-vf3tb-usa.7z
+          7z t dc-vf3tb-usa.7z
+          listing="$(7z l -slt dc-vf3tb-usa.7z)"
+          printf '%s\n' "$listing" | awk -F' = ' '/^Path = /{path=$2} /^Size = 1179648$ && path ~ /(^|[\\/])1ST_READ.BIN$/{print path; exit}' > first_read.path
+          entry="$(cat first_read.path)"
           test -n "$entry"
-          unzip -p vf3-assets.zip "$entry" > 1ST_READ.BIN
+          7z x -so dc-vf3tb-usa.7z "$entry" > 1ST_READ.BIN
           test "$(stat -c %s 1ST_READ.BIN)" = "1179648"
-          echo "Extracted entry: $entry" >> "$GITHUB_STEP_SUMMARY"
           sha256sum 1ST_READ.BIN | tee executable.sha256
           test "$(cut -d' ' -f1 executable.sha256)" = "37f38dd9a47b785f526157c4a1674ca75322f0de1342f64bbf33c88d128e4b32"
-          reload_entry="$(unzip -Z1 vf3-assets.zip | grep -m1 'RELOAD.BIN')"
+          printf 'Extracted executable: %s\n' "$entry" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Archive size: %s bytes\n' "$(stat -c %s dc-vf3tb-usa.7z)" >> "$GITHUB_STEP_SUMMARY"
+          printf '1ST_READ.BIN SHA-256: %s\n' "$(cut -d' ' -f1 executable.sha256)" >> "$GITHUB_STEP_SUMMARY"
+
+          printf '%s\n' "$listing" | awk -F' = ' '/^Path = /{path=$2} /^Size = 655360$ && path ~ /(^|[\\/])RELOAD.BIN$/{print path; exit}' > reload.path
+          reload_entry="$(cat reload.path)"
           test -n "$reload_entry"
-          unzip -p vf3-assets.zip "$reload_entry" > RELOAD.BIN
+          7z x -so dc-vf3tb-usa.7z "$reload_entry" > RELOAD.BIN
           test "$(stat -c %s RELOAD.BIN)" = "655360"
-          echo "Extracted second-stage module: $reload_entry" >> "$GITHUB_STEP_SUMMARY"
           sha256sum RELOAD.BIN | tee reload.sha256
+          printf 'Extracted second-stage module: %s\n' "$reload_entry" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Inspect 1ST_READ and RELOAD SH-4 code
         run: |
@@ -58,7 +64,7 @@ jobs:
       - name: Upload inspection reports (not copyrighted executables)
         uses: actions/upload-artifact@v4
         with:
-          name: vf3tb-dreamcast-executable-inspection-v2
+          name: vf3tb-dreamcast-executable-inspection-7z-v1
           path: |
             1st_read-inspection.txt
             reload-inspection.txt
