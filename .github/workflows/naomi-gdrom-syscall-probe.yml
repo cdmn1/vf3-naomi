@@ -7,9 +7,11 @@ on:
       - "tests/naomi_gdrom_syscall_probe/**"
       - "tools/pack_vf3_assets.py"
       - "tools/generate_vf3_asset_map_header.py"
+      - "tools/append_vf3_assets_to_naomi_rom.py"
       - "docs/GDROM_DISC_FILE_MAP.csv"
       - "tests/test_vf3_asset_packer.py"
       - "tests/test_vf3_asset_map_header.py"
+      - "tests/test_append_vf3_assets_to_naomi_rom.py"
       - ".github/workflows/naomi-gdrom-syscall-probe.yml"
   workflow_dispatch:
 
@@ -217,6 +219,7 @@ jobs:
           PY
           python3 -m unittest discover -s tests -p 'test_vf3_asset_packer.py' -v
           python3 -m unittest discover -s tests -p 'test_vf3_asset_map_header.py' -v
+          python3 -m unittest discover -s tests -p 'test_append_vf3_assets_to_naomi_rom.py' -v
           python3 tools/pack_vf3_assets.py \
             --assets vf3-assets \
             --manifest docs/GDROM_DISC_FILE_MAP.csv \
