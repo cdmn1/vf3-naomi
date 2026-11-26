@@ -183,3 +183,17 @@ The same workflow extracted `RELOAD.BIN` from the shared folder and verified its
 - `0x8C012CEC`: alternate selector `r6=-1, r7=1`.
 
 This independently confirms that both `1ST_READ.BIN` and `RELOAD.BIN` expect the same BIOS service-vector address and the same `r6/r7` dispatch convention. The narrowest replacement remains a handler installed at `0x8C0000BC`; it must handle the `r6=0` GD-ROM family and preserve or explicitly support the `r6=-1` calls if the game reaches them. The service pointer must remain valid when the second-stage module is loaded.
+## First BIOS-vector bridge build
+
+`tests/naomi_gdrom_syscall_probe/` now contains a reusable SH-4 service-vector handler and a Naomi on-screen transport probe. GitHub Actions successfully built `vf3_naomi_gdrom_syscall_probe-v6.bin` (225,724 bytes; SHA-256 `9f15f161e26e4a874472569dfc54e8cd8f726c3cf51dab3c494ef6ec34488c3a`).
+
+The probe installs its handler at `0x8C0000BC`, implements `r6=0` operations `r7=0..13`, and routes both command `0x11` (`DMAREAD`) and command `0x10` (`PIOREAD`) through the Naomi Holly GD-DMA registers. It checks request IDs, transfer polling, command completion, and compares both syscall-mediated transfers against a direct 2 KiB cartridge PIO read. It requires no serial connection.
+
+Important limits of this first build:
+
+- It transfers one 2 KiB sector only.
+- Its temporary mapping is `FAD 45150 -> NetDIMM image offset 0`; this is a transport test, not the retail disc FAD/file map.
+- The `r6=-1` alternate service calls are harmless no-ops in this probe; the production loader must preserve or implement them if the retail game uses them.
+- It does not yet load `1ST_READ.BIN` or `RELOAD.BIN`, and it is not a playable game build.
+
+The next validation is a Flycast run of this ROM. If both read paths and the byte comparisons pass, extend the same handler to the retail FAD-to-packed-asset index and multi-sector transfers, then use it in the Dreamcast executable bootstrap.
