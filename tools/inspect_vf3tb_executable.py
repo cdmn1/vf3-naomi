@@ -55,8 +55,12 @@ out.extend(["", "SH-4 PC-RELATIVE LITERAL REFERENCES TO THOSE STRINGS:"])
 string_vas = {BASE + offset: value for offset, value in strings}
 stub_vas = {
     0x8C04308C: "REQ_CMD (r7=0)", 0x8C0430A0: "GET_CMD_STAT (r7=1)",
-    0x8C0430B4: "EXEC_SERVER (r7=2)", 0x8C0430C8: "r7=3",
-    0x8C0430DC: "r7=4", 0x8C0430F0: "r7=5",
+    0x8C0430B4: "EXEC_SERVER (r7=2)", 0x8C0430C8: "INIT_SYSTEM (r7=3)",
+    0x8C0430DC: "GET_DRV_STAT (r7=4)", 0x8C0430F0: "G1_DMA_END (r7=5)",
+    0x8C043104: "REQ_DMA_TRANS (r7=6)", 0x8C043118: "CHECK_DMA_TRANS (r7=7)",
+    0x8C04312C: "READ_ABORT (r7=8)", 0x8C043140: "RESET (r7=9)",
+    0x8C043154: "CHANGE_DATA_TYPE (r7=10)", 0x8C043168: "SET_PIO_CALLBACK (r7=11)",
+    0x8C04317C: "REQ_PIO_TRANS (r7=12)", 0x8C043190: "CHECK_PIO_TRANS (r7=13)",
 }
 stub_aliases = {value: label for value, label in stub_vas.items()}
 stub_aliases.update({value & 0x0FFFFFFF: label + " (P0 alias)" for value, label in stub_vas.items()})
@@ -106,7 +110,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C036080, 0x8C043080, 0x8C043090, 0x8C0430A0, 0x8C0430B4, 0x8C0430C8, 0x8C0430DC, 0x8C0430F0] + [BASE + x[0] for x in strings]
+    targets = [0x8C036080] + list(stub_vas) + [BASE + x[0] for x in strings]
     out.extend(["", "SYSCALL STUB REGION (0x8C043000-0x8C043200):"])
     for index, line in enumerate(disassembly):
         match = re.match(r"^([0-9a-fA-F]+):", line)
@@ -114,7 +118,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
             out.append(line)
     out.extend(["", "ALL INSTRUCTIONS REFERENCING THE BIOS SERVICE POINTER OR KNOWN STUB ADDRESSES:"])
     for line in disassembly:
-        if re.search(r"8c0000bc|8c043090|8c0430a0|8c0430b4|8c0430c8|8c0430dc|8c0430f0", line, re.I):
+        if re.search(r"8c0000bc|8c0430[0-9a-f]{2}", line, re.I):
             out.append(line)
     out.extend(["", "SH-4 DISASSEMBLY WINDOWS AROUND CANDIDATE FUNCTIONS / STRING DATA:"])
     for target in targets:
