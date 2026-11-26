@@ -164,7 +164,7 @@ jobs:
           export KOS_INC_PATHS_CPP=""
           make -C tests/naomi_gdrom_syscall_probe all
           ELF="tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe.elf"
-          "$KOS_CC_BASE/bin/sh-elf-readelf" -l -S "$ELF" > resident-layout.txt
+          "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$ELF" > resident-layout.txt
           "$KOS_CC_BASE/bin/sh-elf-nm" -n "$ELF" > resident-symbols.txt
           python3 - <<'PY'
           import pathlib
