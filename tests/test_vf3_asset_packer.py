@@ -23,11 +23,11 @@ class PackAssetsTests(unittest.TestCase):
             out=root/"payload.bin"; side=root/"map.json"
             result=mod.pack(assets,manifest,out,side,{"MOVIE_A.SFD"})
             self.assertEqual(result["packed_file_count"],2)
-            self.assertEqual(result["payload_bytes"],4096)
+            self.assertEqual(result["payload_bytes"],6144)
             self.assertEqual(result["entries"][0]["fad"],250)
             self.assertEqual(result["entries"][0]["payload_offset"],0)
             self.assertEqual(result["entries"][1]["payload_offset"],4096)
-            self.assertEqual(out.stat().st_size,4096)
+            self.assertEqual(out.stat().st_size,6144)
 
     def test_rejects_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as td:
