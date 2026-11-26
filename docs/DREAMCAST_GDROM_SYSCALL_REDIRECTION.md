@@ -547,3 +547,12 @@ files, and produces a 321,626,112-byte (306.73 MiB) combined image. The
 artifact includes the manifest, map header, JSON map, packer, append tool and
 Windows PowerShell assembly helper. Only the base ROM and metadata/scripts are
 published; the commercial payload remains local to the user.
+
+
+The final packaged v67 artifact is GitHub Actions run 45897782855
+(`vf3-naomi-map-aware-bridge-v67`). It includes the map JSON beside the
+PowerShell helper, the manifest and both Python pack/append scripts. The
+base ROM SHA-256 is
+`fa40842ea6f3ff88cce9a9b946cc411e3a70a4836f1b8955ba131356dc6aa407`.
+The artifact was downloaded, its ZIP integrity test passed, and its internal
+paths were checked against the helper's expected layout.
