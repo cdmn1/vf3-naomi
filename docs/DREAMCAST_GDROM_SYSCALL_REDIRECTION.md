@@ -536,3 +536,14 @@ This test validates the actual retail executable bytes through the resident
 bridge, but deliberately does not jump to the executable. If it passes, the
 next step is a separate chainload implementation, including a resident copy
 and handoff routine so the KOS loader can be overwritten safely.
+
+
+The first build of the retail-load integrity diagnostic is GitHub Actions run
+45897577122 (artifact version v66), successful. Its map-aware base ROM is
+357,312 bytes, SHA-256
+`712df9b9ec249516c206c0ac979352f7af38e34ed8ce8799af3dc64cf22e8bd4`.
+The packed payload starts at `0x00057800` (358,400), contains 411 mapped
+files, and produces a 321,626,112-byte (306.73 MiB) combined image. The
+artifact includes the manifest, map header, JSON map, packer, append tool and
+Windows PowerShell assembly helper. Only the base ROM and metadata/scripts are
+published; the commercial payload remains local to the user.
