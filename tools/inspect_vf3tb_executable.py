@@ -147,7 +147,8 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         index = address_to_line.get(ref[1])
         if index is not None:
             out.append(f"--- {ref[4]} at VA 0x{ref[1]:08X} (literal 0x{ref[3]:08X}) ---")
-            out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + 12)])    out.extend(["", "SH-4 CALLSITE WINDOWS FOR READ-MODE SELECTOR HELPER:"])
+            out.extend(disassembly[max(0, index - 8):min(len(disassembly), index + 12)])
+    out.extend(["", "SH-4 CALLSITE WINDOWS FOR READ-MODE SELECTOR HELPER:"])
     for ref in helper_refs[:60]:
         index = address_to_line.get(ref[1])
         if index is not None:
