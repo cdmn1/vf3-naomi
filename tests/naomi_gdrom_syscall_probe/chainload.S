@@ -39,10 +39,19 @@ vf3_gd_chainload:
     bf .Licache
     nop
 
-    /* Mask interrupts while changing execution context. The resident bridge
-       remains in 0x8Dxxxxxx and retains the GD-ROM service vector. */
-    stc sr,r0
-    or #0xf0,r0
+    /* Recreate the essential IP.BIN bootstrap CPU environment. The retail
+       boot path installs the RAM vector base before entering 1ST_READ.BIN.
+       KOS may have left a different VBR/GBR and exception-block state. */
+    mov.l .Lvbr,r0
+    ldc r0,vbr
+    mov.l .Lgbr,r0
+    ldc r0,gbr
+    mov.l .Lfpscr,r0
+    lds r0,fpscr
+
+    /* Supervisor + register bank 1, all maskable IRQs masked, but BL clear:
+       exceptions must be able to reach the valid vector table. */
+    mov.l .Lsr,r0
     ldc r0,sr
     mov.l .Lentry,r0
     jmp @r0
@@ -54,5 +63,9 @@ vf3_gd_chainload:
 .Lend_p1:    .long 0x8c130000
 .Lword_count:.long 294912
 .Lstack:     .long 0x8dfff000
+.Lvbr:       .long 0x8c000000
+.Lgbr:       .long 0x00000000
+.Lfpscr:     .long 0x00040000
+.Lsr:        .long 0x600000f0
 .Lentry:     .long 0x8c010000
     .size vf3_gd_chainload,.-vf3_gd_chainload
