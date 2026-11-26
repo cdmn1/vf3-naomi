@@ -34,8 +34,31 @@ jobs:
           file dc-vf3tb-usa.7z
           ls -lh dc-vf3tb-usa.7z
           7z t dc-vf3tb-usa.7z
-          listing="$(7z l -slt dc-vf3tb-usa.7z)"
-          printf '%s\n' "$listing" | awk -F' = ' '/^Path = /{path=$2} /^Size = 1179648$ && path ~ /(^|[\\/])1ST_READ.BIN$/{print path; exit}' > first_read.path
+          7z l -slt dc-vf3tb-usa.7z > archive-listing.txt
+          python3 - <<'PY'
+          from pathlib import PurePosixPath
+          records = []
+          current = {}
+          for line in open("archive-listing.txt", encoding="utf-8", errors="replace"):
+              if not line.strip():
+                  if current:
+                      records.append(current)
+                      current = {}
+                  continue
+              if " = " in line:
+                  key, value = line.rstrip("\\n").split(" = ", 1)
+                  current[key] = value
+          if current:
+              records.append(current)
+          def find(name, size):
+              for record in records:
+                  path = record.get("Path", "")
+                  if PurePosixPath(path.replace("\\\\", "/")).name == name and record.get("Size") == str(size):
+                      return path
+              raise SystemExit(f"Missing {name} with size {size}")
+          open("first_read.path", "w").write(find("1ST_READ.BIN", 1179648))
+          open("reload.path", "w").write(find("RELOAD.BIN", 655360))
+          PY
           entry="$(cat first_read.path)"
           test -n "$entry"
           7z x -so dc-vf3tb-usa.7z "$entry" > 1ST_READ.BIN
@@ -46,7 +69,6 @@ jobs:
           printf 'Archive size: %s bytes\n' "$(stat -c %s dc-vf3tb-usa.7z)" >> "$GITHUB_STEP_SUMMARY"
           printf '1ST_READ.BIN SHA-256: %s\n' "$(cut -d' ' -f1 executable.sha256)" >> "$GITHUB_STEP_SUMMARY"
 
-          printf '%s\n' "$listing" | awk -F' = ' '/^Path = /{path=$2} /^Size = 655360$ && path ~ /(^|[\\/])RELOAD.BIN$/{print path; exit}' > reload.path
           reload_entry="$(cat reload.path)"
           test -n "$reload_entry"
           7z x -so dc-vf3tb-usa.7z "$reload_entry" > RELOAD.BIN
