@@ -1,30 +1,184 @@
     .text
     .align 2
-    .macro GDSTUB name, op
-    .global \name
-    .type \name,@function
-\name:
+
+    .global vf3_gd_req_cmd
+    .type vf3_gd_req_cmd,@function
+vf3_gd_req_cmd:
     mov #0, r6
-    mov #\op, r7
-    mov.l 1f, r0
+    mov #0, r7
+    mov.l .Lvec_req, r0
     mov.l @r0, r0
     jmp @r0
     nop
     .align 2
-1:
+.Lvec_req:
     .long 0x8c0000bc
-    .endm
-    GDSTUB vf3_gd_req_cmd, 0
-    GDSTUB vf3_gd_get_cmd_stat, 1
-    GDSTUB vf3_gd_exec_server, 2
-    GDSTUB vf3_gd_init_system, 3
-    GDSTUB vf3_gd_get_drv_stat, 4
-    GDSTUB vf3_gd_g1_dma_end, 5
-    GDSTUB vf3_gd_req_dma_trans, 6
-    GDSTUB vf3_gd_check_dma_trans, 7
-    GDSTUB vf3_gd_read_abort, 8
-    GDSTUB vf3_gd_reset, 9
-    GDSTUB vf3_gd_change_data_type, 10
-    GDSTUB vf3_gd_set_pio_callback, 11
-    GDSTUB vf3_gd_req_pio_trans, 12
-    GDSTUB vf3_gd_check_pio_trans, 13
+
+    .global vf3_gd_get_cmd_stat
+    .type vf3_gd_get_cmd_stat,@function
+vf3_gd_get_cmd_stat:
+    mov #0, r6
+    mov #1, r7
+    mov.l .Lvec_stat, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_stat:
+    .long 0x8c0000bc
+
+    .global vf3_gd_exec_server
+    .type vf3_gd_exec_server,@function
+vf3_gd_exec_server:
+    mov #0, r6
+    mov #2, r7
+    mov.l .Lvec_exec, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_exec:
+    .long 0x8c0000bc
+
+    .global vf3_gd_init_system
+    .type vf3_gd_init_system,@function
+vf3_gd_init_system:
+    mov #0, r6
+    mov #3, r7
+    mov.l .Lvec_init, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_init:
+    .long 0x8c0000bc
+
+    .global vf3_gd_get_drv_stat
+    .type vf3_gd_get_drv_stat,@function
+vf3_gd_get_drv_stat:
+    mov #0, r6
+    mov #4, r7
+    mov.l .Lvec_drv, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_drv:
+    .long 0x8c0000bc
+
+    .global vf3_gd_g1_dma_end
+    .type vf3_gd_g1_dma_end,@function
+vf3_gd_g1_dma_end:
+    mov #0, r6
+    mov #5, r7
+    mov.l .Lvec_g1, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_g1:
+    .long 0x8c0000bc
+
+    .global vf3_gd_req_dma_trans
+    .type vf3_gd_req_dma_trans,@function
+vf3_gd_req_dma_trans:
+    mov #0, r6
+    mov #6, r7
+    mov.l .Lvec_reqdma, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_reqdma:
+    .long 0x8c0000bc
+
+    .global vf3_gd_check_dma_trans
+    .type vf3_gd_check_dma_trans,@function
+vf3_gd_check_dma_trans:
+    mov #0, r6
+    mov #7, r7
+    mov.l .Lvec_checkdma, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_checkdma:
+    .long 0x8c0000bc
+
+    .global vf3_gd_read_abort
+    .type vf3_gd_read_abort,@function
+vf3_gd_read_abort:
+    mov #0, r6
+    mov #8, r7
+    mov.l .Lvec_abort, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_abort:
+    .long 0x8c0000bc
+
+    .global vf3_gd_reset
+    .type vf3_gd_reset,@function
+vf3_gd_reset:
+    mov #0, r6
+    mov #9, r7
+    mov.l .Lvec_reset, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_reset:
+    .long 0x8c0000bc
+
+    .global vf3_gd_change_data_type
+    .type vf3_gd_change_data_type,@function
+vf3_gd_change_data_type:
+    mov #0, r6
+    mov #10, r7
+    mov.l .Lvec_type, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_type:
+    .long 0x8c0000bc
+
+    .global vf3_gd_set_pio_callback
+    .type vf3_gd_set_pio_callback,@function
+vf3_gd_set_pio_callback:
+    mov #0, r6
+    mov #11, r7
+    mov.l .Lvec_piocb, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_piocb:
+    .long 0x8c0000bc
+
+    .global vf3_gd_req_pio_trans
+    .type vf3_gd_req_pio_trans,@function
+vf3_gd_req_pio_trans:
+    mov #0, r6
+    mov #12, r7
+    mov.l .Lvec_reqpio, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_reqpio:
+    .long 0x8c0000bc
+
+    .global vf3_gd_check_pio_trans
+    .type vf3_gd_check_pio_trans,@function
+vf3_gd_check_pio_trans:
+    mov #0, r6
+    mov #13, r7
+    mov.l .Lvec_checkpio, r0
+    mov.l @r0, r0
+    jmp @r0
+    nop
+    .align 2
+.Lvec_checkpio:
+    .long 0x8c0000bc
