@@ -41,7 +41,7 @@ jobs:
           current = {}
           with open("archive-listing.txt", encoding="utf-8", errors="replace") as listing:
               for raw in listing:
-                  line = raw.rstrip("\\r\\n")
+                  line = raw.strip()
                   if not line:
                       if current:
                           records.append(current)
