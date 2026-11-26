@@ -125,7 +125,7 @@ if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
         match = re.match(r"^([0-9a-fA-F]+):", line)
         if match:
             address_to_line[int(match.group(1), 16)] = index
-    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA, 0x8C050C60, 0x8C050E8A, 0x8C07C480, 0x8C085A88] + list(stub_vas) + [BASE + x[0] for x in strings]
+    targets = [0x8C036080, 0x8C0431D8, 0x8C0431DA, 0x8C050C60, 0x8C050E8A, 0x8C01DAF8, 0x8C07C480, 0x8C085A88] + list(stub_vas) + [BASE + x[0] for x in strings]
     out.extend(["", "GD-ROM SYSCALL HELPER REGION (0x8C043200-0x8C043500):"])
     for line in disassembly:
         match = re.match(r"^([0-9a-fA-F]+):", line)
