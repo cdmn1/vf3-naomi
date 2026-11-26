@@ -16,8 +16,14 @@ all: $(TARGET)
 rom: $(ROM)
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
-$(TARGET): $(OBJS) resident_sections.ld
-	kos-cc -Wl,-T,$(CURDIR)/resident_sections.ld -o $(TARGET) $(OBJS)
+RESIDENT_LDFLAGS = -Wl,--section-start=.vf3_resident_text=0x8D000000 \
+	-Wl,--section-start=.vf3_resident_rodata=0x8D010000 \
+	-Wl,--section-start=.vf3_resident_data=0x8D020000 \
+	-Wl,--defsym=__vf3_resident_start=0x8D000000 \
+	-Wl,--defsym=__vf3_resident_end=0x8D030000
+
+$(TARGET): $(OBJS)
+	kos-cc $(RESIDENT_LDFLAGS) -o $(TARGET) $(OBJS)
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD Syscall $(BUILD_VERSION)" -e $(TARGET)
 include $(KOS_BASE)/Makefile.rules
