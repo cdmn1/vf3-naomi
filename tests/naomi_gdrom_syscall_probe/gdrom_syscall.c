@@ -73,8 +73,8 @@ static int start_cart_dma_chunk(void)
         sectors = MAX_DMA_CHUNK_BYTES / VF3_GD_SECTOR_BYTES;
     if (sectors == 0u) return -1;
 
-    /* Asset-map offsets are relative to the appended payload; Holly DMA
-       addresses the complete NetDIMM image, so add its absolute base. */
+    /* Generated map entries store payload-relative offsets. Add the base
+       exactly once to obtain the absolute NetDIMM cartridge byte address. */
     offset64 = (uint64_t)VF3_ASSET_PAYLOAD_BASE +
                (uint64_t)entry->payload_offset +
                (uint64_t)(gd.current_fad - entry->fad_start) * VF3_GD_SECTOR_BYTES;
