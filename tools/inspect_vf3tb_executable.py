@@ -80,7 +80,7 @@ for match in re.finditer(rb"[ -~]{4,}", data):
 objdump = "sh4-linux-gnu-objdump"
 if subprocess.call(["sh", "-c", f"command -v {objdump} >/dev/null 2>&1"]) == 0:
     result = subprocess.run(
-        [objdump, "-D", "-b", "binary", "-m", "sh4", f"--adjust-vma=0x{BASE:08x}", str(path)],
+        [objdump, "-EL", "-D", "-b", "binary", "-m", "sh4", f"--adjust-vma=0x{BASE:08x}", str(path)],
         check=True, text=True, capture_output=True,
     )
     disassembly = result.stdout.splitlines()
