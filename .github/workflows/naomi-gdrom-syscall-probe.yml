@@ -293,7 +293,6 @@ jobs:
         with:
           name: vf3-naomi-map-aware-bridge-v${{ github.run_number }}
           path: |
-            vf3-asset-map-build-report.txt
+            vf3-assetmap-build/*
             vf3-netdimm-306mb-map.json
-            tests/naomi_gdrom_syscall_probe/vf3_asset_map.h
           if-no-files-found: error
