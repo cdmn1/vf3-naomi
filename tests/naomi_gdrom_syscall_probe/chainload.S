@@ -25,9 +25,9 @@ vf3_gd_chainload:
     VF3_STAGE 1
 
     /*
-     * Discard all four ways of O-cache lines covering the destination. The
-     * destination is about to be replaced completely, so dirty KOS data in
-     * this range is intentionally discarded rather than written back.
+     * Invalidate O-cache lines covering the destination. SH-4 O-cache is
+     * direct-mapped; one OCBI per 32-byte line is sufficient. Dirty KOS data
+     * in this range is intentionally discarded rather than written back.
      */
     VF3_STAGE 2
     mov.l .Ldest_p1,r0
@@ -115,6 +115,7 @@ vf3_gd_chainload:
 .Ldest_p1:      .long 0x8c010000
 .Ldest_p2:      .long 0xac010000
 .Lend_p1:       .long 0x8c130000
+.Lhalf_p1:      .long 0x8c0a0000
 .Lword_count:   .long 294912
 .Lstack:        .long 0xac00fc00
 .Lvbr:          .long 0x8c00f400
