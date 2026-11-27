@@ -52,7 +52,7 @@ gdrom_syscall_client.o: gdrom_syscall_client.c resident_offsets.h
 $(TARGET): $(OBJS)
 	kos-cc -o $(TARGET) $(OBJS)
 $(ROM): $(TARGET) $(NAOMIBINTOOL)
-	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD Syscall $(BUILD_VERSION)" -e $(TARGET)
+	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD $(BUILD_VERSION)" -e $(TARGET)
 include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
