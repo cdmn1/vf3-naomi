@@ -29,16 +29,17 @@ vf3_gd_chainload:
      * destination is about to be replaced completely, so dirty KOS data in
      * this range is intentionally discarded rather than written back.
      */
-    mov.l .Ldest_p1,r0
-    mov.l .Lend_p1,r1
-    mov.l .Lhalf_p1,r5
     VF3_STAGE 2
+    mov.l .Ldest_p1,r0
+    mov.l .Lhalf_p1,r5
 .Ldcache_first:
     ocbi @r0
     add #32,r0
     cmp/hs r5,r0
     bf .Ldcache_first
     VF3_STAGE 3
+    mov.l .Lhalf_p1,r0
+    mov.l .Lend_p1,r1
 .Ldcache_second:
     ocbi @r0
     add #32,r0
