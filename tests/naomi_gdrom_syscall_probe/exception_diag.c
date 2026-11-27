@@ -72,8 +72,8 @@ static RT int refresh_screen_mode(void) {
     uint32_t size=*(volatile uint32_t *)(uintptr_t)FBSIZE;
     uint32_t il=*(volatile uint32_t *)(uintptr_t)ILCFG;
     uint32_t mode=(cfg>>2)&3u;
-    uint32_t bpp=(mode==0u || mode==1u)?2u:(mode==2u?3u:4u);
-    uint32_t width=(((size&0x3ffu)+1u)*4u)/bpp;
+    /* This monitor intentionally supports only the 16-bit framebuffer modes. */
+    uint32_t width=((size&0x3ffu)+1u)*2u;
     uint32_t height=((size>>10)&0x3ffu)+1u;
     if(il&0x10u) height*=2u;
     if(width<160u || height<120u || mode>1u) return 0;
