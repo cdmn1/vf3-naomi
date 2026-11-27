@@ -6,8 +6,8 @@
 #include "gdrom_syscall.h"
 #include "vf3_asset_map.h"
 
-extern const uint8_t _binary_ip_template_bin_start[];
-extern const uint8_t _binary_ip_template_bin_end[];
+extern const uint8_t vf3_ip_template_start[];
+extern const uint8_t vf3_ip_template_end[];
 
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define NAOMI_ROM_OFFSETH 0x005f7000u
@@ -63,8 +63,8 @@ static void sha256(const uint8_t *p,uint32_t n,uint8_t out[32]){
  for(uint32_t i=0;i<8;i++){out[4*i]=H[i]>>24;out[4*i+1]=H[i]>>16;out[4*i+2]=H[i]>>8;out[4*i+3]=H[i];}
 }
 static int install_ip_boot_area(void){
- const uint8_t *src=_binary_ip_template_bin_start;
- uintptr_t bytes=(uintptr_t)_binary_ip_template_bin_end-(uintptr_t)_binary_ip_template_bin_start;
+ const uint8_t *src=vf3_ip_template_start;
+ uintptr_t bytes=(uintptr_t)vf3_ip_template_end-(uintptr_t)vf3_ip_template_start;
  volatile uint8_t *dst=(volatile uint8_t *)(uintptr_t)0xac008000u;
  if(bytes!=0x8000u)return 0;
  for(uint32_t i=0;i<0x8000u;i++)dst[i]=src[i];
