@@ -2,7 +2,7 @@
     .align 2
     .macro VF3_STAGE value
     mov.l .Ldiag_stage,r0
-    mov #\\value,r4
+    mov #\value,r4
     jsr @r0
     nop
     .endm
