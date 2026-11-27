@@ -9,11 +9,6 @@
     .global vf3_gd_chainload
     .type vf3_gd_chainload,@function
 
-/*
- * Enter the final handoff through the uncached P2 alias. This avoids executing
- * the transition code through KOS's cached P1 mapping while we invalidate and
- * disable the SH-4 caches.
- */
 vf3_gd_chainload:
     /* Checkpoint A: prove the C wrapper entered the resident assembly. */
     VF3_STAGE 1, .Ldiag_stage
@@ -24,8 +19,8 @@ vf3_gd_chainload:
 .Lchainload_p2:
     /*
      * Checkpoint B: write a visible red marker directly through P2 MMIO/VRAM
-     * before calling the P1 diagnostic routine. This avoids relying on the
-     * C diagnostic call to prove that the P2 branch was reached.
+     * before calling the P1 diagnostic routine. The marker is independent of
+     * that C call and therefore proves the P2 instruction stream was reached.
      */
     mov.l .Lfbreg_addr,r0
     mov.l @r0,r1
@@ -36,7 +31,9 @@ vf3_gd_chainload:
     mov.l .Lfb_cfg_addr,r0
     mov.l @r0,r3
     shlr2 r3
-    and #3,r3
+    mov r3,r0
+    and #3,r0
+    mov r0,r3
     tst r3,r3
     bf .Lmark_565
     mov.l .Lred_1555,r4
@@ -52,9 +49,8 @@ vf3_gd_chainload:
     dt r5
     bf .Lmark_loop
 
-    /* Returning to this P1 routine is an additional checkpoint, not the proof. */
+    /* This display update is secondary; the red VRAM stripe is the proof. */
     VF3_STAGE 2, .Ldiag_stage
-    /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
@@ -112,24 +108,24 @@ vf3_gd_chainload:
     nop
 
     .align 4
-.Ldiag_stage:       .long _vf3_diag_begin
+.Ldiag_stage:        .long _vf3_diag_begin
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
-.Lfbreg_addr:      .long 0xa05f8050
-.Lfb_cfg_addr:     .long 0xa05f8044
-.Lfb_mask:         .long 0x007fffff
-.Lvram_base:       .long 0xa5000000
-.Lred_1555:        .long 0x00007c00
-.Lred_565:         .long 0x0000f800
-.Lsource_p2:       .long 0xad100000
-.Ldest_p2:         .long 0xac010000
-.Lword_count:      .long 294912
-.Lstack:           .long 0xac00fc00
-.Lvbr:             .long 0x8c00f400
-.Lgbr:             .long 0x00000000
-.Lfpscr:           .long 0x00040001
-.Lsr:              .long 0x600000f0
-.Lccr_addr:        .long 0xff00001c
-.Lccr_value:       .long 0x00000808
-.Lentry:           .long 0x8c010000
+.Lfbreg_addr:        .long 0xa05f8050
+.Lfb_cfg_addr:       .long 0xa05f8044
+.Lfb_mask:           .long 0x007fffff
+.Lvram_base:         .long 0xa5000000
+.Lred_1555:          .long 0x00007c00
+.Lred_565:           .long 0x0000f800
+.Lsource_p2:         .long 0xad100000
+.Ldest_p2:           .long 0xac010000
+.Lword_count:        .long 294912
+.Lstack:             .long 0xac00fc00
+.Lvbr:               .long 0x8c00f400
+.Lgbr:               .long 0x00000000
+.Lfpscr:             .long 0x00040001
+.Lsr:                .long 0x600000f0
+.Lccr_addr:          .long 0xff00001c
+.Lccr_value:         .long 0x00000808
+.Lentry:             .long 0x8c010000
 
     .size vf3_gd_chainload,.-vf3_gd_chainload
