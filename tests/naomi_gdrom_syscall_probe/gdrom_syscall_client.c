@@ -9,6 +9,7 @@ extern const uint8_t resident_blob_end[] __asm__("_binary_resident_shim_bin_end"
 
 typedef uint32_t (*resident_fn0)(void);
 typedef void (*resident_fn_void)(void);
+typedef void (*resident_fn1)(uint32_t);
 typedef uint32_t (*resident_fn3)(uint32_t, uint32_t, uint32_t);
 
 static int resident_loaded;
