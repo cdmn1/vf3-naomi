@@ -1,7 +1,7 @@
     .section .vf3_resident_text,"ax"
     .align 2
-    .macro VF3_STAGE value
-    mov.l .Ldiag_stage,r0
+    .macro VF3_STAGE value, diagptr=.Ldiag_stage
+    mov.l \diagptr,r0
     mov #\value,r4
     jsr @r0
     nop
@@ -16,14 +16,14 @@
  */
 vf3_gd_chainload:
     /* Checkpoint A: prove the C wrapper entered the resident assembly. */
-    VF3_STAGE 1
+    VF3_STAGE 1, .Ldiag_stage
     mov.l .Lchainload_p2_addr,r0
     jmp @r0
     nop
 
 .Lchainload_p2:
     /* Checkpoint B: prove the uncached P2 branch completed. */
-    VF3_STAGE 2
+    VF3_STAGE 2, .Ldiag_stage_p2
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
     /*
@@ -93,7 +93,8 @@ vf3_gd_chainload:
     nop
 
     .align 4
-.Ldiag_stage:  .long _vf3_diag_begin
+.Ldiag_stage:    .long _vf3_diag_begin
+.Ldiag_stage_p2: .long 0xad000000 + (_vf3_diag_begin - 0x8d000000)
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
 .Lsource_p2:    .long 0xad100000
 .Ldest_p1:      .long 0x8c010000
