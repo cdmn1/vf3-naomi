@@ -15,16 +15,14 @@
  * disable the SH-4 caches.
  */
 vf3_gd_chainload:
+    /* Checkpoint A: prove the C wrapper entered the resident assembly. */
+    VF3_STAGE 1
     mov.l .Lchainload_p2_addr,r0
     jmp @r0
     nop
 
 .Lchainload_p2:
-    /*
-     * Draw this checkpoint before changing stacks. If it appears, the P2
-     * branch and diagnostic call are sound; the next operation is the stack
-     * switch followed by the uncached retail-image copy.
-     */
+    /* Checkpoint B: prove the uncached P2 branch completed. */
     VF3_STAGE 2
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
