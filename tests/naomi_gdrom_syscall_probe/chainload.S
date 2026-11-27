@@ -1,5 +1,11 @@
     .section .vf3_resident_text,"ax"
     .align 2
+    .macro VF3_STAGE value
+    mov.l .Ldiag_stage,r0
+    mov #\\value,r4
+    jsr @r0
+    nop
+    .endm
     .global vf3_gd_chainload
     .type vf3_gd_chainload,@function
 
@@ -16,6 +22,7 @@ vf3_gd_chainload:
 .Lchainload_p2:
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
+    VF3_STAGE 1
 
     /*
      * Discard all four ways of O-cache lines covering the destination. The
@@ -41,6 +48,7 @@ vf3_gd_chainload:
     add #32,r0
     cmp/hs r1,r0
     bf .Ldcache
+    VF3_STAGE 2
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
     mov.l .Lsource_p2,r0
@@ -52,6 +60,7 @@ vf3_gd_chainload:
     add #4,r1
     dt r2
     bf .Lcopy
+    VF3_STAGE 3
 
     /*
      * Match the cache invalidation used by Dreamcast IP bootstraps.
@@ -64,6 +73,7 @@ vf3_gd_chainload:
     mov.l r1,@r0
     nop
     nop
+    VF3_STAGE 4
 
     /* Establish a clean Katana startup CPU context. */
     mov.l .Lvbr,r0
@@ -89,6 +99,7 @@ vf3_gd_chainload:
     mov r1,r12
     mov r1,r13
     mov r1,r14
+    VF3_STAGE 5
     /* v108 diagnostic: force a TRAPA after handoff setup to validate the
        installed SH-4 exception vector. This is intentionally not a game boot. */
     trapa #0x3f
@@ -101,6 +112,7 @@ vf3_gd_chainload:
     nop
 
     .align 4
+.Ldiag_stage:  .long vf3_diag_stage
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
 .Lsource_p2:    .long 0xad100000
 .Ldest_p1:      .long 0x8c010000
