@@ -44,7 +44,7 @@ resident_shim_blob.o: resident_shim.bin
 	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh $< $@
 
 ip_template_blob.o: ip_template.bin
-	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh --rename-section .data=.rodata,alloc,load,readonly,data,contents --set-section-alignment .rodata=4 $< $@
+	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh --rename-section .data=.rodata,alloc,load,readonly,data,contents $< $@
 
 resident_offsets.h: resident_shim.elf resident_shim.bin
 	python3 ../../tools/generate_resident_offsets.py --nm $(SH_ELF_NM) --elf resident_shim.elf --bin resident_shim.bin --output $@
