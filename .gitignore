@@ -4,3 +4,6 @@
 
 # Local Dreamcast game executable used for analysis.
 /1ST_READ.BIN
+
+# Downloaded, pinned replacement Dreamcast IP template (generated in Actions).
+/tests/naomi_gdrom_syscall_probe/ip_template.bin
