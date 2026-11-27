@@ -9,6 +9,11 @@ on:
       - "tools/generate_vf3_asset_map_header.py"
       - "tools/append_vf3_assets_to_naomi_rom.py"
       - "tools/build_vf3_netdimm_image.ps1"
+      - "docs/THIRD_PARTY_NOTICES.md"
+      - "tests/naomi_gdrom_syscall_probe/RETAIL_LOADCHECK_README.md"
+      - "tests/naomi_gdrom_syscall_probe/Makefile"
+      - "tests/naomi_gdrom_syscall_probe/chainload.S"
+      - "tests/naomi_gdrom_syscall_probe/main.c"
       - "tools/generate_vf3_asset_map_from_manifest.py"
       - "docs/GDROM_DISC_FILE_MAP.csv"
       - "tests/test_vf3_asset_packer.py"
@@ -153,6 +158,17 @@ jobs:
         with:
           path: .cache/kos-naomi-build.tar
           key: kos-naomi-bootstrap-${{ runner.os }}-${{ steps.kos-revision.outputs.sha }}-naomi-v2
+
+      - name: Fetch and verify open replacement Dreamcast IP template
+        run: |
+          set -euo pipefail
+          TEMPLATE="tests/naomi_gdrom_syscall_probe/ip_template.bin"
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://raw.githubusercontent.com/Dreamcast-Projects/makeip/146b310e2d03c93648f56df81cd27b3458639f5c/rsrc/templates/ip.tmpl" \
+            -o "$TEMPLATE"
+          test "$(stat -c '%s' "$TEMPLATE")" -eq 32768
+          test "$(git hash-object "$TEMPLATE")" = "9ce8f2a7d6cc444ce198ac28ceef223b9848d17a"
+          echo "Replacement IP.BIN template: 32768 bytes; pinned Git blob verified."
 
       - name: Compile and package GD-ROM syscall bridge probe
         env:
@@ -507,6 +523,7 @@ jobs:
           cp tools/pack_vf3_assets.py tools/append_vf3_assets_to_naomi_rom.py vf3-compact-map-base/tools/
           cp tools/build_vf3_netdimm_image.ps1 vf3-compact-map-base/
           cp tests/naomi_gdrom_syscall_probe/RETAIL_LOADCHECK_README.md vf3-compact-map-base/README.txt
+          cp docs/THIRD_PARTY_NOTICES.md vf3-compact-map-base/THIRD_PARTY_NOTICES.txt
           python3 - "$ROM" "$PAYLOAD_BASE" vf3-netdimm-306mb-map.json <<'PY'
           import hashlib, json, os, pathlib, shutil, sys
           rom = pathlib.Path(sys.argv[1])
