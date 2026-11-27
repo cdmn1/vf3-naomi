@@ -9,7 +9,7 @@
  * disable the SH-4 caches.
  */
 vf3_gd_chainload:
-    mov.l .Lchainload_p2,r0
+    mov.l .Lchainload_p2_addr,r0
     jmp @r0
     nop
 
@@ -94,8 +94,8 @@ vf3_gd_chainload:
     jmp @r0
     nop
 
-    .align 2
-.Lchainload_p2: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
+    .align 4
+.Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
 .Lsource_p2:    .long 0xad100000
 .Ldest_p1:      .long 0x8c010000
 .Ldest_p2:      .long 0xac010000
