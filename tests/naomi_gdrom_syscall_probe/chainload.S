@@ -22,30 +22,12 @@ vf3_gd_chainload:
 .Lchainload_p2:
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
-    VF3_STAGE 1
-
     /*
-     * Invalidate O-cache lines covering the destination. SH-4 O-cache is
-     * direct-mapped; one OCBI per 32-byte line is sufficient. Dirty KOS data
-     * in this range is intentionally discarded rather than written back.
+     * Skip the explicit OCBI sweep. The later CCR write requests whole-cache
+     * O/I invalidation, so a per-line destination sweep is redundant here.
+     * This checkpoint now leads directly into the uncached image copy.
      */
     VF3_STAGE 2
-    mov.l .Ldest_p1,r0
-    mov.l .Lhalf_p1,r5
-.Ldcache_first:
-    ocbi @r0
-    add #32,r0
-    cmp/hs r5,r0
-    bf .Ldcache_first
-    VF3_STAGE 3
-    mov.l .Lhalf_p1,r0
-    mov.l .Lend_p1,r1
-.Ldcache_second:
-    ocbi @r0
-    add #32,r0
-    cmp/hs r1,r0
-    bf .Ldcache_second
-    VF3_STAGE 4
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
     mov.l .Lsource_p2,r0
@@ -115,7 +97,6 @@ vf3_gd_chainload:
 .Ldest_p1:      .long 0x8c010000
 .Ldest_p2:      .long 0xac010000
 .Lend_p1:       .long 0x8c130000
-.Lhalf_p1:      .long 0x8c0a0000
 .Lword_count:   .long 294912
 .Lstack:        .long 0xac00fc00
 .Lvbr:          .long 0x8c00f400
