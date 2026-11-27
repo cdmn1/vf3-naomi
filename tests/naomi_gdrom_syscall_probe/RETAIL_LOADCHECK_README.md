@@ -41,11 +41,15 @@ screen should first show the existing DMA/PIO checks passing, followed by:
 After displaying the successful result for approximately three seconds, the
 resident high-RAM chainloader:
 
-1. Invalidates cached lines covering the destination.
-2. Copies the verified 1,179,648-byte retail executable from staging RAM to
+1. Installs and verifies a BSD-licensed replacement Dreamcast IP.BIN template
+   at `0x8C008000`, including the reserved boot-area range expected by retail
+   startup code.
+2. Invalidates cached lines covering the destination.
+3. Copies the verified 1,179,648-byte retail executable from staging RAM to
    its Dreamcast load address, `0x8C010000`.
-3. Invalidates the SH-4 instruction cache for the copied code.
-4. Sets a reserved high-RAM stack and jumps to the retail entry point.
+4. Invalidates the SH-4 instruction cache for the copied code.
+5. Sets the Dreamcast startup CPU context and calls the retail entry point,
+   matching the established replacement-IP bootstrap handoff convention.
 
 The resident GD-ROM bridge remains in `0x8D000000–0x8D030000` so subsequent
 retail GD-ROM requests can still be serviced. This is the first actual
@@ -54,3 +58,5 @@ operations are compatible.
 
 No serial connection is required. No commercial game assets are committed to
 the repository or included in GitHub Actions artifacts.
+
+The embedded replacement IP template is from Dreamcast-Projects/makeip and is distributed under the BSD 2-Clause License. See `THIRD_PARTY_NOTICES.txt` in the package.
