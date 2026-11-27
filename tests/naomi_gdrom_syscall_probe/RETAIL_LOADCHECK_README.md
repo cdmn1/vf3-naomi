@@ -22,12 +22,13 @@ and Windows packing helpers. It does not contain the commercial game payload.
 The script uses only files already on your PC. For a 7z archive it extracts
 locally using an installed 7-Zip; for a folder it searches recursively. It
 verifies every asset against the checked-in manifest, packs all 411 included
-files (excluding only `MOVIE_A.SFD`), and appends the payload to the map-aware
-base ROM. `MOVIE_B.SFD` remains included.
+files (excluding only `MOVIE_A.SFD`), derives the payload offset from the base
+ROM's actual sector-aligned end, and appends the payload. `MOVIE_B.SFD` remains
+included.
 
 Python 3 is required. The completed image is written to the current PowerShell
 folder as `vf3-naomi-chainload-vNN.bin` (unless `-OutputPath` is supplied).
-The complete image is approximately 306.73 MiB, within the 512 MiB NetDIMM
+The complete image is approximately 306.76 MiB, within the 512 MiB NetDIMM
 capacity. Temporary extraction and payload files are removed automatically.
 
 ## Flycast test
