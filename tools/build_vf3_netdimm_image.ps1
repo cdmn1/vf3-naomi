@@ -1,7 +1,28 @@
 param(
-    [string]$AssetsPath = "",
-    [string]$OutputPath = "",
-    [string]$AssetsZipUrl = "https://www.dropbox.com/scl/fo/l47sloq9477lxnotdix35/AFbQ2trl_xczZdgC9fHZgZg?rlkey=uriqyifyb3igd74a31iijz92h&dl=1"
+    [Parameter(Mandatory=$true)][string]$AssetsPath,
+    [string]$OutputPath = ""
+)
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$manifest = Join-Path $root "GDROM_DISC_FILE_MAP.csv"
+$map = Join-Path $root "vf3-netdimm-306mb-map.json"
+$header = Join-Path $root "vf3_asset_map.h"
+$baseRom = Get-ChildItem -Path $root -Filter "vf3-naomi-assetmap-base-v*.bin" | Select-Object -First 1
+$packer = Join-Path $root "tools/pack_vf3_assets.py"
+$append = Join-Path $root "tools/append_vf3_assets_to_naomi_rom.py"
+
+foreach ($required in @($manifest, $map, $header, $packer, $append)) {
+    if (-not (Test-Path $required)) { throw "Required build file is missing: $required" }
+}
+if (-not $baseRom) { throw "The compact base ROM is missing. Extract the vf3-naomi-compact-map-base-v82 ZIP into this same folder." }
+
+$work = Join-Path ([System.IO.Path]::GetTempPath()) ("vf3-naomi-build-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $work | Out-Null
+try {
+    if (-not (Test-Path $AssetsPath -PathType Container)) { throw "Extracted VF3 assets folder not found: $AssetsPath" }
+param(
+    [Parameter(Mandatory=$true)][string]$AssetsPath,
+    [string]$OutputPath = ""
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -48,16 +69,16 @@ try {
     $m = [regex]::Match($headerText, '(?m)^#define VF3_ASSET_PAYLOAD_BASE (\d+)u$')
     if (-not $m.Success) { throw "Could not read payload base from vf3_asset_map.h." }
     $payloadBase = [int64]$m.Groups[1].Value
-    if ($payloadBase -ne 358400) { throw "This base ROM expects payload base 0x57800 (358400), but header says $payloadBase. Use the matching v81 compact base package." }
+    if ($payloadBase -ne 358400) { throw "This base ROM expects payload base 0x57800 (358400), but header says $payloadBase. Use the matching compact base package." }
 
-    Write-Host "Checking generated asset map against the v81 map..."
+    Write-Host "Checking generated asset map against the packaged map..."
     $expectedMap = Get-Content $map -Raw | ConvertFrom-Json
     $actualMap = Get-Content $generatedMap -Raw | ConvertFrom-Json
     if ($actualMap.payload_bytes -ne $expectedMap.payload_bytes -or $actualMap.packed_file_count -ne $expectedMap.packed_file_count) {
         throw "Generated payload map does not match the v81 compact map. Check that the Dropbox source is the expected VF3tb USA asset set."
     }
 
-    Write-Host "Combining the v81 base ROM and generated payload..."
+    Write-Host "Combining the compact base ROM and generated payload..."
     python $append --rom $baseRom.FullName --payload $payload --map-json $generatedMap --header $header --payload-base $payloadBase --output $OutputPath
     if ($LASTEXITCODE -ne 0) { throw "Image assembly failed (exit $LASTEXITCODE)." }
 
@@ -68,7 +89,7 @@ try {
     Write-Host $OutputPath
     Write-Host ("Size: {0:N0} bytes ({1:N2} MiB)" -f $size,($size/1MB))
     Write-Host "SHA-256: $sha"
-    Write-Host "The temporary payload was generated automatically and will be cleaned up."
+    Write-Host "The temporary payload was generated automatically from your extracted archive and will be cleaned up."
 }
 finally {
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
