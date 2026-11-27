@@ -239,7 +239,7 @@ jobs:
             od -An -tx1 -N128 "$RETAIL_BIN"
             echo
             echo "SH-4 disassembly at 0x8C010000 (first 100 instructions):"
-            "$KOS_CC_BASE/bin/sh-elf-objdump" -D -b binary -m sh4 \
+            "$KOS_CC_BASE/bin/sh-elf-objdump" -D -b binary -m sh4 -EL \
               --adjust-vma=0x8c010000 "$RETAIL_BIN" | sed -n '1,115p'
           } > retail-entry-analysis.txt
           cat retail-entry-analysis.txt
