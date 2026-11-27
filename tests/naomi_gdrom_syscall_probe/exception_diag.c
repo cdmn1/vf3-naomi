@@ -187,9 +187,9 @@ RT uint32_t vf3_diag_prepare(uint32_t width,uint32_t height,uint32_t pixel_mode)
        *tlb_target!=(uint32_t)(uintptr_t)vf3_exception_entry) return 0u;
     return 1u;
 }
-RT void vf3_diag_begin(void) { active=1u; show_handoff(); }
-RT void vf3_diag_stage(uint32_t stage) {
+RT void vf3_diag_begin(uint32_t stage) {
     const char *label = t_stage1;
+    if(stage==0u) { active=1u; show_handoff(); return; }
     if(!refresh_screen_mode()) return;
     if(stage==2u) label=t_stage2;
     else if(stage==3u) label=t_stage3;
