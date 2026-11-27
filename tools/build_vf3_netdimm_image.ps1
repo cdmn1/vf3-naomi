@@ -26,11 +26,7 @@ if ($baseRoms.Count -ne 1) {
 }
 $baseRom = $baseRoms[0]
 
-$assetsFullPath = (Resolve-Path -LiteralPath $AssetsPath -ErrorAction Stop).Path
-if (-not (Test-Path -LiteralPath $assetsFullPath -PathType Container)) {
-    throw "AssetsPath must point to the folder containing the extracted VF3tb USA files: $AssetsPath"
-}
-
+$assetInput = Get-Item -LiteralPath $AssetsPath -ErrorAction Stop
 $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) {
     throw "Python 3 was not found. Install Python 3 and ensure the 'python' command is available in PowerShell."
@@ -53,11 +49,48 @@ $work = Join-Path ([System.IO.Path]::GetTempPath()) ("vf3-naomi-build-" + [guid]
 New-Item -ItemType Directory -Path $work | Out-Null
 
 try {
+    if ($assetInput.PSIsContainer) {
+        $assetsFullPath = (Resolve-Path -LiteralPath $assetInput.FullName).Path
+        Write-Host "Using already-extracted local assets: $assetsFullPath"
+    }
+    elseif ($assetInput.Extension -ieq ".7z") {
+        $sevenZip = Get-Command 7z.exe -ErrorAction SilentlyContinue
+        if (-not $sevenZip) {
+            $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+            $candidates = @(
+                (Join-Path $env:ProgramFiles "7-Zip\7z.exe"),
+                (Join-Path $programFilesX86 "7-Zip\7z.exe")
+            )
+            foreach ($candidate in $candidates) {
+                if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+                    $sevenZipPath = $candidate
+                    break
+                }
+            }
+            if (-not $sevenZipPath) {
+                throw "A local .7z archive was supplied, but 7-Zip was not found. Install 7-Zip or pass the path to an already-extracted assets folder."
+            }
+        }
+        else {
+            $sevenZipPath = $sevenZip.Source
+        }
+
+        $assetsFullPath = Join-Path $work "extracted-assets"
+        New-Item -ItemType Directory -Path $assetsFullPath | Out-Null
+        Write-Host "Extracting local 7z archive with 7-Zip..."
+        & $sevenZipPath x -y "-o$assetsFullPath" $assetInput.FullName
+        if ($LASTEXITCODE -ne 0) {
+            throw "7-Zip extraction failed (exit $LASTEXITCODE)."
+        }
+    }
+    else {
+        throw "AssetsPath must be either an extracted assets folder or a local .7z archive: $AssetsPath"
+    }
+
     $payload = Join-Path $work "vf3-netdimm-306mb.payload"
     $generatedMap = Join-Path $work "vf3-netdimm-306mb-map.json"
 
-    Write-Host "Source assets: $assetsFullPath"
-    Write-Host "Base ROM:      $($baseRom.Name)"
+    Write-Host "Base ROM: $($baseRom.Name)"
     Write-Host "Packing retail assets and validating file sizes/SHA-1..."
     & python $packer --assets $assetsFullPath --manifest $manifest --output $payload --map $generatedMap --exclude MOVIE_A.SFD
     if ($LASTEXITCODE -ne 0) {
@@ -96,7 +129,7 @@ try {
     Write-Host $OutputPath
     Write-Host ("Size: {0:N0} bytes ({1:N2} MiB)" -f $size, ($size / 1MB))
     Write-Host "SHA-256: $sha"
-    Write-Host "The temporary payload and generated map were removed automatically."
+    Write-Host "Temporary extracted files, payload and generated map were removed automatically."
 }
 finally {
     Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
