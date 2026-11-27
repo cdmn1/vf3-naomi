@@ -79,7 +79,6 @@ vf3_gd_chainload:
     mov #0,r1
     mov r1,r2
     mov r1,r3
-    mov.l .Lentry,r4
     mov r1,r5
     mov r1,r6
     mov r1,r7
@@ -91,7 +90,10 @@ vf3_gd_chainload:
     mov r1,r13
     mov r1,r14
     mov.l .Lentry,r0
-    jmp @r0
+    jsr @r0
+    mov r0,r4
+.Lreturned:
+    bra .Lreturned
     nop
 
     .align 4
