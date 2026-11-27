@@ -10,7 +10,7 @@ endif
 BUILD_VERSION ?= dev
 TARGET = vf3_naomi_gdrom_syscall_probe.elf
 ROM = vf3_naomi_gdrom_syscall_probe-$(BUILD_VERSION).bin
-OBJS = main.o gdrom_syscall_client.o resident_shim_blob.o syscalls.o
+OBJS = main.o gdrom_syscall_client.o resident_shim_blob.o ip_template_blob.o syscalls.o
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
 all: $(TARGET)
 rom: $(ROM)
@@ -43,6 +43,9 @@ resident_shim.bin: resident_shim.elf
 resident_shim_blob.o: resident_shim.bin
 	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh $< $@
 
+ip_template_blob.o: ip_template.bin
+	$(SH_ELF_OBJCOPY) -I binary -O elf32-shl -B sh --rename-section .data=.rodata,alloc,load,readonly,data,contents --set-section-alignment .rodata=4 $< $@
+
 resident_offsets.h: resident_shim.elf resident_shim.bin
 	python3 ../../tools/generate_resident_offsets.py --nm $(SH_ELF_NM) --elf resident_shim.elf --bin resident_shim.bin --output $@
 
@@ -57,5 +60,5 @@ include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
 clean:
-	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h
+	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h ip_template_blob.o
 .PHONY: all rom clean
