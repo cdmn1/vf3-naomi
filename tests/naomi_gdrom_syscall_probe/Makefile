@@ -27,12 +27,18 @@ gdrom_syscall_resident.o: gdrom_syscall.c gdrom_syscall.h vf3_asset_map.h
 chainload.o: chainload.S
 	kos-cc -c chainload.S -o $@
 
-resident_shim.elf: gdrom_syscall_resident.o chainload.o
+exception_diag.o: exception_diag.c
+	kos-cc -fno-jump-tables -c exception_diag.c -o $@
+
+exception_entry.o: exception_entry.S
+	kos-cc -c exception_entry.S -o $@
+
+resident_shim.elf: gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o
 	$(SH_ELF_LD) -EL -e _vf3_gd_install \
 		--section-start=.vf3_resident_text=0x8D000000 \
 		--section-start=.vf3_resident_rodata=0x8D010000 \
 		--section-start=.vf3_resident_data=0x8D020000 \
-		-o $@ gdrom_syscall_resident.o chainload.o
+		-o $@ gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o
 
 resident_shim.bin: resident_shim.elf
 	$(SH_ELF_OBJCOPY) -O binary --gap-fill=0x00 \
@@ -57,5 +63,5 @@ include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
 clean:
-	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h
+	-rm -f $(TARGET) $(ROM) $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h exception_diag.o exception_entry.o
 .PHONY: all rom clean

@@ -14,6 +14,8 @@ FUNCTIONS = {
     "VF3_RESIDENT_ADDR_LAST_DMA_STATUS": "vf3_gd_last_dma_status",
     "VF3_RESIDENT_ADDR_LAST_BYTES": "vf3_gd_last_bytes",
     "VF3_RESIDENT_ADDR_CHAINLOAD": "vf3_gd_chainload",
+    "VF3_RESIDENT_ADDR_DIAG_PREPARE": "vf3_diag_prepare",
+    "VF3_RESIDENT_ADDR_DIAG_BEGIN": "vf3_diag_begin",
 }
 
 def generate(nm: str, elf: Path, binary: Path) -> str:

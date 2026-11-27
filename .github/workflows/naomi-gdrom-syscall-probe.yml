@@ -206,7 +206,7 @@ jobs:
           "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$RESIDENT_ELF" > resident-layout.txt
           "$KOS_CC_BASE/bin/sh-elf-readelf" -W -l -S "$APP_ELF" > app-layout.txt
           "$KOS_CC_BASE/bin/sh-elf-nm" -n "$RESIDENT_ELF" > resident-symbols.txt
-          "$KOS_CC_BASE/bin/sh-elf-nm" -u tests/naomi_gdrom_syscall_probe/gdrom_syscall_resident.o > resident-undefined.txt
+          "$KOS_CC_BASE/bin/sh-elf-nm" -u "$RESIDENT_ELF" > resident-undefined.txt
           "$KOS_CC_BASE/bin/sh-elf-nm" -n "$APP_ELF" > app-symbols.txt
           python3 - <<'PY'
           import pathlib

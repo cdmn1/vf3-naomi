@@ -26,6 +26,9 @@ static void *vf3_guest_pointer(uint32_t address)
 #define VF3_ASSET_MAP_IMPLEMENTATION
 #include "vf3_asset_map.h"
 
+void vf3_diag_note_operation(uint32_t op, uint32_t a, uint32_t b, uint32_t c);
+void vf3_diag_note_request(uint32_t command, const uint32_t params[4]);
+
 #ifndef VF3_GD_HOST_TEST
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define REG32(a) (*(volatile uint32_t *)(uintptr_t)(a))
@@ -176,6 +179,7 @@ static VF3_RESIDENT_TEXT uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r
                                        uint32_t r6, uint32_t r7)
 {
     volatile uint32_t *words;
+    vf3_diag_note_operation(r7, r4, r5, r6);
     if (r6 != 0u) {
         if (r6 == 0xffffffffu && (r7 == 0u || r7 == 1u))
             return 0u;
@@ -197,6 +201,7 @@ static VF3_RESIDENT_TEXT uint32_t vf3_gd_syscall_handler(uint32_t r4, uint32_t r
             for (unsigned i = 0; i < 4; ++i)
                 gd.params[i] = words[i];
         }
+        vf3_diag_note_request(gd.command, gd.params);
         if (gd.command == VF3_GD_CMD_DMAREAD || gd.command == VF3_GD_CMD_PIOREAD) {
             if (gd.params[1] == 0u ||
                 gd.params[1] > MAX_REQUEST_BYTES / VF3_GD_SECTOR_BYTES ||

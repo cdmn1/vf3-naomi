@@ -9,6 +9,7 @@ extern const uint8_t resident_blob_end[] __asm__("_binary_resident_shim_bin_end"
 
 typedef uint32_t (*resident_fn0)(void);
 typedef void (*resident_fn_void)(void);
+typedef uint32_t (*resident_fn3)(uint32_t, uint32_t, uint32_t);
 
 static int resident_loaded;
 
@@ -61,9 +62,18 @@ uint32_t vf3_gd_last_bytes(void)
     return ((resident_fn0)(uintptr_t)VF3_RESIDENT_ADDR_LAST_BYTES)();
 }
 
+uint32_t vf3_gd_diag_prepare(uint32_t width, uint32_t height, uint32_t pixel_mode)
+{
+    if (load_resident_image() != 0)
+        return 0u;
+    return ((resident_fn3)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_PREPARE)(width, height, pixel_mode);
+}
+
 void vf3_gd_chainload(void)
 {
-    if (load_resident_image() == 0)
+    if (load_resident_image() == 0) {
+        ((resident_fn0)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_BEGIN)();
         ((resident_fn_void)(uintptr_t)VF3_RESIDENT_ADDR_CHAINLOAD)();
+    }
     for (;;) { }
 }

@@ -31,7 +31,7 @@ static uint8_t pio_bridge_buffer[WORDS * 2u] __attribute__((aligned(32)));
 static pvr_ptr_t font_texture;
 static int dma_pass, pio_bridge_pass, direct_match, bridge_match, status_pass;
 static uint32_t old_service, dma_status, dma_bytes, dma_request, pio_request;
-static int retail_load_pass, retail_sha_pass, ip_boot_area_pass;
+static int retail_load_pass, retail_sha_pass, ip_boot_area_pass, exception_monitor_pass;
 #define RETAIL_STAGE_P1 0x8d100000u
 #define RETAIL_STAGE_P2 0xad100000u
 #define RETAIL_EXEC_BYTES 1179648u
@@ -205,7 +205,7 @@ static void draw_screen(void)
     draw_text(32,328,line);
     snprintf(line,sizeof line,"TEST FAD %u  CART OFFSET %08X",(unsigned)TEST_FAD,(unsigned)TEST_OFFSET);
     draw_text(32,364,line);
-    draw_text(32,388,"NO SERIAL CONNECTION REQUIRED");
+    draw_text(32,388,exception_monitor_pass?"EXCEPTION MONITOR: READY":"EXCEPTION MONITOR: NOT READY");
     snprintf(resident_line, sizeof resident_line, "IP.BIN BOOT AREA: %s", ip_boot_area_pass?"PASS":"FAIL");
     draw_text(32,412,resident_line);
     draw_text(32,436,retail_load_pass?"RETAIL 1ST_READ LOAD: PASS":"RETAIL 1ST_READ LOAD: NOT VERIFIED");
@@ -234,7 +234,10 @@ int main(void)
     font_texture = pvr_mem_malloc(256u*256u*2u);
     if (!font_texture) for (;;) thd_sleep(1000);
     font_init();
-    if (retail_load_pass && retail_sha_pass && ip_boot_area_pass) {
+    if (retail_load_pass && retail_sha_pass && ip_boot_area_pass)
+        exception_monitor_pass = vf3_gd_diag_prepare((uint32_t)vid_mode->width,
+            (uint32_t)vid_mode->height, (uint32_t)vid_mode->pm) == 1u;
+    if (retail_load_pass && retail_sha_pass && ip_boot_area_pass && exception_monitor_pass) {
         /* Let the user see the successful retail hash check before replacing
            the low KOS image with the Dreamcast retail executable. */
         for (unsigned i = 0; i < 180u; ++i) { draw_screen(); thd_sleep(16); }
