@@ -7,7 +7,8 @@
 #define FBSIZE 0xa05f805cu
 #define ILCFG 0xa05f80d0u
 #define VRAM  0xa5000000u
-#define VEC   0xac00f500u
+#define VEC_GENERAL 0xac00f500u
+#define VEC_TLB     0xac00f800u
 
 typedef struct { uint32_t spc, ssr, sgr, expevt, tea, sr; } vf3_exception_info_t;
 volatile vf3_exception_info_t vf3_exception_info RD;
@@ -161,15 +162,23 @@ static RT void show_exception(void) {
     text(8,180,t_stopped,1,rgb(255,180,180));
 }
 RT uint32_t vf3_diag_prepare(uint32_t width,uint32_t height,uint32_t pixel_mode) {
-    volatile uint16_t *v=(volatile uint16_t *)(uintptr_t)VEC;
-    volatile uint32_t *target=(volatile uint32_t *)(uintptr_t)(VEC+8u);
+    volatile uint16_t *general=(volatile uint16_t *)(uintptr_t)VEC_GENERAL;
+    volatile uint16_t *tlb=(volatile uint16_t *)(uintptr_t)VEC_TLB;
+    volatile uint32_t *general_target=(volatile uint32_t *)(uintptr_t)(VEC_GENERAL+8u);
+    volatile uint32_t *tlb_target=(volatile uint32_t *)(uintptr_t)(VEC_TLB+8u);
     w=width; h=height; pm=pixel_mode; active=0; calls=0;
     if(width<320u || height<240u || pixel_mode>1u) return 0u;
-    /* mov.l @(1,pc),r0 ; jmp @r0 ; nop ; padding ; absolute handler */
-    v[0]=0xd001u; v[1]=0x402bu; v[2]=0x0009u; v[3]=0x0009u;
-    *target=(uint32_t)(uintptr_t)vf3_exception_entry;
-    if(v[0]!=0xd001u || v[1]!=0x402bu ||
-       *target!=(uint32_t)(uintptr_t)vf3_exception_entry) return 0u;
+    /* General exceptions use VBR+0x100; TLB misses use VBR+0x400. */
+    general[0]=0xd001u; general[1]=0x402bu;
+    general[2]=0x0009u; general[3]=0x0009u;
+    *general_target=(uint32_t)(uintptr_t)vf3_exception_entry;
+    tlb[0]=0xd001u; tlb[1]=0x402bu;
+    tlb[2]=0x0009u; tlb[3]=0x0009u;
+    *tlb_target=(uint32_t)(uintptr_t)vf3_exception_entry;
+    if(general[0]!=0xd001u || general[1]!=0x402bu ||
+       *general_target!=(uint32_t)(uintptr_t)vf3_exception_entry ||
+       tlb[0]!=0xd001u || tlb[1]!=0x402bu ||
+       *tlb_target!=(uint32_t)(uintptr_t)vf3_exception_entry) return 0u;
     return 1u;
 }
 RT void vf3_diag_begin(void) { active=1u; show_handoff(); }
