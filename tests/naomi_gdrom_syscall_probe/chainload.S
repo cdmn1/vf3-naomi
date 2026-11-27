@@ -109,7 +109,7 @@ vf3_gd_chainload:
 
     .align 4
 .Ldiag_stage:        .long _vf3_diag_begin
-.Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
+.Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - 0x8d000000)
 .Lfbreg_addr:        .long 0xa05f8050
 .Lfb_cfg_addr:       .long 0xa05f8044
 .Lfb_mask:           .long 0x007fffff
