@@ -60,9 +60,36 @@ jobs:
           print("\n".join(report))
           PY
 
+      - name: Analyze IP0000 boot-code layout
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          data = Path("IP0000.BIN").read_bytes()
+          out = []
+          out.append(f"Total bytes: {len(data)}")
+          out.append(f"Unique byte values: {len(set(data))}")
+          out.append(f"Nonzero bytes: {sum(x != 0 for x in data)}")
+          out.append(f"Distinct 0x800-byte blocks: {len({data[i:i+0x800] for i in range(0, len(data), 0x800)})}")
+          out.append("")
+          for i in range(0, len(data), 0x800):
+              block = data[i:i+0x800]
+              out.append(f"BLOCK 0x{i:04X}-0x{i+len(block)-1:04X} SHA256 {hashlib.sha256(block).hexdigest()} nonzero={sum(x != 0 for x in block)}")
+          out.append("")
+          for start, size in ((0x300, 0x100), (0x3800, 0x100), (0x6000, 0x100), (0x7000, 0x100)):
+              if start < len(data):
+                  chunk = data[start:start+size]
+                  out.append(f"OFFSET 0x{start:04X}: " + chunk.hex(" "))
+          Path("IP0000-layout.txt").write_text("\\n".join(out)+"\\n")
+          print("\\n".join(out))
+          PY
+
       - name: Publish text inspection only
         uses: actions/upload-artifact@v4
         with:
           name: vf3tb-ip0000-inspection-v${{ github.run_number }}
-          path: IP0000-inspection.txt
+          path: |
+            IP0000-inspection.txt
+            IP0000-layout.txt
           if-no-files-found: error
