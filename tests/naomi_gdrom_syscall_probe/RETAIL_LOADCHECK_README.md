@@ -36,6 +36,7 @@ capacity. Temporary extraction and payload files are removed automatically.
 Load the resulting combined image as a NAOMI NetDIMM image. The diagnostic
 screen should first show the existing DMA/PIO checks passing, followed by:
 
+- `IP.BIN BOOT AREA: PASS`
 - `RETAIL 1ST_READ LOAD: PASS`
 - `1ST_READ SHA256: MATCH`
 
