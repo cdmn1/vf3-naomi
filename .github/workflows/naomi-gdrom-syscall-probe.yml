@@ -502,6 +502,10 @@ jobs:
           cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-compact-map-base/
           cp vf3-netdimm-306mb-map.json vf3-compact-map-base/
           cp docs/GDROM_DISC_FILE_MAP.csv vf3-compact-map-base/
+          mkdir -p vf3-compact-map-base/tools
+          cp tools/pack_vf3_assets.py tools/append_vf3_assets_to_naomi_rom.py vf3-compact-map-base/tools/
+          cp tools/build_vf3_netdimm_image.ps1 vf3-compact-map-base/
+          cp tests/naomi_gdrom_syscall_probe/RETAIL_LOADCHECK_README.md vf3-compact-map-base/README.txt
           python3 - "$ROM" "$PAYLOAD_BASE" vf3-netdimm-306mb-map.json <<'PY'
           import hashlib, json, os, pathlib, shutil, sys
           rom = pathlib.Path(sys.argv[1])
