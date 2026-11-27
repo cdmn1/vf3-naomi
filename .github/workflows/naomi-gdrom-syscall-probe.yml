@@ -169,6 +169,25 @@ jobs:
           test "$(stat -c '%s' "$TEMPLATE")" -eq 32768
           test "$(git hash-object "$TEMPLATE")" = "9ce8f2a7d6cc444ce198ac28ceef223b9848d17a"
           echo "Replacement IP.BIN template: 32768 bytes; pinned Git blob verified."
+          python3 - <<'PY'
+          import pathlib
+          source = pathlib.Path("tests/naomi_gdrom_syscall_probe/ip_template.bin")
+          data = source.read_bytes()
+          if len(data) != 0x8000:
+              raise SystemExit(f"Unexpected IP template size: {len(data)}")
+          rows = []
+          for i in range(0, len(data), 16):
+              rows.append("    " + ", ".join(f"0x{x:02x}" for x in data[i:i+16]) + ",")
+          header = (
+              "#ifndef VF3_IP_TEMPLATE_DATA_H\\n"
+              "#define VF3_IP_TEMPLATE_DATA_H\\n"
+              "static const uint8_t vf3_ip_template[0x8000] = {\\n"
+              + "\\n".join(rows)
+              + "\\n};\\n#endif\\n"
+          )
+          pathlib.Path("tests/naomi_gdrom_syscall_probe/ip_template_data.h").write_text(header)
+          print("Generated C IP template array: 32768 bytes")
+          PY
 
       - name: Compile and package GD-ROM syscall bridge probe
         env:
