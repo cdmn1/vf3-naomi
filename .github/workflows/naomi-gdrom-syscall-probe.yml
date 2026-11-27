@@ -178,13 +178,15 @@ jobs:
           rows = []
           for i in range(0, len(data), 16):
               rows.append("    " + ", ".join(f"0x{x:02x}" for x in data[i:i+16]) + ",")
-          header = (
-              "#ifndef VF3_IP_TEMPLATE_DATA_H\\n"
-              "#define VF3_IP_TEMPLATE_DATA_H\\n"
-              "static const uint8_t vf3_ip_template[0x8000] = {\\n"
-              + "\\n".join(rows)
-              + "\\n};\\n#endif\\n"
-          )
+          header = "\n".join([
+              "#ifndef VF3_IP_TEMPLATE_DATA_H",
+              "#define VF3_IP_TEMPLATE_DATA_H",
+              "static const uint8_t vf3_ip_template[0x8000] = {",
+              *rows,
+              "};",
+              "#endif",
+              ""
+          ])
           pathlib.Path("tests/naomi_gdrom_syscall_probe/ip_template_data.h").write_text(header)
           print("Generated C IP template array: 32768 bytes")
           PY
