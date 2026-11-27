@@ -73,7 +73,7 @@ uint32_t vf3_gd_diag_prepare(uint32_t width, uint32_t height, uint32_t pixel_mod
 void vf3_gd_chainload(void)
 {
     if (load_resident_image() == 0) {
-        ((resident_fn0)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_BEGIN)();
+        ((resident_fn1)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_BEGIN)(0u);
         ((resident_fn_void)(uintptr_t)VF3_RESIDENT_ADDR_CHAINLOAD)();
     }
     for (;;) { }
