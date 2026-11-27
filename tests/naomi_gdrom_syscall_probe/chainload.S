@@ -89,6 +89,10 @@ vf3_gd_chainload:
     mov r1,r12
     mov r1,r13
     mov r1,r14
+    /* v108 diagnostic: force a TRAPA after handoff setup to validate the
+       installed SH-4 exception vector. This is intentionally not a game boot. */
+    trapa #0x3f
+    nop
     mov.l .Lentry,r0
     jsr @r0
     mov r0,r4
