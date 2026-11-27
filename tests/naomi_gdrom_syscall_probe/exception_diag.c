@@ -3,12 +3,16 @@
 #define RD __attribute__((section(".vf3_resident_data"), used))
 #define RO __attribute__((section(".vf3_resident_rodata"), used))
 #define FBREG 0xa05f8050u
+#define FBCFG 0xa05f8044u
+#define FBSIZE 0xa05f805cu
+#define ILCFG 0xa05f80d0u
 #define VRAM  0xa5000000u
 #define VEC   0xac00f500u
 
 typedef struct { uint32_t spc, ssr, sgr, expevt, tea, sr; } vf3_exception_info_t;
 volatile vf3_exception_info_t vf3_exception_info RD;
 static volatile uint32_t w RD, h RD, pm RD, active RD, calls RD;
+static volatile uint32_t screen_w RD, screen_h RD, screen_pm RD;
 static volatile uint32_t op RD, arg0 RD, arg1 RD, arg2 RD, cmd RD, fad RD, sectors RD, dest RD;
 extern void vf3_exception_entry(void) __asm__("_vf3_exception_entry");
 
@@ -62,8 +66,21 @@ static RT int gi(char c) {
     if(c >= '0' && c <= '9') return 26 + c - '0';
     return -1;
 }
+static RT int refresh_screen_mode(void) {
+    uint32_t cfg=*(volatile uint32_t *)(uintptr_t)FBCFG;
+    uint32_t size=*(volatile uint32_t *)(uintptr_t)FBSIZE;
+    uint32_t il=*(volatile uint32_t *)(uintptr_t)ILCFG;
+    uint32_t mode=(cfg>>2)&3u;
+    uint32_t bpp=(mode==0u || mode==1u)?2u:(mode==2u?3u:4u);
+    uint32_t width=(((size&0x3ffu)+1u)*4u)/bpp;
+    uint32_t height=((size>>10)&0x3ffu)+1u;
+    if(il&0x10u) height*=2u;
+    if(width<160u || height<120u || mode>1u) return 0;
+    screen_w=width; screen_h=height; screen_pm=mode;
+    return 1;
+}
 static RT uint16_t rgb(uint8_t r,uint8_t g,uint8_t b) {
-    if(pm == 0u) return (uint16_t)(((r>>3)<<10)|((g>>3)<<5)|(b>>3));
+    if(screen_pm == 0u) return (uint16_t)(((r>>3)<<10)|((g>>3)<<5)|(b>>3));
     return (uint16_t)(((r>>3)<<11)|((g>>2)<<5)|(b>>3));
 }
 static RT volatile uint16_t *fbptr(void) {
@@ -71,12 +88,12 @@ static RT volatile uint16_t *fbptr(void) {
     return (volatile uint16_t *)(uintptr_t)(VRAM|(base&0x007fffffu));
 }
 static RT void clear(uint16_t c) {
-    if(pm>1u || !w || !h) return;
+    if(screen_pm>1u || !screen_w || !screen_h) return;
     volatile uint16_t *p=fbptr();
-    for(uint32_t i=0;i<w*h;i++) p[i]=c;
+    for(uint32_t i=0;i<screen_w*screen_h;i++) p[i]=c;
 }
 static RT void pixel(uint32_t x,uint32_t y,uint16_t c) {
-    if(x<w && y<h && pm<=1u) fbptr()[y*w+x]=c;
+    if(x<screen_w && y<screen_h && screen_pm<=1u) fbptr()[y*screen_w+x]=c;
 }
 static RT void text(uint32_t x,uint32_t y,const char *s,uint32_t scale,uint16_t c) {
     while(*s) {
@@ -105,40 +122,43 @@ static RT void hexval(uint32_t x,uint32_t y,uint32_t v,uint32_t scale,uint16_t c
     }
 }
 static RT void line(uint32_t y,const char *label,uint32_t v,uint16_t c) {
-    text(24,y,label,2,c); hexval(190,y,v,2,c);
+    text(8,y,label,2,c); hexval(104,y,v,2,c);
 }
 static RT void show_handoff(void) {
+    if(!refresh_screen_mode()) return;
     clear(rgb(4,12,38));
-    text(24,24,t_handoff,3,rgb(255,255,255));
-    text(24,78,t_ready,2,rgb(80,255,160));
-    text(24,116,t_wait,2,rgb(255,255,255));
-    text(24,170,t_entry,2,rgb(255,220,80));
-    hexval(110,170,0x8c010000u,2,rgb(255,220,80));
-    text(24,220,t_bridge,2,rgb(120,200,255));
+    text(8,8,t_handoff,2,rgb(255,255,255));
+    text(8,40,t_ready,1,rgb(80,255,160));
+    text(8,58,t_wait,1,rgb(255,255,255));
+    text(8,90,t_entry,2,rgb(255,220,80));
+    hexval(80,90,0x8c010000u,2,rgb(255,220,80));
+    text(8,124,t_bridge,1,rgb(120,200,255));
 }
 static RT void show_syscall(void) {
+    if(!refresh_screen_mode()) return;
     clear(rgb(3,28,12));
-    text(24,20,t_syscall,3,rgb(255,255,255));
-    line(86,l_op,op,rgb(120,255,160));
-    line(126,l_arg,arg0,rgb(255,255,255));
-    line(166,l_ptr,arg1,rgb(255,255,255));
-    line(206,l_calls,calls,rgb(255,220,80));
-    text(24,270,t_request,2,rgb(120,200,255));
-    line(310,l_cmd,cmd,rgb(255,255,255));
-    line(350,l_fad,fad,rgb(255,255,255));
-    line(390,l_sectors,sectors,rgb(255,255,255));
-    line(430,l_dest,dest,rgb(255,255,255));
+    text(8,8,t_syscall,2,rgb(255,255,255));
+    line(36,l_op,op,rgb(120,255,160));
+    line(58,l_arg,arg0,rgb(255,255,255));
+    line(80,l_ptr,arg1,rgb(255,255,255));
+    line(102,l_calls,calls,rgb(255,220,80));
+    text(8,128,t_request,2,rgb(120,200,255));
+    line(150,l_cmd,cmd,rgb(255,255,255));
+    line(172,l_fad,fad,rgb(255,255,255));
+    line(194,l_sectors,sectors,rgb(255,255,255));
+    line(216,l_dest,dest,rgb(255,255,255));
 }
 static RT void show_exception(void) {
+    if(!refresh_screen_mode()) return;
     clear(rgb(45,0,0));
-    text(24,16,t_exception,3,rgb(255,255,255));
-    line(78,l_expevt,vf3_exception_info.expevt,rgb(255,220,80));
-    line(118,l_spc,vf3_exception_info.spc,rgb(255,255,255));
-    line(158,l_ssr,vf3_exception_info.ssr,rgb(255,255,255));
-    line(198,l_tea,vf3_exception_info.tea,rgb(255,255,255));
-    line(238,l_sgr,vf3_exception_info.sgr,rgb(255,255,255));
-    line(278,l_sr,vf3_exception_info.sr,rgb(255,255,255));
-    text(24,340,t_stopped,2,rgb(255,180,180));
+    text(8,8,t_exception,2,rgb(255,255,255));
+    line(36,l_expevt,vf3_exception_info.expevt,rgb(255,220,80));
+    line(58,l_spc,vf3_exception_info.spc,rgb(255,255,255));
+    line(80,l_ssr,vf3_exception_info.ssr,rgb(255,255,255));
+    line(102,l_tea,vf3_exception_info.tea,rgb(255,255,255));
+    line(124,l_sgr,vf3_exception_info.sgr,rgb(255,255,255));
+    line(146,l_sr,vf3_exception_info.sr,rgb(255,255,255));
+    text(8,180,t_stopped,1,rgb(255,180,180));
 }
 RT uint32_t vf3_diag_prepare(uint32_t width,uint32_t height,uint32_t pixel_mode) {
     volatile uint16_t *v=(volatile uint16_t *)(uintptr_t)VEC;
