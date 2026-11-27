@@ -26,8 +26,13 @@ static void *vf3_guest_pointer(uint32_t address)
 #define VF3_ASSET_MAP_IMPLEMENTATION
 #include "vf3_asset_map.h"
 
+#ifdef VF3_GD_HOST_TEST
+#define vf3_diag_note_operation(op, a, b, c) ((void)0)
+#define vf3_diag_note_request(command, params) ((void)0)
+#else
 void vf3_diag_note_operation(uint32_t op, uint32_t a, uint32_t b, uint32_t c);
 void vf3_diag_note_request(uint32_t command, const uint32_t params[4]);
+#endif
 
 #ifndef VF3_GD_HOST_TEST
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
