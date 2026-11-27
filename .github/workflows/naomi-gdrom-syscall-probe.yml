@@ -215,6 +215,8 @@ jobs:
                     test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
 
       - name: Inspect the retail 1ST_READ.BIN entry sequence
+        env:
+          KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
         run: |
           set -euo pipefail
           sudo apt-get update
