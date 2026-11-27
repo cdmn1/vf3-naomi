@@ -22,8 +22,14 @@ vf3_gd_chainload:
     nop
 
 .Lchainload_p2:
-    /* Checkpoint B: prove the uncached P2 branch completed. */
-    VF3_STAGE 2, .Ldiag_stage_p2
+    /*
+     * Checkpoint B: this code is running through P2. Call the diagnostic
+     * routine through its P1 alias deliberately: the routine itself is not
+     * position-independent, so executing its P2 alias is not a valid test.
+     * Returning here proves the P2 branch while keeping the display routine
+     * on its known-good P1 mapping.
+     */
+    VF3_STAGE 2, .Ldiag_stage
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
     /*
@@ -94,7 +100,6 @@ vf3_gd_chainload:
 
     .align 4
 .Ldiag_stage:    .long _vf3_diag_begin
-.Ldiag_stage_p2: .long 0xad000000 + (_vf3_diag_begin - 0x8d000000)
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
 .Lsource_p2:    .long 0xad100000
 .Ldest_p1:      .long 0x8c010000
