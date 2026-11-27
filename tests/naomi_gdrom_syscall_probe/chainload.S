@@ -101,8 +101,8 @@ vf3_gd_chainload:
 .Ldest_p2:      .long 0xac010000
 .Lend_p1:       .long 0x8c130000
 .Lword_count:   .long 294912
-.Lstack:        .long 0x8c00f400
-.Lvbr:          .long 0x8c000000
+.Lstack:        .long 0xac00fc00
+.Lvbr:          .long 0x8c00f400
 .Lgbr:          .long 0x00000000
 .Lfpscr:        .long 0x00040001
 .Lsr:           .long 0x600000f0
