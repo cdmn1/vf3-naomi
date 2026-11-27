@@ -224,7 +224,7 @@ jobs:
             "https://www.dropbox.com/scl/fi/axraudzw49jtr8rzat9wc/dc-vf3tb-usa.7z?rlkey=k6uxeattji64870k5z48v93vs&dl=1" \
             --output /tmp/dc-vf3tb-usa.7z
           mkdir -p /tmp/vf3-retail-source
-          7zz x -y -o/tmp/vf3-retail-source /tmp/dc-vf3tb-usa.7z >/tmp/vf3-7z-extract.log
+          7z x -y -o/tmp/vf3-retail-source /tmp/dc-vf3tb-usa.7z >/tmp/vf3-7z-extract.log
           RETAIL_BIN="$(find /tmp/vf3-retail-source -type f -iname '1ST_READ.BIN' -print -quit)"
           test -n "$RETAIL_BIN"
           {
