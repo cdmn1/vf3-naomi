@@ -10,17 +10,17 @@ _vf3_exception_entry:
     stc spc,r0
     mov.l r0,@r1
     stc ssr,r0
-    mov.l r0,@(1,r1)
+    mov.l r0,@(4,r1)
     stc sgr,r0
-    mov.l r0,@(2,r1)
+    mov.l r0,@(8,r1)
     mov.l .Lexpevt,r2
     mov.l @r2,r0
-    mov.l r0,@(3,r1)
+    mov.l r0,@(12,r1)
     mov.l .Ltea,r2
     mov.l @r2,r0
-    mov.l r0,@(4,r1)
+    mov.l r0,@(16,r1)
     stc sr,r0
-    mov.l r0,@(5,r1)
+    mov.l r0,@(20,r1)
     mov.l .Lexc_display,r0
     jsr @r0
     nop
