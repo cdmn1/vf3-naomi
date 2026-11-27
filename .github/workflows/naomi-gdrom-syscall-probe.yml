@@ -214,10 +214,39 @@ jobs:
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_gdrom_syscall_probe rom
                     test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
 
+      - name: Inspect the retail 1ST_READ.BIN entry sequence
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y 7zip
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent "Mozilla/5.0" \
+            "https://www.dropbox.com/scl/fi/axraudzw49jtr8rzat9wc/dc-vf3tb-usa.7z?rlkey=k6uxeattji64870k5z48v93vs&dl=1" \
+            --output /tmp/dc-vf3tb-usa.7z
+          mkdir -p /tmp/vf3-retail-source
+          7zz x -y -o/tmp/vf3-retail-source /tmp/dc-vf3tb-usa.7z >/tmp/vf3-7z-extract.log
+          RETAIL_BIN="$(find /tmp/vf3-retail-source -type f -iname '1ST_READ.BIN' -print -quit)"
+          test -n "$RETAIL_BIN"
+          {
+            echo "VF3tb USA retail entry analysis"
+            echo "File: 1ST_READ.BIN"
+            stat -c 'Bytes: %s' "$RETAIL_BIN"
+            sha256sum "$RETAIL_BIN"
+            echo
+            echo "First 128 bytes:"
+            od -An -tx1 -N128 "$RETAIL_BIN"
+            echo
+            echo "SH-4 disassembly at 0x8C010000 (first 100 instructions):"
+            "$KOS_CC_BASE/bin/sh-elf-objdump" -D -b binary -m sh4 \
+              --adjust-vma=0x8c010000 "$RETAIL_BIN" | sed -n '1,115p'
+          } > retail-entry-analysis.txt
+          cat retail-entry-analysis.txt
+
       - name: Validate and upload GD-ROM syscall bridge ROM
         run: |
           set -euo pipefail
           mkdir -p gdrom-syscall-artifact
+          cp retail-entry-analysis.txt gdrom-syscall-artifact/
           ROM="vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
           cp "tests/naomi_gdrom_syscall_probe/${ROM}" gdrom-syscall-artifact/
           cp resident-layout.txt gdrom-syscall-artifact/
