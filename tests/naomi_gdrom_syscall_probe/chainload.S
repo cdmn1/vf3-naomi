@@ -112,7 +112,7 @@ vf3_gd_chainload:
     nop
 
     .align 4
-.Ldiag_stage:  .long vf3_diag_stage
+.Ldiag_stage:  .long vf3_diag_begin
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
 .Lsource_p2:    .long 0xad100000
 .Ldest_p1:      .long 0x8c010000
