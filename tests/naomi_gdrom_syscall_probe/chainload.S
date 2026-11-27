@@ -54,10 +54,10 @@ vf3_gd_chainload:
     bf .Lcopy
 
     /*
-     * Match the cache-disabled handoff used by Dreamcast IP bootstraps.
-     * This routine is executing from P2, so disabling the caches cannot strand
-     * the instruction stream in a stale P1 cache line. OCI/ICI invalidate the
-     * cache arrays as OCE/ICE are left disabled.
+     * Match the cache invalidation used by Dreamcast IP bootstraps.
+     * CCR 0x808 asserts both OCI and ICI; it invalidates the operand and
+     * instruction caches but does not clear the OCE/ICE enable bits. This
+     * routine is executing from P2 while the cache arrays are invalidated.
      */
     mov.l .Lccr_addr,r0
     mov.l .Lccr_value,r1
