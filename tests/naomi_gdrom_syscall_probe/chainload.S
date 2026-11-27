@@ -31,24 +31,20 @@ vf3_gd_chainload:
      */
     mov.l .Ldest_p1,r0
     mov.l .Lend_p1,r1
-.Ldcache:
+    mov.l .Lhalf_p1,r5
+    VF3_STAGE 2
+.Ldcache_first:
     ocbi @r0
-    mov #0x10,r2
-    shll8 r2
-    or r0,r2
-    ocbi @r2
-    mov #0x20,r2
-    shll8 r2
-    or r0,r2
-    ocbi @r2
-    mov #0x30,r2
-    shll8 r2
-    or r0,r2
-    ocbi @r2
+    add #32,r0
+    cmp/hs r5,r0
+    bf .Ldcache_first
+    VF3_STAGE 3
+.Ldcache_second:
+    ocbi @r0
     add #32,r0
     cmp/hs r1,r0
-    bf .Ldcache
-    VF3_STAGE 2
+    bf .Ldcache_second
+    VF3_STAGE 4
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
     mov.l .Lsource_p2,r0
@@ -60,7 +56,7 @@ vf3_gd_chainload:
     add #4,r1
     dt r2
     bf .Lcopy
-    VF3_STAGE 3
+    VF3_STAGE 5
 
     /*
      * Match the cache invalidation used by Dreamcast IP bootstraps.
@@ -73,7 +69,7 @@ vf3_gd_chainload:
     mov.l r1,@r0
     nop
     nop
-    VF3_STAGE 4
+    VF3_STAGE 6
 
     /* Establish a clean Katana startup CPU context. */
     mov.l .Lvbr,r0
@@ -99,7 +95,7 @@ vf3_gd_chainload:
     mov r1,r12
     mov r1,r13
     mov r1,r14
-    VF3_STAGE 5
+    VF3_STAGE 7
     /* v108 diagnostic: force a TRAPA after handoff setup to validate the
        installed SH-4 exception vector. This is intentionally not a game boot. */
     trapa #0x3f
