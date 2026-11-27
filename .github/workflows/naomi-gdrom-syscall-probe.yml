@@ -241,6 +241,11 @@ jobs:
             echo "SH-4 disassembly at 0x8C010000 (first 100 instructions):"
             "$KOS_CC_BASE/bin/sh-elf-objdump" -D -b binary -m sh4 -EL \
               --adjust-vma=0x8c010000 "$RETAIL_BIN" | sed -n '1,115p'
+            echo
+            echo "Relocated stage-2 code (file offset 0x100 -> runtime 0x8C004000):"
+            dd if="$RETAIL_BIN" of=/tmp/vf3-stage2.bin bs=1 skip=256 count=16128 status=none
+            "$KOS_CC_BASE/bin/sh-elf-objdump" -D -b binary -m sh4 -EL \
+              --adjust-vma=0x8c004000 /tmp/vf3-stage2.bin | sed -n '1,180p'
           } > retail-entry-analysis.txt
           cat retail-entry-analysis.txt
 
