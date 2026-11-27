@@ -7,3 +7,4 @@
 
 # Downloaded, pinned replacement Dreamcast IP template (generated in Actions).
 /tests/naomi_gdrom_syscall_probe/ip_template.bin
+/tests/naomi_gdrom_syscall_probe/ip_template_data.h
