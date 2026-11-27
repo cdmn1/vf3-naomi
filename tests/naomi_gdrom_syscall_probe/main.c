@@ -6,6 +6,9 @@
 #include "gdrom_syscall.h"
 #include "vf3_asset_map.h"
 
+extern const uint8_t _binary_ip_template_bin_start[];
+extern const uint8_t _binary_ip_template_bin_end[];
+
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define NAOMI_ROM_OFFSETH 0x005f7000u
 #define NAOMI_ROM_OFFSETL 0x005f7004u
@@ -30,7 +33,7 @@ static uint8_t pio_bridge_buffer[WORDS * 2u] __attribute__((aligned(32)));
 static pvr_ptr_t font_texture;
 static int dma_pass, pio_bridge_pass, direct_match, bridge_match, status_pass;
 static uint32_t old_service, dma_status, dma_bytes, dma_request, pio_request;
-static int retail_load_pass, retail_sha_pass;
+static int retail_load_pass, retail_sha_pass, ip_boot_area_pass;
 #define RETAIL_STAGE_P1 0x8d100000u
 #define RETAIL_STAGE_P2 0xad100000u
 #define RETAIL_EXEC_BYTES 1179648u
@@ -58,6 +61,15 @@ static void sha256(const uint8_t *p,uint32_t n,uint8_t out[32]){
   H[0]+=a;H[1]+=b;H[2]+=c;H[3]+=d;H[4]+=e;H[5]+=f;H[6]+=g;H[7]+=h;
  }
  for(uint32_t i=0;i<8;i++){out[4*i]=H[i]>>24;out[4*i+1]=H[i]>>16;out[4*i+2]=H[i]>>8;out[4*i+3]=H[i];}
+}
+static int install_ip_boot_area(void){
+ const uint8_t *src=_binary_ip_template_bin_start;
+ uintptr_t bytes=(uintptr_t)_binary_ip_template_bin_end-(uintptr_t)_binary_ip_template_bin_start;
+ volatile uint8_t *dst=(volatile uint8_t *)(uintptr_t)0xac008000u;
+ if(bytes!=0x8000u)return 0;
+ for(uint32_t i=0;i<0x8000u;i++)dst[i]=src[i];
+ for(uint32_t i=0;i<0x8000u;i++)if(dst[i]!=src[i])return 0;
+ return 1;
 }
 static int retail_hash_matches(const uint8_t *data){
  static const uint8_t expected[32]={0x37,0xf3,0x8d,0xd9,0xa4,0x7b,0x78,0x5f,0x52,0x61,0x57,0xc4,0xa1,0x67,0x4c,0xa7,0x53,0x22,0xf0,0xde,0x13,0x42,0xf6,0x4b,0xbf,0x33,0xc8,0x8d,0x12,0x8e,0x4b,0x32};
@@ -197,7 +209,7 @@ static void draw_screen(void)
     snprintf(line,sizeof line,"TEST FAD %u  CART OFFSET %08X",(unsigned)TEST_FAD,(unsigned)TEST_OFFSET);
     draw_text(32,364,line);
     draw_text(32,388,"NO SERIAL CONNECTION REQUIRED");
-    snprintf(resident_line, sizeof resident_line, "RESIDENT 8D000000-8D030000");
+    snprintf(resident_line, sizeof resident_line, "IP.BIN BOOT AREA: %s", ip_boot_area_pass?"PASS":"FAIL");
     draw_text(32,412,resident_line);
     draw_text(32,436,retail_load_pass?"RETAIL 1ST_READ LOAD: PASS":"RETAIL 1ST_READ LOAD: NOT VERIFIED");
     draw_text(32,460,retail_sha_pass?"1ST_READ SHA256: MATCH":"1ST_READ SHA256: NOT MATCHED");
@@ -217,13 +229,15 @@ int main(void)
     run_pio_to_dma_bridge();
     bridge_match = compare_uncached(pio_words,pio_bridge_buffer);
     run_retail_load_check();
+    if (retail_load_pass && retail_sha_pass)
+        ip_boot_area_pass = install_ip_boot_area();
 
     pvr_init_defaults();
     pvr_set_bg_color(0.02f,0.06f,0.12f);
     font_texture = pvr_mem_malloc(256u*256u*2u);
     if (!font_texture) for (;;) thd_sleep(1000);
     font_init();
-    if (retail_load_pass && retail_sha_pass) {
+    if (retail_load_pass && retail_sha_pass && ip_boot_area_pass) {
         /* Let the user see the successful retail hash check before replacing
            the low KOS image with the Dreamcast retail executable. */
         for (unsigned i = 0; i < 180u; ++i) { draw_screen(); thd_sleep(16); }
