@@ -494,6 +494,14 @@ jobs:
           BUILD_VERSION="$BUILD_VERSION" make -C tests/naomi_gdrom_syscall_probe rom
           SECOND_SIZE="$(stat -c '%s' "$ROM")"
           test "$FIRST_SIZE" = "$SECOND_SIZE"
+          # Publish the compact map-aware base only; keep all retail assets out
+          # of public Actions artifacts. This base uses the ROM-end payload
+          # offset so it can be combined with the user's own local asset pack.
+          mkdir -p vf3-compact-map-base
+          cp "$ROM" "vf3-compact-map-base/vf3-naomi-assetmap-base-v${GITHUB_RUN_NUMBER}.bin"
+          cp tests/naomi_gdrom_syscall_probe/vf3_asset_map.h vf3-compact-map-base/
+          cp vf3-netdimm-306mb-map.json vf3-compact-map-base/
+          cp docs/GDROM_DISC_FILE_MAP.csv vf3-compact-map-base/
           python3 - "$ROM" "$PAYLOAD_BASE" vf3-netdimm-306mb-map.json <<'PY'
           import hashlib, json, os, pathlib, shutil, sys
           rom = pathlib.Path(sys.argv[1])
@@ -538,6 +546,13 @@ jobs:
           (out / "BUILD_INFO.txt").write_text("\n".join(report) + "\n")
           print("\n".join(report))
           PY
+
+      - name: Upload compact map-aware base ROM (no game assets)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-compact-map-base-v${{ github.run_number }}
+          path: vf3-compact-map-base/*
+          if-no-files-found: error
 
       - name: Upload full-manifest-offset GD-ROM diagnostic
         uses: actions/upload-artifact@v4
