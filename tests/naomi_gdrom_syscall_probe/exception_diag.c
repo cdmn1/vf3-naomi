@@ -47,6 +47,12 @@ static const char t_syscall[] RO = "RETAIL GDROM CALL";
 static const char t_request[] RO = "REQUEST DETAILS";
 static const char t_exception[] RO = "SH4 EXCEPTION";
 static const char t_stopped[] RO = "CPU STOPPED IN RETAIL STARTUP";
+static const char t_chainload[] RO = "CHAINLOAD PROGRESS";
+static const char t_stage1[] RO = "ENTERED P2 HANDOFF";
+static const char t_stage2[] RO = "CACHE INVALIDATION DONE";
+static const char t_stage3[] RO = "RETAIL IMAGE COPY DONE";
+static const char t_stage4[] RO = "CCR UPDATE DONE";
+static const char t_stage5[] RO = "TRAPA INSTRUCTION NEXT";
 static const char l_op[] RO = "OP";
 static const char l_arg[] RO = "ARG";
 static const char l_ptr[] RO = "PTR";
@@ -182,6 +188,22 @@ RT uint32_t vf3_diag_prepare(uint32_t width,uint32_t height,uint32_t pixel_mode)
     return 1u;
 }
 RT void vf3_diag_begin(void) { active=1u; show_handoff(); }
+RT void vf3_diag_stage(uint32_t stage) {
+    const char *label = t_stage1;
+    if(!refresh_screen_mode()) return;
+    if(stage==2u) label=t_stage2;
+    else if(stage==3u) label=t_stage3;
+    else if(stage==4u) label=t_stage4;
+    else if(stage==5u) label=t_stage5;
+    clear(rgb(3,12,42));
+    text(8,8,t_chainload,2,rgb(255,255,255));
+    text(8,44,label,1,rgb(120,255,160));
+    text(8,78,t_entry,2,rgb(255,220,80));
+    hexval(80,78,0x8c010000u,2,rgb(255,220,80));
+    text(8,116,t_bridge,1,rgb(120,200,255));
+    text(8,152,t_wait,1,rgb(255,255,255));
+}
+
 RT void vf3_diag_note_operation(uint32_t operation,uint32_t a,uint32_t b,uint32_t c) {
     if(!active || operation==1u || operation==6u || operation==7u ||
        operation==12u || operation==13u) return;
