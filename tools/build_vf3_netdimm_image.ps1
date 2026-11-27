@@ -103,9 +103,12 @@ try {
         throw "Could not read VF3_ASSET_PAYLOAD_BASE from vf3_asset_map.h."
     }
     $payloadBase = [int64]$headerMatch.Groups[1].Value
-    if ($payloadBase -ne 358400) {
-        throw "This compact base requires payload base 0x57800 (358400), but the header says $payloadBase. Use the compact-map-base package."
+    $baseLength = [int64](Get-Item -LiteralPath $baseRom.FullName).Length
+    $expectedPayloadBase = [int64]([Math]::Ceiling($baseLength / 2048.0) * 2048)
+    if ($payloadBase -ne $expectedPayloadBase) {
+        throw ("The map header payload base 0x{0:X} does not match the sector-aligned base ROM end 0x{1:X}. Keep the base ROM, map header and manifest from the same package." -f $payloadBase, $expectedPayloadBase)
     }
+    Write-Host ("Verified payload base: 0x{0:X} ({0} bytes)" -f $payloadBase)
 
     Write-Host "Checking generated payload map against the packaged retail map..."
     $expectedMap = Get-Content -LiteralPath $map -Raw | ConvertFrom-Json
