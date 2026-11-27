@@ -8,6 +8,7 @@ on:
       - "tools/pack_vf3_assets.py"
       - "tools/generate_vf3_asset_map_header.py"
       - "tools/append_vf3_assets_to_naomi_rom.py"
+      - "tools/build_vf3_netdimm_image.ps1"
       - "tools/generate_vf3_asset_map_from_manifest.py"
       - "docs/GDROM_DISC_FILE_MAP.csv"
       - "tests/test_vf3_asset_packer.py"
