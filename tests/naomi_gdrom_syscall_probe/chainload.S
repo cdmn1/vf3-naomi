@@ -20,14 +20,18 @@ vf3_gd_chainload:
     nop
 
 .Lchainload_p2:
+    /*
+     * Draw this checkpoint before changing stacks. If it appears, the P2
+     * branch and diagnostic call are sound; the next operation is the stack
+     * switch followed by the uncached retail-image copy.
+     */
+    VF3_STAGE 2
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
     /*
      * Skip the explicit OCBI sweep. The later CCR write requests whole-cache
      * O/I invalidation, so a per-line destination sweep is redundant here.
-     * This checkpoint now leads directly into the uncached image copy.
      */
-    VF3_STAGE 2
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
     mov.l .Lsource_p2,r0
