@@ -23,19 +23,39 @@ vf3_gd_chainload:
 
 .Lchainload_p2:
     /*
-     * Checkpoint B: this code is running through P2. Call the diagnostic
-     * routine through its P1 alias deliberately: the routine itself is not
-     * position-independent, so executing its P2 alias is not a valid test.
-     * Returning here proves the P2 branch while keeping the display routine
-     * on its known-good P1 mapping.
+     * Checkpoint B: write a visible red marker directly through P2 MMIO/VRAM
+     * before calling the P1 diagnostic routine. This avoids relying on the
+     * C diagnostic call to prove that the P2 branch was reached.
      */
+    mov.l .Lfbreg_addr,r0
+    mov.l @r0,r1
+    mov.l .Lfb_mask,r2
+    and r2,r1
+    mov.l .Lvram_base,r2
+    or r2,r1
+    mov.l .Lfb_cfg_addr,r0
+    mov.l @r0,r3
+    shlr2 r3
+    and #3,r3
+    tst r3,r3
+    bf .Lmark_565
+    mov.l .Lred_1555,r4
+    bra .Lmark_color_ready
+    nop
+.Lmark_565:
+    mov.l .Lred_565,r4
+.Lmark_color_ready:
+    mov #128,r5
+.Lmark_loop:
+    mov.w r4,@r1
+    add #2,r1
+    dt r5
+    bf .Lmark_loop
+
+    /* Returning to this P1 routine is an additional checkpoint, not the proof. */
     VF3_STAGE 2, .Ldiag_stage
     /* The KOS stack is no longer used after this point. */
     mov.l .Lstack,r15
-    /*
-     * Skip the explicit OCBI sweep. The later CCR write requests whole-cache
-     * O/I invalidation, so a per-line destination sweep is redundant here.
-     */
 
     /* Copy the exact 1,179,648-byte retail image via uncached P2 aliases. */
     mov.l .Lsource_p2,r0
@@ -49,12 +69,7 @@ vf3_gd_chainload:
     bf .Lcopy
     VF3_STAGE 5
 
-    /*
-     * Match the cache invalidation used by Dreamcast IP bootstraps.
-     * CCR 0x808 asserts both OCI and ICI; it invalidates the operand and
-     * instruction caches but does not clear the OCE/ICE enable bits. This
-     * routine is executing from P2 while the cache arrays are invalidated.
-     */
+    /* Match the cache invalidation used by Dreamcast IP bootstraps. */
     mov.l .Lccr_addr,r0
     mov.l .Lccr_value,r1
     mov.l r1,@r0
@@ -87,8 +102,6 @@ vf3_gd_chainload:
     mov r1,r13
     mov r1,r14
     VF3_STAGE 7
-    /* v108 diagnostic: force a TRAPA after handoff setup to validate the
-       installed SH-4 exception vector. This is intentionally not a game boot. */
     trapa #0x3f
     nop
     mov.l .Lentry,r0
@@ -99,20 +112,24 @@ vf3_gd_chainload:
     nop
 
     .align 4
-.Ldiag_stage:    .long _vf3_diag_begin
+.Ldiag_stage:       .long _vf3_diag_begin
 .Lchainload_p2_addr: .long 0xad000000 + (.Lchainload_p2 - vf3_gd_chainload)
-.Lsource_p2:    .long 0xad100000
-.Ldest_p1:      .long 0x8c010000
-.Ldest_p2:      .long 0xac010000
-.Lend_p1:       .long 0x8c130000
-.Lword_count:   .long 294912
-.Lstack:        .long 0xac00fc00
-.Lvbr:          .long 0x8c00f400
-.Lgbr:          .long 0x00000000
-.Lfpscr:        .long 0x00040001
-.Lsr:           .long 0x600000f0
-.Lccr_addr:     .long 0xff00001c
-.Lccr_value:    .long 0x00000808
-.Lentry:        .long 0x8c010000
+.Lfbreg_addr:      .long 0xa05f8050
+.Lfb_cfg_addr:     .long 0xa05f8044
+.Lfb_mask:         .long 0x007fffff
+.Lvram_base:       .long 0xa5000000
+.Lred_1555:        .long 0x00007c00
+.Lred_565:         .long 0x0000f800
+.Lsource_p2:       .long 0xad100000
+.Ldest_p2:         .long 0xac010000
+.Lword_count:      .long 294912
+.Lstack:           .long 0xac00fc00
+.Lvbr:             .long 0x8c00f400
+.Lgbr:             .long 0x00000000
+.Lfpscr:           .long 0x00040001
+.Lsr:              .long 0x600000f0
+.Lccr_addr:        .long 0xff00001c
+.Lccr_value:       .long 0x00000808
+.Lentry:           .long 0x8c010000
 
     .size vf3_gd_chainload,.-vf3_gd_chainload
