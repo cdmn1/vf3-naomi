@@ -330,11 +330,11 @@ jobs:
           cat > exception-stack-artifact/BUILD_INFO.txt <<EOF
           Target: Isolated resident SH-4 exception stack-switch diagnostic
           Build version: v${GITHUB_RUN_NUMBER}
-          Execution: saves the original KOS stack, switches to a 16-byte-aligned BSS stack, verifies a sentinel, calls a returning resident renderer, then restores the original stack and returns
-          Exercises: alternate-stack memory access, C call/return ABI, and restoration of the caller stack; r14 is left unchanged
-          Omits: SPC/SSR/SGR/EXPEVT/TEA/SR capture, VBR dispatch, hardware exception generation
-          Expected: red background with white upper-left block and green lower block
-          Purpose: isolate the exception stack switch from privileged register capture
+          Execution: saves the original KOS stack, switches to a 16-byte-aligned BSS stack, verifies a sentinel, calls a resident C function with an eight-word volatile local array, restores the original stack, and returns the C result to KOS
+          Exercises: alternate-stack memory access, resident C stack-frame writes/reads, SH-4 call/return ABI, and caller-stack restoration
+          Omits: framebuffer rendering on the alternate stack, SPC/SSR/SGR/EXPEVT/TEA/SR capture, VBR dispatch, hardware exception generation
+          Expected PASS: blue background with white upper-left and green lower rectangles; FAIL: red background with white and yellow rectangles
+          Purpose: isolate the alternate-stack C call/return path without running the renderer on that stack
           EOF
 
       - name: Upload isolated exception stack probe
