@@ -98,8 +98,6 @@ vf3_gd_chainload:
     mov r1,r13
     mov r1,r14
     VF3_STAGE 7
-    trapa #0x3f
-    nop
     mov.l .Lentry,r0
     jsr @r0
     mov r0,r4
