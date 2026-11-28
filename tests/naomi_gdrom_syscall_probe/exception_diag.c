@@ -396,7 +396,27 @@ RT uint32_t vf3_diag_stack_c_test(void)
 }
 
 RT void vf3_diag_exception_draw_once(void) {
-    show_exception();
+    /* Minimal alternate-stack test: no helper calls, font, globals, or arrays. */
+    volatile uint32_t *cfgp=(volatile uint32_t *)(uintptr_t)FBCFG;
+    volatile uint32_t *sizep=(volatile uint32_t *)(uintptr_t)FBSIZE;
+    volatile uint32_t *basep=(volatile uint32_t *)(uintptr_t)FBREG;
+    uint32_t cfg=*cfgp, size=*sizep, base=*basep;
+    uint32_t mode=(cfg>>2)&3u;
+    uint32_t width=((size&0x3ffu)+1u)*2u;
+    uint32_t height=((size>>10)&0x3ffu)+1u;
+    if(mode>1u || width<160u || height<120u) return;
+    if(*(volatile uint32_t *)(uintptr_t)ILCFG & 0x10u) height*=2u;
+    volatile uint16_t *fb=(volatile uint16_t *)(uintptr_t)(VRAM|(base&0x007fffffu));
+    uint16_t red=(mode==0u)?0x7c00u:0xf800u;
+    for(uint32_t y=8u;y<72u;y++)
+        for(uint32_t x=8u;x<72u;x++)
+            fb[y*width+x]=red;
+    for(uint32_t y=16u;y<40u;y++)
+        for(uint32_t x=88u;x<136u;x++)
+            fb[y*width+x]=0xffffu;
+    for(uint32_t y=48u;y<72u;y++)
+        for(uint32_t x=88u;x<136u;x++)
+            fb[y*width+x]=0x07e0u;
 }
 RT void vf3_diag_exception_display(void) {
     show_exception();
