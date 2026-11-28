@@ -252,6 +252,28 @@ jobs:
           BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_gdrom_syscall_probe rom
                     test -s "tests/naomi_gdrom_syscall_probe/vf3_naomi_gdrom_syscall_probe-v${GITHUB_RUN_NUMBER}.bin"
 
+          # Independent PVR-only display test; no resident bridge or handoff.
+          make -C tests/naomi_fb_probe clean
+          BUILD_VERSION="v${GITHUB_RUN_NUMBER}" make -C tests/naomi_fb_probe rom
+          test -s "tests/naomi_fb_probe/vf3_naomi_fb_probe-v${GITHUB_RUN_NUMBER}.bin"
+          mkdir -p naomi-fb-probe-artifact
+          cp "tests/naomi_fb_probe/vf3_naomi_fb_probe-v${GITHUB_RUN_NUMBER}.bin" naomi-fb-probe-artifact/
+          cat > naomi-fb-probe-artifact/BUILD_INFO.txt <<EOF
+          Target: Standalone Naomi PVR display diagnostic
+          Build version: v${GITHUB_RUN_NUMBER}
+          Display: six solid PVR-coloured rectangles on dark background
+          Dependencies: KOS PVR only
+          Excludes: resident code, exception vectors, GD-ROM bridge, retail executable
+          Purpose: verify baseline PVR rendering independently of VF3 handoff
+          EOF
+
+      - name: Upload standalone Naomi PVR display diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-pvr-display-probe-v${{ github.run_number }}
+          path: naomi-fb-probe-artifact/*
+          if-no-files-found: error
+
       - name: Inspect the retail 1ST_READ.BIN entry sequence
         env:
           KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
