@@ -352,11 +352,11 @@ jobs:
           cat > exception-capture-return-artifact/BUILD_INFO.txt <<EOF
           Target: Returning SH-4 privileged exception-register capture diagnostic
           Build version: v${GITHUB_RUN_NUMBER}
-          Execution: switches to the 16-byte-aligned BSS stack validated by v174, captures SPC/SSR/SGR/EXPEVT/TEA/SR into resident data, restores caller stack/r8/PR, and returns a fixed result token
-          Omits: resident C renderer, exception display, VBR dispatch, hardware exception generation
+          Execution: switches to the 16-byte-aligned BSS stack validated by v174, captures SPC/SSR/SGR/EXPEVT/TEA/SR into resident data, calls the resident exception renderer on the validated stack, restores caller stack/r8/PR, and returns a fixed result token
+          Omits: VBR dispatch and hardware exception generation
           Expected PASS: blue background with white upper-left and green lower rectangles
           Expected FAIL: red background with white upper-left and yellow lower rectangles
-          Purpose: isolate privileged-register capture from resident framebuffer rendering
+          Purpose: test whether the resident exception renderer returns correctly after privileged-register capture
           EOF
 
       - name: Upload returning exception register-capture probe
