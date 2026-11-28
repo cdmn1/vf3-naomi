@@ -28,7 +28,12 @@ _vf3_exception_capture_return_probe:
     stc sr,r0
     mov.l r0,@(20,r1)
 
-    /* Return a fixed success token without calling resident C or rendering. */
+    /* Exercise the resident exception renderer on this validated stack. */
+    mov.l .Lcapture_draw,r0
+    jsr @r0
+    nop
+
+    /* Return a fixed success token to KOS after the resident renderer returns. */
     mov.l .Lcapture_pass,r0
     mov r8,r15
     add #8,r15
@@ -41,5 +46,6 @@ _vf3_exception_capture_return_probe:
 .Lcapture_info:   .long _vf3_exception_info
 .Lcapture_expevt: .long 0xff000024
 .Lcapture_tea:    .long 0xff00000c
+ .Lcapture_draw:   .long _vf3_diag_exception_draw_once
 .Lcapture_pass:   .long 0x6ca7cafe
     .size _vf3_exception_capture_return_probe,.-_vf3_exception_capture_return_probe
