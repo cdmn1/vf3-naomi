@@ -311,13 +311,26 @@ static RT void exception_draw_value(volatile uint16_t *fb,uint32_t x,uint32_t y,
 static RT void show_exception(void) {
     if(!refresh_screen_mode()) return;
     clear(rgb(45,0,0));
+
+    /*
+     * Minimal post-clear framebuffer diagnostic. Deliberately avoid:
+     * - exception-info reads
+     * - local arrays or stack-derived values
+     * - font/rodata accesses
+     * - helper calls after clear
+     *
+     * If these fixed blocks appear, execution continued after clear and
+     * direct framebuffer writes work. Register rendering can then be
+     * reintroduced in separately verified steps.
+     */
     volatile uint16_t *fb=fbptr();
-    const uint32_t values[6]={vf3_exception_info.expevt,vf3_exception_info.spc,
-        vf3_exception_info.ssr,vf3_exception_info.tea,vf3_exception_info.sgr,
-        vf3_exception_info.sr};
-    for(uint32_t row=0;row<6;row++) {
-        exception_draw_nibble(fb,8u,12u+row*30u,row,0xffe0u);
-        exception_draw_value(fb,40u,12u+row*30u,values[row],0xffffu);
+    for(uint32_t y=12u;y<36u;y++) {
+        for(uint32_t x=8u;x<56u;x++)
+            fb[y*screen_w+x]=0xffffu;
+    }
+    for(uint32_t y=44u;y<68u;y++) {
+        for(uint32_t x=8u;x<56u;x++)
+            fb[y*screen_w+x]=0x07e0u;
     }
 }
 
