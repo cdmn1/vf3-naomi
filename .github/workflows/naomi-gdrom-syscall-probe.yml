@@ -330,8 +330,8 @@ jobs:
           cat > exception-stack-artifact/BUILD_INFO.txt <<EOF
           Target: Isolated resident SH-4 exception stack-switch diagnostic
           Build version: v${GITHUB_RUN_NUMBER}
-          Execution: switches to a 16-byte-aligned stack supplied from the KOS app's allocated BSS, then calls the known-good resident exception renderer
-          Exercises: resident assembly execution, caller-supplied stack pointer and renderer call
+          Execution: initializes r15 and r14 to a 16-byte-aligned KOS BSS stack, verifies a sentinel stack write/read, then calls the resident exception renderer
+          Exercises: writable stack, SH-4 stack and frame-pointer registers, and C renderer call
           Omits: SPC/SSR/SGR/EXPEVT/TEA/SR capture, VBR dispatch, hardware exception generation
           Expected: red background with white upper-left block and green lower block
           Purpose: isolate the exception stack switch from privileged register capture
@@ -379,6 +379,8 @@ jobs:
           cat retail-entry-analysis.txt
 
       - name: Validate and upload GD-ROM syscall bridge ROM
+        env:
+          KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
         run: |
           set -euo pipefail
           mkdir -p gdrom-syscall-artifact
