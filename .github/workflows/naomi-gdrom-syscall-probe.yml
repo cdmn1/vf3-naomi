@@ -343,6 +343,28 @@ jobs:
           name: vf3-naomi-exception-stack-probe-v${{ github.run_number }}
           path: exception-stack-artifact/*
           if-no-files-found: error
+      - name: Package returning exception register-capture probe
+        run: |
+          set -euo pipefail
+          mkdir -p exception-capture-return-artifact
+          ROM="vf3_naomi_exception_capture_return_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_gdrom_syscall_probe/${ROM}" exception-capture-return-artifact/
+          cat > exception-capture-return-artifact/BUILD_INFO.txt <<EOF
+          Target: Returning SH-4 privileged exception-register capture diagnostic
+          Build version: v${GITHUB_RUN_NUMBER}
+          Execution: switches to the 16-byte-aligned BSS stack validated by v174, captures SPC/SSR/SGR/EXPEVT/TEA/SR into resident data, restores caller stack/r8/PR, and returns a fixed result token
+          Omits: resident C renderer, exception display, VBR dispatch, hardware exception generation
+          Expected PASS: blue background with white upper-left and green lower rectangles
+          Expected FAIL: red background with white upper-left and yellow lower rectangles
+          Purpose: isolate privileged-register capture from resident framebuffer rendering
+          EOF
+
+      - name: Upload returning exception register-capture probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-exception-capture-return-probe-v${{ github.run_number }}
+          path: exception-capture-return-artifact/*
+          if-no-files-found: error
       - name: Inspect the retail 1ST_READ.BIN entry sequence
         env:
           KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
