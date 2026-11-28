@@ -18,11 +18,13 @@ STACK_TARGET = vf3_naomi_exception_stack_probe.elf
 STACK_ROM = vf3_naomi_exception_stack_probe-$(BUILD_VERSION).bin
 CAPTURE_TARGET = vf3_naomi_exception_capture_return_probe.elf
 CAPTURE_ROM = vf3_naomi_exception_capture_return_probe-$(BUILD_VERSION).bin
+STACK_RENDER_TARGET = vf3_naomi_exception_stack_renderer_probe.elf
+STACK_RENDER_ROM = vf3_naomi_exception_stack_renderer_probe-$(BUILD_VERSION).bin
 COMMON_OBJS = gdrom_syscall_client.o resident_shim_blob.o syscalls.o
 OBJS = main.o $(COMMON_OBJS)
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
-all: $(TARGET) $(RENDERER_TARGET) $(ENTRY_TARGET) $(STACK_TARGET) $(CAPTURE_TARGET)
-rom: $(ROM) $(RENDERER_ROM) $(ENTRY_ROM) $(STACK_ROM) $(CAPTURE_ROM)
+all: $(TARGET) $(RENDERER_TARGET) $(ENTRY_TARGET) $(STACK_TARGET) $(CAPTURE_TARGET) $(STACK_RENDER_TARGET)
+rom: $(ROM) $(RENDERER_ROM) $(ENTRY_ROM) $(STACK_ROM) $(CAPTURE_ROM) $(STACK_RENDER_ROM)
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
 SH_ELF_BIN ?= $(KOS_CC_BASE)/bin
@@ -48,12 +50,15 @@ exception_stack_probe.o: exception_stack_probe.S
 exception_capture_return_probe.o: exception_capture_return_probe.S
 	kos-cc -c exception_capture_return_probe.S -o $@
 
-resident_shim.elf: gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o
+exception_stack_renderer_probe.o: exception_stack_renderer_probe.S
+	kos-cc -c exception_stack_renderer_probe.S -o $@
+
+resident_shim.elf: gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o exception_stack_renderer_probe.o
 	$(SH_ELF_LD) -EL -e _vf3_gd_install \
 		--section-start=.vf3_resident_text=0x8D000000 \
 		--section-start=.vf3_resident_rodata=0x8D010000 \
 		--section-start=.vf3_resident_data=0x8D020000 \
-		-o $@ gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o
+		-o $@ gdrom_syscall_resident.o chainload.o exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o exception_stack_renderer_probe.o
 
 resident_shim.bin: resident_shim.elf
 	$(SH_ELF_OBJCOPY) -O binary --gap-fill=0x00 \
@@ -88,6 +93,12 @@ exception_capture_return_probe_main.o: exception_capture_return_probe_main.c
 $(CAPTURE_TARGET): exception_capture_return_probe_main.o $(COMMON_OBJS)
 	kos-cc -o $(CAPTURE_TARGET) exception_capture_return_probe_main.o $(COMMON_OBJS)
 
+exception_stack_renderer_probe_main.o: exception_stack_renderer_probe_main.c
+	kos-cc -c exception_stack_renderer_probe_main.c -o $@
+
+$(STACK_RENDER_TARGET): exception_stack_renderer_probe_main.o $(COMMON_OBJS)
+	kos-cc -o $(STACK_RENDER_TARGET) exception_stack_renderer_probe_main.o $(COMMON_OBJS)
+
 renderer_probe_main.o: renderer_probe_main.c
 	kos-cc -c renderer_probe_main.c -o $@
 
@@ -105,9 +116,11 @@ $(STACK_ROM): $(STACK_TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(STACK_ROM) -d "CDMN" -t "VF3 STACK $(BUILD_VERSION)" -e $(STACK_TARGET)
 $(CAPTURE_ROM): $(CAPTURE_TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(CAPTURE_ROM) -d "CDMN" -t "VF3 CAPTURE $(BUILD_VERSION)" -e $(CAPTURE_TARGET)
+$(STACK_RENDER_ROM): $(STACK_RENDER_TARGET) $(NAOMIBINTOOL)
+	$(NAOMIBINTOOL) build $(STACK_RENDER_ROM) -d "CDMN" -t "VF3 STRNDR $(BUILD_VERSION)" -e $(STACK_RENDER_TARGET)
 include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
 clean:
-	-rm -f $(TARGET) $(ROM) $(RENDERER_TARGET) $(RENDERER_ROM) $(ENTRY_TARGET) $(ENTRY_ROM) $(STACK_TARGET) $(STACK_ROM) $(CAPTURE_TARGET) $(CAPTURE_ROM) exception_capture_return_probe_main.o exception_entry_probe_main.o exception_stack_probe_main.o renderer_probe_main.o $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o
+	-rm -f $(TARGET) $(ROM) $(RENDERER_TARGET) $(RENDERER_ROM) $(ENTRY_TARGET) $(ENTRY_ROM) $(STACK_TARGET) $(STACK_ROM) $(CAPTURE_TARGET) $(CAPTURE_ROM) $(STACK_RENDER_TARGET) $(STACK_RENDER_ROM) exception_stack_renderer_probe_main.o exception_capture_return_probe_main.o exception_entry_probe_main.o exception_stack_probe_main.o renderer_probe_main.o $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h exception_diag.o exception_entry.o exception_stack_probe.o exception_capture_return_probe.o exception_stack_renderer_probe.o
 .PHONY: all rom clean
