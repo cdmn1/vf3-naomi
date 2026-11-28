@@ -84,10 +84,10 @@ void vf3_gd_diag_exception_display(void)
     for (;;) { }
 }
 
-void vf3_gd_diag_exception_stack(void)
+void vf3_gd_diag_exception_stack(uint32_t stack_top)
 {
     if (load_resident_image() == 0)
-        ((resident_fn_void)(uintptr_t)VF3_RESIDENT_ADDR_EXCEPTION_STACK_PROBE)();
+        ((resident_fn1)(uintptr_t)VF3_RESIDENT_ADDR_EXCEPTION_STACK_PROBE)(stack_top);
     for (;;) { }
 }
 
