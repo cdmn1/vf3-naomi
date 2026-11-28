@@ -389,6 +389,8 @@ jobs:
           cp app-layout.txt gdrom-syscall-artifact/
           cp resident-undefined.txt gdrom-syscall-artifact/
           cp "tests/naomi_gdrom_syscall_probe/resident_shim.bin" gdrom-syscall-artifact/
+          "${KOS_CC_BASE}/bin/sh-elf-objdump" -drwC -S tests/naomi_gdrom_syscall_probe/resident_shim.elf > gdrom-syscall-artifact/resident-disassembly.txt
+          "${KOS_CC_BASE}/bin/sh-elf-nm" -n tests/naomi_gdrom_syscall_probe/resident_shim.elf > gdrom-syscall-artifact/resident-symbols.txt
           SIZE="$(stat -c '%s' "gdrom-syscall-artifact/${ROM}")"
           SHA="$(sha256sum "gdrom-syscall-artifact/${ROM}" | awk '{print $1}')"
           test "$SIZE" -gt 0
