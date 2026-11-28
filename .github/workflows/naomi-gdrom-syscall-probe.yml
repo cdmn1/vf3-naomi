@@ -262,10 +262,10 @@ jobs:
           cat > naomi-fb-probe-artifact/BUILD_INFO.txt <<EOF
           Target: Standalone Naomi PVR display diagnostic
           Build version: v${GITHUB_RUN_NUMBER}
-          Display: six solid PVR-coloured rectangles on dark background
-          Dependencies: KOS PVR only
+          Display: direct framebuffer test; solid red-tinted background with white and green blocks
+          Dependencies: KOS PVR initialization, then raw PVR framebuffer register writes
           Excludes: resident code, exception vectors, GD-ROM bridge, retail executable
-          Purpose: verify baseline PVR rendering independently of VF3 handoff
+          Purpose: validate the exact direct framebuffer address/mode/stride method used by VF3 diagnostics
           EOF
 
       - name: Upload standalone Naomi PVR display diagnostic
