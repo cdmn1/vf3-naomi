@@ -365,6 +365,28 @@ jobs:
           name: vf3-naomi-exception-capture-return-probe-v${{ github.run_number }}
           path: exception-capture-return-artifact/*
           if-no-files-found: error
+      - name: Package alternate-stack resident renderer probe
+        run: |
+          set -euo pipefail
+          mkdir -p stack-renderer-artifact
+          ROM="vf3_naomi_exception_stack_renderer_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_gdrom_syscall_probe/${ROM}" stack-renderer-artifact/
+          cat > stack-renderer-artifact/BUILD_INFO.txt <<EOF
+          Target: Isolated resident exception renderer on alternate stack
+          Build version: v${GITHUB_RUN_NUMBER}
+          Execution: switches to the 16-byte-aligned KOS BSS stack validated by v174, calls only vf3_diag_exception_draw_once, restores caller stack/r8/PR and returns a fixed token
+          Omits: privileged-register capture, VBR dispatch and hardware exception generation
+          Expected PASS: blue background with white upper-left and green lower rectangles
+          Expected FAIL: red background with white upper-left and yellow lower rectangles
+          Purpose: isolate resident renderer execution on alternate stack from register capture
+          EOF
+
+      - name: Upload alternate-stack resident renderer probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-exception-stack-renderer-probe-v${{ github.run_number }}
+          path: stack-renderer-artifact/*
+          if-no-files-found: error
       - name: Inspect the retail 1ST_READ.BIN entry sequence
         env:
           KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
