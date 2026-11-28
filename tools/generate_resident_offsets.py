@@ -19,6 +19,7 @@ FUNCTIONS = {
     "VF3_RESIDENT_ADDR_DIAG_EXCEPTION_DISPLAY": "vf3_diag_exception_display",
     "VF3_RESIDENT_ADDR_EXCEPTION_ENTRY": "vf3_exception_entry",
     "VF3_RESIDENT_ADDR_EXCEPTION_CAPTURE_PROBE": "vf3_exception_capture_probe",
+    "VF3_RESIDENT_ADDR_EXCEPTION_CAPTURE_RETURN_PROBE": "vf3_exception_capture_return_probe",
     "VF3_RESIDENT_ADDR_EXCEPTION_STACK_PROBE": "vf3_exception_stack_probe",
 }
 
