@@ -384,6 +384,17 @@ RT void vf3_diag_note_request(uint32_t command,const uint32_t params[4]) {
     if(params) { fad=params[0]; sectors=params[1]; dest=params[2]; }
     show_syscall();
 }
+RT uint32_t vf3_diag_stack_c_test(void)
+{
+    volatile uint32_t local_words[8];
+    for (uint32_t i = 0; i < 8u; ++i)
+        local_words[i] = 0x13579bdfu ^ (i * 0x01010101u);
+    for (uint32_t i = 0; i < 8u; ++i)
+        if (local_words[i] != (0x13579bdfu ^ (i * 0x01010101u)))
+            return 0xbad10000u | i;
+    return 0x51ac0ffeu;
+}
+
 RT void vf3_diag_exception_draw_once(void) {
     show_exception();
 }
