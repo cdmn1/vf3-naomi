@@ -157,18 +157,57 @@ static RT void show_syscall(void) {
     line(194,l_sectors,sectors,rgb(255,255,255));
     line(216,l_dest,dest,rgb(255,255,255));
 }
+
+/* Exception screen renderer: avoids resident font/rodata lookups. */
+static RT uint8_t exception_hex_col(uint32_t n, uint32_t c) {
+    switch(n) {
+    case 0: { const uint8_t v[5]={0x3e,0x41,0x41,0x41,0x3e}; return v[c]; }
+    case 1: { const uint8_t v[5]={0x00,0x42,0x7f,0x40,0x00}; return v[c]; }
+    case 2: { const uint8_t v[5]={0x42,0x61,0x51,0x49,0x46}; return v[c]; }
+    case 3: { const uint8_t v[5]={0x21,0x41,0x45,0x4b,0x31}; return v[c]; }
+    case 4: { const uint8_t v[5]={0x18,0x14,0x12,0x7f,0x10}; return v[c]; }
+    case 5: { const uint8_t v[5]={0x27,0x45,0x45,0x45,0x39}; return v[c]; }
+    case 6: { const uint8_t v[5]={0x3c,0x4a,0x49,0x49,0x30}; return v[c]; }
+    case 7: { const uint8_t v[5]={0x01,0x71,0x09,0x05,0x03}; return v[c]; }
+    case 8: { const uint8_t v[5]={0x36,0x49,0x49,0x49,0x36}; return v[c]; }
+    case 9: { const uint8_t v[5]={0x06,0x49,0x49,0x29,0x1e}; return v[c]; }
+    case 10:{ const uint8_t v[5]={0x7e,0x11,0x11,0x11,0x7e}; return v[c]; }
+    case 11:{ const uint8_t v[5]={0x7f,0x49,0x49,0x49,0x36}; return v[c]; }
+    case 12:{ const uint8_t v[5]={0x3e,0x41,0x41,0x41,0x22}; return v[c]; }
+    case 13:{ const uint8_t v[5]={0x7f,0x41,0x41,0x22,0x1c}; return v[c]; }
+    case 14:{ const uint8_t v[5]={0x7f,0x49,0x49,0x49,0x41}; return v[c]; }
+    default:{ const uint8_t v[5]={0x7f,0x09,0x09,0x09,0x01}; return v[c]; }
+    }
+}
+static RT void exception_draw_nibble(volatile uint16_t *fb,uint32_t x,uint32_t y,
+                                     uint32_t n,uint16_t color) {
+    for(uint32_t col=0;col<5;col++) {
+        uint8_t bits=exception_hex_col(n,col);
+        for(uint32_t row=0;row<7;row++) if(bits&(1u<<row))
+            for(uint32_t sy=0;sy<2;sy++)
+                for(uint32_t sx=0;sx<2;sx++)
+                    fb[(y+row*2u+sy)*screen_w+x+col*2u+sx]=color;
+    }
+}
+static RT void exception_draw_value(volatile uint16_t *fb,uint32_t x,uint32_t y,
+                                    uint32_t value,uint16_t color) {
+    for(uint32_t i=0;i<8;i++)
+        exception_draw_nibble(fb,x+i*14u,y,(value>>((7u-i)*4u))&15u,color);
+}
+
 static RT void show_exception(void) {
     if(!refresh_screen_mode()) return;
     clear(rgb(45,0,0));
-    text(8,8,t_exception,2,rgb(255,255,255));
-    line(36,l_expevt,vf3_exception_info.expevt,rgb(255,220,80));
-    line(58,l_spc,vf3_exception_info.spc,rgb(255,255,255));
-    line(80,l_ssr,vf3_exception_info.ssr,rgb(255,255,255));
-    line(102,l_tea,vf3_exception_info.tea,rgb(255,255,255));
-    line(124,l_sgr,vf3_exception_info.sgr,rgb(255,255,255));
-    line(146,l_sr,vf3_exception_info.sr,rgb(255,255,255));
-    text(8,180,t_stopped,1,rgb(255,180,180));
+    volatile uint16_t *fb=fbptr();
+    const uint32_t values[6]={vf3_exception_info.expevt,vf3_exception_info.spc,
+        vf3_exception_info.ssr,vf3_exception_info.tea,vf3_exception_info.sgr,
+        vf3_exception_info.sr};
+    for(uint32_t row=0;row<6;row++) {
+        exception_draw_nibble(fb,8u,12u+row*30u,row,0xffe0u);
+        exception_draw_value(fb,40u,12u+row*30u,values[row],0xffffu);
+    }
 }
+
 RT uint32_t vf3_diag_prepare(uint32_t width,uint32_t height,uint32_t pixel_mode) {
     volatile uint16_t *general=(volatile uint16_t *)(uintptr_t)VEC_GENERAL;
     volatile uint16_t *tlb=(volatile uint16_t *)(uintptr_t)VEC_TLB;
