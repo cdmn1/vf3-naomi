@@ -4,26 +4,31 @@
     .type _vf3_exception_stack_probe,@function
 
 _vf3_exception_stack_probe:
-    /* Establish both SH-4 stack and frame-pointer registers on the new stack. */
+    /* Preserve the caller's callee-saved r8 and original stack, aligned. */
+    mov.l r8,@-r15
+    add #-12,r15
+    mov r15,r8
+    /* Switch stacks without changing r14; test a real C call on this stack. */
     mov r4,r15
-    mov r15,r14
-    /* Verify the supplied stack is writable before entering compiled C. */
     mov.l .Lsentinel,r0
     mov.l r0,@-r15
     mov.l @r15,r1
     cmp/eq r0,r1
     bf .Lstack_bad
     add #4,r15
-    mov.l .Ldisplay,r0
+    mov.l .Ldraw_once,r0
     jsr @r0
     nop
-.Lstack_loop:
-    bra .Lstack_loop
+    /* Return to the original KOS stack and return to the caller. */
+    mov r8,r15
+    add #12,r15
+    mov.l @r15+,r8
+    rts
     nop
 .Lstack_bad:
     bra .Lstack_bad
     nop
     .align 4
 .Lsentinel: .long 0x51ac0ffe
-.Ldisplay: .long _vf3_diag_exception_display
+.Ldraw_once: .long _vf3_diag_exception_draw_once
     .size _vf3_exception_stack_probe,.-_vf3_exception_stack_probe
