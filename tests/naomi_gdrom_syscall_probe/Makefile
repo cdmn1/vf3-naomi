@@ -12,10 +12,13 @@ TARGET = vf3_naomi_gdrom_syscall_probe.elf
 ROM = vf3_naomi_gdrom_syscall_probe-$(BUILD_VERSION).bin
 RENDERER_TARGET = vf3_naomi_exception_renderer_probe.elf
 RENDERER_ROM = vf3_naomi_exception_renderer_probe-$(BUILD_VERSION).bin
+ENTRY_TARGET = vf3_naomi_exception_entry_probe.elf
+ENTRY_ROM = vf3_naomi_exception_entry_probe-$(BUILD_VERSION).bin
 COMMON_OBJS = gdrom_syscall_client.o resident_shim_blob.o syscalls.o
 OBJS = main.o $(COMMON_OBJS)
 NAOMIBINTOOL ?= $(KOS_BASE)/utils/naomibintool/naomibintool
-all: $(TARGET) $(RENDERER_TARGET)
+all: $(TARGET) $(RENDERER_TARGET) $(ENTRY_TARGET)
+rom: $(ROM) $(RENDERER_ROM) $(ENTRY_ROM)
 rom: $(ROM) $(RENDERER_ROM)
 $(NAOMIBINTOOL):
 	$(MAKE) -C $(KOS_BASE)/utils/naomibintool CC=cc
@@ -58,6 +61,12 @@ resident_offsets.h: resident_shim.elf resident_shim.bin
 gdrom_syscall_client.o: gdrom_syscall_client.c resident_offsets.h
 	kos-cc -c gdrom_syscall_client.c -o $@
 
+exception_entry_probe_main.o: exception_entry_probe_main.c
+	kos-cc -c exception_entry_probe_main.c -o $@
+
+$(ENTRY_TARGET): exception_entry_probe_main.o $(COMMON_OBJS)
+	kos-cc -o $(ENTRY_TARGET) exception_entry_probe_main.o $(COMMON_OBJS)
+
 renderer_probe_main.o: renderer_probe_main.c
 	kos-cc -c renderer_probe_main.c -o $@
 
@@ -69,9 +78,11 @@ $(ROM): $(TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(ROM) -d "CDMN" -t "VF3 GD $(BUILD_VERSION)" -e $(TARGET)
 $(RENDERER_ROM): $(RENDERER_TARGET) $(NAOMIBINTOOL)
 	$(NAOMIBINTOOL) build $(RENDERER_ROM) -d "CDMN" -t "VF3 RENDER $(BUILD_VERSION)" -e $(RENDERER_TARGET)
+$(ENTRY_ROM): $(ENTRY_TARGET) $(NAOMIBINTOOL)
+	$(NAOMIBINTOOL) build $(ENTRY_ROM) -d "CDMN" -t "VF3 ENTRY $(BUILD_VERSION)" -e $(ENTRY_TARGET)
 include $(KOS_BASE)/Makefile.rules
 CFLAGS += -fno-jump-tables
 
 clean:
-	-rm -f $(TARGET) $(ROM) $(RENDERER_TARGET) $(RENDERER_ROM) renderer_probe_main.o $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h exception_diag.o exception_entry.o
+	-rm -f $(TARGET) $(ROM) $(RENDERER_TARGET) $(RENDERER_ROM) $(ENTRY_TARGET) $(ENTRY_ROM) exception_entry_probe_main.o renderer_probe_main.o $(OBJS) gdrom_syscall_resident.o chainload.o resident_shim.elf resident_shim.bin resident_offsets.h exception_diag.o exception_entry.o
 .PHONY: all rom clean
