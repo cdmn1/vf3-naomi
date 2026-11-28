@@ -4,9 +4,13 @@
     .type _vf3_exception_stack_probe,@function
 
 _vf3_exception_stack_probe:
-    /* Preserve caller r8 and original stack on the original KOS stack. */
+    /*
+     * Preserve the caller's PR and callee-saved r8 on the original KOS stack.
+     * This routine makes a nested jsr, so PR must be restored before rts.
+     */
+    sts.l pr,@-r15
     mov.l r8,@-r15
-    add #-12,r15
+    add #-8,r15
     mov r15,r8
 
     /* Switch to caller-supplied aligned BSS stack and exercise a resident C frame. */
@@ -21,18 +25,20 @@ _vf3_exception_stack_probe:
     jsr @r0
     nop
 
-    /* Preserve the C result in r0; restore the original KOS stack and r8. */
+    /* Preserve C result in r0; restore original stack, r8 and PR. */
     mov r8,r15
-    add #12,r15
+    add #8,r15
     mov.l @r15+,r8
+    lds.l @r15+,pr
     rts
     nop
 
 .Lstack_bad:
     mov.l .Lbad_result,r0
     mov r8,r15
-    add #12,r15
+    add #8,r15
     mov.l @r15+,r8
+    lds.l @r15+,pr
     rts
     nop
 
