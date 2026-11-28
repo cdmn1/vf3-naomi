@@ -298,6 +298,28 @@ jobs:
           name: vf3-naomi-exception-renderer-probe-v${{ github.run_number }}
           path: exception-renderer-artifact/*
           if-no-files-found: error
+      - name: Package isolated exception entry probe
+        run: |
+          set -euo pipefail
+          mkdir -p exception-entry-artifact
+          ROM="vf3_naomi_exception_entry_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_gdrom_syscall_probe/${ROM}" exception-entry-artifact/
+          cat > exception-entry-artifact/BUILD_INFO.txt <<EOF
+          Target: Isolated resident SH-4 exception-entry assembly diagnostic
+          Build version: v${GITHUB_RUN_NUMBER}
+          Execution: calls _vf3_exception_entry directly from normal KOS context
+          Exercises: exception stack switch, SPC/SSR/SGR/EXPEVT/TEA/SR capture, renderer call
+          Bypasses: VBR exception dispatch and actual hardware exception generation
+          Expected: red background with white upper-left block and green lower block
+          Purpose: separate exception-entry assembly/stack faults from VBR vector dispatch faults
+          EOF
+
+      - name: Upload isolated exception entry probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-exception-entry-probe-v${{ github.run_number }}
+          path: exception-entry-artifact/*
+          if-no-files-found: error
       - name: Inspect the retail 1ST_READ.BIN entry sequence
         env:
           KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
