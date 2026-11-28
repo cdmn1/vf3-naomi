@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "tests/naomi_gdrom_syscall_probe/**"
+      - "tests/naomi_fb_probe/**"
       - "tools/pack_vf3_assets.py"
       - "tools/generate_vf3_asset_map_header.py"
       - "tools/append_vf3_assets_to_naomi_rom.py"
