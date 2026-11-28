@@ -4,7 +4,9 @@
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
 extern uint32_t vf3_gd_install(void);
-extern void vf3_gd_diag_exception_stack(void);
+extern void vf3_gd_diag_exception_stack(uint32_t stack_top);
+
+static uint8_t safe_exception_stack[4096] __attribute__((aligned(16)));
 
 int main(void)
 {
@@ -13,9 +15,10 @@ int main(void)
     if (vf3_gd_install() == 0xffffffffu)
         for (;;) thd_sleep(1000);
 
-    /* Switch to the exact exception stack, then call the known-good renderer.
-       This deliberately omits SPC/SSR/SGR/EXPEVT/TEA/SR capture. */
-    vf3_gd_diag_exception_stack();
+    /* Switch to a 16-byte-aligned stack allocated in the KOS app's BSS, then
+       call the known-good renderer. This isolates stack address validity from
+       the resident stack-switch instruction. Register capture is omitted. */
+    vf3_gd_diag_exception_stack((uint32_t)(uintptr_t)(safe_exception_stack + sizeof(safe_exception_stack)));
 
     for (;;) thd_sleep(1000);
     return 0;
