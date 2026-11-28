@@ -330,8 +330,8 @@ jobs:
           cat > exception-stack-artifact/BUILD_INFO.txt <<EOF
           Target: Isolated resident SH-4 exception stack-switch diagnostic
           Build version: v${GITHUB_RUN_NUMBER}
-          Execution: switches to 0x8D0F0000, then calls the known-good resident exception renderer
-          Exercises: resident assembly execution, dedicated stack pointer and renderer call
+          Execution: switches to a 16-byte-aligned stack supplied from the KOS app's allocated BSS, then calls the known-good resident exception renderer
+          Exercises: resident assembly execution, caller-supplied stack pointer and renderer call
           Omits: SPC/SSR/SGR/EXPEVT/TEA/SR capture, VBR dispatch, hardware exception generation
           Expected: red background with white upper-left block and green lower block
           Purpose: isolate the exception stack switch from privileged register capture
