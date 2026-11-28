@@ -159,25 +159,138 @@ static RT void show_syscall(void) {
 }
 
 /* Exception screen renderer: avoids resident font/rodata lookups. */
-static RT uint8_t exception_hex_col(uint32_t n, uint32_t c) {
-    switch(n) {
-    case 0: { const uint8_t v[5]={0x3e,0x41,0x41,0x41,0x3e}; return v[c]; }
-    case 1: { const uint8_t v[5]={0x00,0x42,0x7f,0x40,0x00}; return v[c]; }
-    case 2: { const uint8_t v[5]={0x42,0x61,0x51,0x49,0x46}; return v[c]; }
-    case 3: { const uint8_t v[5]={0x21,0x41,0x45,0x4b,0x31}; return v[c]; }
-    case 4: { const uint8_t v[5]={0x18,0x14,0x12,0x7f,0x10}; return v[c]; }
-    case 5: { const uint8_t v[5]={0x27,0x45,0x45,0x45,0x39}; return v[c]; }
-    case 6: { const uint8_t v[5]={0x3c,0x4a,0x49,0x49,0x30}; return v[c]; }
-    case 7: { const uint8_t v[5]={0x01,0x71,0x09,0x05,0x03}; return v[c]; }
-    case 8: { const uint8_t v[5]={0x36,0x49,0x49,0x49,0x36}; return v[c]; }
-    case 9: { const uint8_t v[5]={0x06,0x49,0x49,0x29,0x1e}; return v[c]; }
-    case 10:{ const uint8_t v[5]={0x7e,0x11,0x11,0x11,0x7e}; return v[c]; }
-    case 11:{ const uint8_t v[5]={0x7f,0x49,0x49,0x49,0x36}; return v[c]; }
-    case 12:{ const uint8_t v[5]={0x3e,0x41,0x41,0x41,0x22}; return v[c]; }
-    case 13:{ const uint8_t v[5]={0x7f,0x41,0x41,0x22,0x1c}; return v[c]; }
-    case 14:{ const uint8_t v[5]={0x7f,0x49,0x49,0x49,0x41}; return v[c]; }
-    default:{ const uint8_t v[5]={0x7f,0x09,0x09,0x09,0x01}; return v[c]; }
-    }
+static RT uint8_t exception_hex_col(uint32_t n,uint32_t c) {
+ switch(n) {
+ case 0: switch(c) {
+  case 0: return 0x3eu;
+  case 1: return 0x41u;
+  case 2: return 0x41u;
+  case 3: return 0x41u;
+  case 4: return 0x3eu;
+  default: return 0u;
+ }
+ case 1: switch(c) {
+  case 0: return 0x0u;
+  case 1: return 0x42u;
+  case 2: return 0x7fu;
+  case 3: return 0x40u;
+  case 4: return 0x0u;
+  default: return 0u;
+ }
+ case 2: switch(c) {
+  case 0: return 0x42u;
+  case 1: return 0x61u;
+  case 2: return 0x51u;
+  case 3: return 0x49u;
+  case 4: return 0x46u;
+  default: return 0u;
+ }
+ case 3: switch(c) {
+  case 0: return 0x21u;
+  case 1: return 0x41u;
+  case 2: return 0x45u;
+  case 3: return 0x4bu;
+  case 4: return 0x31u;
+  default: return 0u;
+ }
+ case 4: switch(c) {
+  case 0: return 0x18u;
+  case 1: return 0x14u;
+  case 2: return 0x12u;
+  case 3: return 0x7fu;
+  case 4: return 0x10u;
+  default: return 0u;
+ }
+ case 5: switch(c) {
+  case 0: return 0x27u;
+  case 1: return 0x45u;
+  case 2: return 0x45u;
+  case 3: return 0x45u;
+  case 4: return 0x39u;
+  default: return 0u;
+ }
+ case 6: switch(c) {
+  case 0: return 0x3cu;
+  case 1: return 0x4au;
+  case 2: return 0x49u;
+  case 3: return 0x49u;
+  case 4: return 0x30u;
+  default: return 0u;
+ }
+ case 7: switch(c) {
+  case 0: return 0x1u;
+  case 1: return 0x71u;
+  case 2: return 0x9u;
+  case 3: return 0x5u;
+  case 4: return 0x3u;
+  default: return 0u;
+ }
+ case 8: switch(c) {
+  case 0: return 0x36u;
+  case 1: return 0x49u;
+  case 2: return 0x49u;
+  case 3: return 0x49u;
+  case 4: return 0x36u;
+  default: return 0u;
+ }
+ case 9: switch(c) {
+  case 0: return 0x6u;
+  case 1: return 0x49u;
+  case 2: return 0x49u;
+  case 3: return 0x29u;
+  case 4: return 0x1eu;
+  default: return 0u;
+ }
+ case 10: switch(c) {
+  case 0: return 0x7eu;
+  case 1: return 0x11u;
+  case 2: return 0x11u;
+  case 3: return 0x11u;
+  case 4: return 0x7eu;
+  default: return 0u;
+ }
+ case 11: switch(c) {
+  case 0: return 0x7fu;
+  case 1: return 0x49u;
+  case 2: return 0x49u;
+  case 3: return 0x49u;
+  case 4: return 0x36u;
+  default: return 0u;
+ }
+ case 12: switch(c) {
+  case 0: return 0x3eu;
+  case 1: return 0x41u;
+  case 2: return 0x41u;
+  case 3: return 0x41u;
+  case 4: return 0x22u;
+  default: return 0u;
+ }
+ case 13: switch(c) {
+  case 0: return 0x7fu;
+  case 1: return 0x41u;
+  case 2: return 0x41u;
+  case 3: return 0x22u;
+  case 4: return 0x1cu;
+  default: return 0u;
+ }
+ case 14: switch(c) {
+  case 0: return 0x7fu;
+  case 1: return 0x49u;
+  case 2: return 0x49u;
+  case 3: return 0x49u;
+  case 4: return 0x41u;
+  default: return 0u;
+ }
+ case 15: switch(c) {
+  case 0: return 0x7fu;
+  case 1: return 0x9u;
+  case 2: return 0x9u;
+  case 3: return 0x9u;
+  case 4: return 0x1u;
+  default: return 0u;
+ }
+ default: return 0u;
+ }
 }
 static RT void exception_draw_nibble(volatile uint16_t *fb,uint32_t x,uint32_t y,
                                      uint32_t n,uint16_t color) {
