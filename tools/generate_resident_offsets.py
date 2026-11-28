@@ -16,6 +16,7 @@ FUNCTIONS = {
     "VF3_RESIDENT_ADDR_CHAINLOAD": "vf3_gd_chainload",
     "VF3_RESIDENT_ADDR_DIAG_PREPARE": "vf3_diag_prepare",
     "VF3_RESIDENT_ADDR_DIAG_BEGIN": "vf3_diag_begin",
+    "VF3_RESIDENT_ADDR_DIAG_EXCEPTION_DISPLAY": "vf3_diag_exception_display",
 }
 
 def generate(nm: str, elf: Path, binary: Path) -> str:
