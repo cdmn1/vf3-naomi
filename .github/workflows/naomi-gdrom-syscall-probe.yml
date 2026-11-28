@@ -275,6 +275,29 @@ jobs:
           path: naomi-fb-probe-artifact/*
           if-no-files-found: error
 
+      - name: Package isolated resident exception renderer probe
+        run: |
+          set -euo pipefail
+          mkdir -p exception-renderer-artifact
+          ROM="vf3_naomi_exception_renderer_probe-v${GITHUB_RUN_NUMBER}.bin"
+          cp "tests/naomi_gdrom_syscall_probe/${ROM}" exception-renderer-artifact/
+          cat > exception-renderer-artifact/BUILD_INFO.txt <<EOF
+          Target: Isolated resident exception display renderer diagnostic
+          Build version: v${GITHUB_RUN_NUMBER}
+          Display: red background followed by fixed white and green rectangles
+          Execution: calls vf3_diag_exception_display directly from normal KOS context
+          Includes: the exact resident exception renderer and resident memory image used by VF3
+          Excludes: VBR exception dispatch, exception entry assembly, retail executable and GD-ROM asset loading
+          Purpose: distinguish resident renderer/section problems from exception-vector or exception-stack problems
+          Expected: red background with white upper-left block and green lower block
+          EOF
+
+      - name: Upload isolated resident exception renderer probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: vf3-naomi-exception-renderer-probe-v${{ github.run_number }}
+          path: exception-renderer-artifact/*
+          if-no-files-found: error
       - name: Inspect the retail 1ST_READ.BIN entry sequence
         env:
           KOS_CC_BASE: ${{ github.workspace }}/.toolchain/sh-elf
