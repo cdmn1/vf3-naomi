@@ -84,6 +84,13 @@ void vf3_gd_diag_exception_display(void)
     for (;;) { }
 }
 
+void vf3_gd_diag_exception_stack(void)
+{
+    if (load_resident_image() == 0)
+        ((resident_fn_void)(uintptr_t)VF3_RESIDENT_ADDR_EXCEPTION_STACK_PROBE)();
+    for (;;) { }
+}
+
 void vf3_gd_chainload(void)
 {
     if (load_resident_image() == 0) {
