@@ -384,6 +384,9 @@ RT void vf3_diag_note_request(uint32_t command,const uint32_t params[4]) {
     if(params) { fad=params[0]; sectors=params[1]; dest=params[2]; }
     show_syscall();
 }
+RT void vf3_diag_exception_draw_once(void) {
+    show_exception();
+}
 RT void vf3_diag_exception_display(void) {
     show_exception();
     for(;;) __asm__ volatile("nop");
