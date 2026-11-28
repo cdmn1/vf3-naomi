@@ -70,6 +70,13 @@ uint32_t vf3_gd_diag_prepare(uint32_t width, uint32_t height, uint32_t pixel_mod
     return ((resident_fn3)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_PREPARE)(width, height, pixel_mode);
 }
 
+void vf3_gd_diag_exception_display(void)
+{
+    if (load_resident_image() == 0)
+        ((resident_fn_void)(uintptr_t)VF3_RESIDENT_ADDR_DIAG_EXCEPTION_DISPLAY)();
+    for (;;) { }
+}
+
 void vf3_gd_chainload(void)
 {
     if (load_resident_image() == 0) {
